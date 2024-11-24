@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question Bank</title>
+    <link rel="stylesheet" href="stylesheets/style.css">
+    <link rel="stylesheet" href="stylesheets/questionbank.css">
+    <style>
+        #viewGeneratedPapersButton {
+            display: none;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            border-radius: 5px;
+        }
+
+        #viewGeneratedPapersButton:hover {
+            background-color: #0056b3;
+        }
+
+        .question-item {
+            margin-bottom: 15px;
+        }
+
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <span><a href="index.html">CIE²T</a></span>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="questionBank.html">Question Databank</a></li>
+                <li><a href="reporting.html">Assessment Reporting</a></li>
+                <li><a href="Exam_Automation.html">Exam Automation</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+        <div class="auth-buttons">
+            <a href="signup.html" class="sign-up">Sign Up</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <h1>Select Subject</h1>
+        <p>Welcome to the Cambridge Exam Question Bank! Here, you can explore various subjects and select questions to generate your custom exam papers. Click on any subject below to see the available questions.</p>
+
+        <div class="subject-selection">
+            <button onclick="showQuestions('math')">Math</button>
+            <button onclick="showQuestions('physics')">Physics</button>
+            <button onclick="showQuestions('biology')">Biology</button>
+            <button onclick="showQuestions('chemistry')">Chemistry</button>
+            <button onclick="showQuestions('computer')">Computer Science</button>
+        </div>
+
+        <div id="questions-container" style="display:none;">
+            <h2>Questions</h2>
+            <form id="pdfForm">
+                <div id="question-list" class="question-list">
+                    <!-- Questions will be dynamically inserted here -->
+                </div>
+                <button type="submit">Generate PDF</button>
+            </form>
+            <button id="viewGeneratedPapersButton" onclick="toggleGeneratedPapers()">View Generated Papers</button>
+        </div>
+
+        <div id="generatedPapersContainer" style="display: none;">
+            <h2>Generated Papers</h2>
+            <table id="generatedPapersTable">
+                <thead>
+                    <tr>
+                        <th>Paper Name</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Dynamic content will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <footer id="contact">
+        <p>&copy; 2024 CIE²T. All rights reserved.</p>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+        // Fetch and display questions based on subject from the backend
+        async function showQuestions(subject) {
+            const questionList = document.getElementById('question-list');
+            questionList.innerHTML = ''; // Clear existing questions
+            document.getElementById('questions-container').style.display = 'none'; // Hide container initially
+
+            try {
+                const response = await fetch(`/api/questions/${subject}`);
+                if (!response.ok) throw new Error(`Error fetching questions: ${response.statusText}`);
+
+                const questions = await response.json();
+
+                if (!questions || questions.length === 0) {
+                    questionList.innerHTML = '<p>No questions found for this subject.</p>';
+                } else {
+                    questions.forEach((question) => {
+                        const questionItem = document.createElement('div');
+                        questionItem.classList.add('question-item');
+
+                        questionItem.innerHTML = `
+                            <input type="checkbox" value="${question.question_text}" name="questions">
+                            <span>${question.question_text}</span>
+                        `;
+                        questionList.appendChild(questionItem);
+                    });
+                }
+                document.getElementById('questions-container').style.display = 'block';
+            } catch (error) {
+                console.error('Error fetching questions:', error);
+                questionList.innerHTML = '<p>Failed to load questions. Please try again later.</p>';
+            }
+        }
+
+        // Handle PDF generation form submission
+        document.getElementById('pdfForm').addEventListener('submit', async function (event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const selectedQuestions = Array.from(formData.getAll('questions'));
+
+            // Check if selected questions are correctly captured
+            console.log('Selected Questions:', selectedQuestions);
+
+            if (selectedQuestions.length === 0) {
+                alert('Please select at least one question.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/generate-pdf', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ questions: selectedQuestions })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    alert('PDF generated successfully!');
+                    document.getElementById('viewGeneratedPapersButton').style.display = 'inline-block';
+                    fetchGeneratedPapers(); // Refresh the list of generated papers
+                } else {
+                    alert('Failed to generate PDF. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('An error occurred. Please try again.');
+            }
+        });
+
+        // Fetch and display generated papers
+        async function fetchGeneratedPapers() {
+            try {
+                const response = await fetch('/api/generated-papers');
+                if (!response.ok) throw new Error('Failed to fetch generated papers');
+
+                const papers = await response.json();
+                const tableBody = document.getElementById('generatedPapersTable').querySelector('tbody');
+                tableBody.innerHTML = ''; // Clear existing rows
+
+                if (papers.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="2">No papers generated yet.</td></tr>';
+                } else {
+                    papers.forEach((paper) => {
+                        if (paper.filename) {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${paper.filename}</td>
+                                <td><button onclick="downloadPaper('${paper.filename}')">Download PDF</button></td>
+                            `;
+                            tableBody.appendChild(row);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching generated papers:', error);
+                alert('Failed to fetch generated papers.');
+            }
+        }
+
+        // Download generated paper
+        function downloadPaper(fileName) {
+            if (fileName) {
+                window.location.href = `/download-pdf/${fileName}`;
+            } else {
+                alert('Filename is invalid or not found.');
+            }
+        }
+
+        // Toggle visibility of the generated papers container
+        function toggleGeneratedPapers() {
+            const container = document.getElementById('generatedPapersContainer');
+            container.style.display = container.style.display === 'none' ? 'block' : 'none';
+        }
+    </script>
+</body>
+
+</html>

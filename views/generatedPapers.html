@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generated Papers</title>
+    <link rel="stylesheet" href="stylesheets/style.css">
+    <link rel="stylesheet" href="stylesheets/questionbank.css">
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <span><a href="index.html">CIE²T</a></span>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="/questionBank.html">Question Databank</a></li>
+                <li><a href="/reporting.html">Assessment Reporting</a></li>
+                <li><a href="/Exam_Automation.html">Exam Automation</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+        <div class="auth-buttons">
+            <a href="signup.html" class="sign-up">Sign Up</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1>Generated Papers</h1>
+        <table id="generatedPapersTable">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Papers will be populated here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', fetchGeneratedPapers);
+
+        async function fetchGeneratedPapers() {
+            try {
+                const response = await fetch('/api/generated-papers');
+                const papers = await response.json();
+                const tableBody = document.querySelector('#generatedPapersTable tbody');
+                tableBody.innerHTML = '';
+
+                papers.forEach(paper => {
+                    const row = document.createElement('tr');
+                    const createdAt = new Date(paper.createdAt).toLocaleString(); // Format the date
+                    row.innerHTML = `
+                        <td>${paper.name}</td>
+                        <td>${createdAt}</td>
+                        <td>
+                            <button onclick="downloadPaper('${paper.name}')">Download</button>
+                            <button onclick="deletePaper('${paper.name}')">Delete</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error fetching papers:', error);
+            }
+        }
+
+        async function downloadPaper(id) {
+            try {
+                const response = await fetch(`/api/download-paper/${id}`);
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'generated_paper.pdf';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Error downloading paper:', error);
+            }
+        }
+
+        async function deletePaper(id) {
+            if (confirm('Are you sure you want to delete this paper?')) {
+                try {
+                    const response = await fetch(`/api/delete-paper/${id}`, { method: 'DELETE' });
+                    if (response.ok) {
+                        fetchGeneratedPapers();
+                    } else {
+                        console.error('Error deleting paper:', await response.json());
+                    }
+                } catch (error) {
+                    console.error('Error deleting paper:', error);
+                }
+            }
+        }
+    </script>
+</body>
+</html>

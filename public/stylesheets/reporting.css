@@ -1,0 +1,65 @@
+/* General Styles */
+
+.container {
+    /* max-width: 800px; */
+    margin: 30px auto;
+    /* padding: 50px; */
+    height: 60vh;
+    width: 70%;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    
+}
+
+/* Student List Styles */
+h1 {
+    text-align: center;
+    color: #003366;
+    margin-top: 35px;
+}
+.student-list{
+    display: flex;
+    flex-direction: column;
+    /* align-items: baseline; */
+    
+    /* text-align: center; */
+}
+.student-list ul {
+    padding: 0;
+    margin: 20px;
+    /* text-align: center; */
+}
+
+.student-list ul li {
+    margin: 10px 0;
+    list-style-type: none;
+    border-bottom: 1px solid #00336638;
+    position: relative;
+
+}
+.student-list ul li::before{
+    content: "";
+    position: absolute;
+    height: 100%;
+    width: 5px;
+    background-color: #003366;
+    /* left: 0; */
+    right: 0;
+    transition: width 0.2s ease-out;
+}
+
+.student-list ul li:hover::before{
+    width: 8%;
+}
+.student-list ul li a {
+    text-decoration: none;
+    color: #007bff;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.student-list ul li a:hover {
+    text-decoration: underline;
+    color: #0056b3;
+}
