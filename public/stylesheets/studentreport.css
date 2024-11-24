@@ -1,0 +1,136 @@
+/* General Styles */
+.container {
+    margin: 30px auto;
+    height: 80vh; /* Adjusted height */
+    width: 70%;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding: 20px; /* Added padding for better spacing */
+}
+
+
+/* Assessment Report Section */
+.assessment-report {
+    margin-top: 20px;
+}
+
+.assessment-report h1 {
+    text-align: center;
+    color: #003366;
+    margin-bottom: 20px;
+}
+
+/* Details Summary */
+.details-summary {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+}
+
+.student-details, .performance-summary {
+    width: 48%; /* Each section takes up half of the container */
+    background: #f4f4f4;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.student-details h2, .performance-summary h2 {
+    color: #003366;
+    margin-bottom: 10px;
+}
+
+.student-details p, .performance-summary p {
+    font-size: 16px;
+    margin: 10px 0;
+}
+
+/* Examiner's Comments Section */
+.examiner-comments {
+    background: #f4f4f4;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.examiner-comments h2 {
+    color: #003366;
+    margin-bottom: 10px;
+}
+
+.examiner-comments p {
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 10px 0;
+}
+
+/* Footer Styles */
+footer {
+    background-color: #003366;
+    color: white;
+    padding: 40px 20px;
+}
+
+footer .footer-content {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+}
+
+footer .footer-section {
+    width: 23%; /* Divide the footer sections evenly */
+}
+
+footer .footer-section h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+footer .footer-section p,
+footer .footer-section ul li {
+    font-size: 14px;
+}
+
+footer .footer-section a {
+    color: white;
+    text-decoration: none;
+}
+
+footer .footer-section a:hover {
+    color: #ffd700; /* Gold hover effect for footer links */
+}
+
+footer .footer-bottom {
+    text-align: center;
+    font-size: 14px;
+    padding-top: 20px;
+}
+
+/* Social Icons */
+footer .social-icons {
+    display: flex;
+    gap: 10px;
+}
+
+footer .social-icons a img {
+    width: 24px;
+    height: 24px;
+}
+
+/* Responsiveness for smaller screens */
+@media (max-width: 768px) {
+    .details-summary {
+        flex-direction: column; /* Stack student details and performance summary */
+    }
+
+    footer .footer-content {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    footer .footer-section {
+        width: 100%;
+        margin-bottom: 20px;
+    }
+}

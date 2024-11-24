@@ -24,6 +24,11 @@ app.get('/Exam_Automation', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'Exam_Automation.html'));
 });
 
+app.get('/student1', (req, res) => {
+    console.log("Serving Exam_Automation.html"); // Debugging log
+    res.sendFile(path.join(__dirname, 'views', 'student1.html'));
+});
+
 // Route for Signup Page
 app.get('/signup', (req, res) => {
     console.log("Serving signup.html"); // Debugging log
