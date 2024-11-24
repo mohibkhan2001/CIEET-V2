@@ -34,19 +34,21 @@
 <body>
     <header>
         <div class="logo">
-            <span><a href="index.html">CIE²T</a></span>
+            <span><a href="/">CIE²T</a></span>
         </div>
         <nav>
             <ul>
-                <li><a href="questionBank.html">Question Databank</a></li>
-                <li><a href="reporting.html">Assessment Reporting</a></li>
-                <li><a href="Exam_Automation.html">Exam Automation</a></li>
+                <li><a href="/questionBank">Question Databank</a></li>
+                <li><a href="/reporting">Assessment Reporting</a></li>
+                <li><a href="/Exam_Automation">Exam Automation</a></li>
+                <li><a href="/generatedPapers">Generated Papers</a></li>
                 <li><a href="#about">About</a></li>
                 <li><a href="#contact">Contact</a></li>
             </ul>
         </nav>
+        
         <div class="auth-buttons">
-            <a href="signup.html" class="sign-up">Sign Up</a>
+            <a href="/signup" class="sign-up">Sign Up</a>
         </div>
     </header>
 
@@ -68,6 +70,10 @@
                 <div id="question-list" class="question-list">
                     <!-- Questions will be dynamically inserted here -->
                 </div>
+                
+                <!-- New input for custom PDF name -->
+                <label for="pdfName">Enter PDF Name:</label>
+                <input type="text" id="pdfName" name="pdfName" placeholder="Enter custom name for the PDF" required>
                 <button type="submit">Generate PDF</button>
             </form>
             <button id="viewGeneratedPapersButton" onclick="toggleGeneratedPapers()">View Generated Papers</button>
@@ -114,7 +120,7 @@
                         const questionItem = document.createElement('div');
                         questionItem.classList.add('question-item');
 
-                        questionItem.innerHTML = `
+                        questionItem.innerHTML = ` 
                             <input type="checkbox" value="${question.question_text}" name="questions">
                             <span>${question.question_text}</span>
                         `;
@@ -133,12 +139,15 @@
             event.preventDefault();
             const formData = new FormData(event.target);
             const selectedQuestions = Array.from(formData.getAll('questions'));
-
-            // Check if selected questions are correctly captured
-            console.log('Selected Questions:', selectedQuestions);
+            const pdfName = formData.get('pdfName').trim();  // Get the custom PDF name entered by the user
 
             if (selectedQuestions.length === 0) {
                 alert('Please select at least one question.');
+                return;
+            }
+
+            if (!pdfName) {
+                alert('Please enter a name for the PDF.');
                 return;
             }
 
@@ -146,7 +155,7 @@
                 const response = await fetch('/generate-pdf', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ questions: selectedQuestions })
+                    body: JSON.stringify({ questions: selectedQuestions, customName: pdfName })
                 });
 
                 const result = await response.json();
@@ -180,9 +189,10 @@
                     papers.forEach((paper) => {
                         if (paper.filename) {
                             const row = document.createElement('tr');
-                            row.innerHTML = `
+                            row.innerHTML = ` 
                                 <td>${paper.filename}</td>
-                                <td><button onclick="downloadPaper('${paper.filename}')">Download PDF</button></td>
+                                <td><button onclick="downloadPaper('${paper.filename}')">Download PDF</button>
+                                </td>
                             `;
                             tableBody.appendChild(row);
                         }

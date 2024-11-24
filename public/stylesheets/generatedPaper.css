@@ -1,0 +1,113 @@
+/* General body and container styling */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f6f9;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    width: 80%;
+    margin: 50px auto;
+    padding: 20px;
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+
+/* Heading Styling */
+h1 {
+    text-align: center;
+    font-size: 36px;
+    color: #0056b3;
+    margin-bottom: 30px;
+}
+
+/* Loading and Empty State Styling */
+#generated-papers-list p {
+    text-align: center;
+    font-size: 18px;
+    color: #555;
+}
+
+/* Paper Item Container */
+.paper-item {
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    text-align: left;
+}
+
+/* Grid layout for paper details (Exam Paper, Size, Time, Date) */
+.paper-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+/* Paper Name Styling */
+.paper-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: #007bff;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* File Size Styling */
+.file-size,
+.time-created,
+.date-created {
+    font-size: 16px;
+    color: #555;
+}
+
+/* Styling for links (hover effect) */
+.paper-name:hover {
+    color: #0056b3;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+    .container {
+        width: 90%;
+    }
+    h1 {
+        font-size: 28px;
+    }
+    .paper-name {
+        font-size: 16px;
+    }
+    .file-size,
+    .time-created,
+    .date-created {
+        font-size: 14px;
+    }
+}
+/* Header Row Styling */
+.header-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 15px;
+    font-weight: bold;
+    font-size: 16px;
+    color: #;
+    margin-bottom: 10px;
+    text-align: left;
+}
+
+.header-title {
+    padding: 5px 0;
+    border-bottom: 2px solid #ddd;
+}
+#download-link{
+    font-size: 0.8rem;
+    font-weight: 100;
+    color: #918888;
+}
