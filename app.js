@@ -12,153 +12,176 @@ app.use(express.static(path.join(__dirname, 'public'))); // Static files in 'pub
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Ensure papers directory exists
+const papersDir = path.join(__dirname, 'papers');
+if (!fs.existsSync(papersDir)) {
+    fs.mkdirSync(papersDir);
+}
+
 // Serve Views
 app.get('/', (req, res) => {
-    console.log("Serving index.html"); // Debugging log
+    console.log("Serving index.html");
     res.sendFile(path.join(__dirname, 'views', 'index.html'));
 });
 
-// Route for Exam Automation
-app.get('/Exam_Automation', (req, res) => {
-    console.log("Serving Exam_Automation.html"); // Debugging log
-    res.sendFile(path.join(__dirname, 'views', 'Exam_Automation.html'));
-});
-
-app.get('/student1', (req, res) => {
-    console.log("Serving Exam_Automation.html"); // Debugging log
-    res.sendFile(path.join(__dirname, 'views', 'student1.html'));
-});
-
-// Route for Signup Page
-app.get('/signup', (req, res) => {
-    console.log("Serving signup.html"); // Debugging log
-    res.sendFile(path.join(__dirname, 'views', 'signup.html'));
-});
-
-// Route for Reporting
-app.get('/reporting', (req, res) => {
-    console.log("Serving reporting.html"); // Debugging log
-    res.sendFile(path.join(__dirname, 'views', 'reporting.html'));
-});
-app.get('/test', (req, res) => {
-    console.log("Serving reporting.html"); // Debugging log
-    res.sendFile(path.join(__dirname, 'views', 'test.html'));
-});
-
-// Route for Question Bank
 app.get('/questionBank', (req, res) => {
-    console.log("Serving questionBank.html"); // Debugging log
+    console.log("Serving questionBank.html");
     res.sendFile(path.join(__dirname, 'views', 'questionBank.html'));
 });
+app.get('/generatedPapers', (req, res) => {
+    console.log("Serving questionBank.html");
+    res.sendFile(path.join(__dirname, 'views', 'generatedPapers.html'));
+});
 
-// Database Queries (fetching questions)
+// Database Query to Fetch Questions
 app.get('/api/questions/:subject', (req, res) => {
-    const subject = req.params.subject;
+    const { subject } = req.params;
 
-    const query = 'SELECT question_text FROM questions WHERE subject = ?';
+    const query = `
+        SELECT id, question_text, subject, year, question_type
+        FROM subjective_questions
+        WHERE subject = ?
+    `;
+
     db.query(query, [subject], (err, results) => {
         if (err) {
             console.error('Error fetching questions:', err);
             return res.status(500).json({ error: 'Failed to fetch questions' });
         }
-        res.json(results);
+
+        const formattedResults = results.map((question) => ({
+            id: question.id,
+            question_text: question.question_text,
+            subject: question.subject.toUpperCase(),
+            year: `YEAR: ${question.year}`,
+            question_type: `TYPE: ${question.question_type.toUpperCase()}`
+        }));
+
+        res.json(formattedResults);
     });
 });
 
 // Generate PDF Route
 app.post('/generate-pdf', (req, res) => {
-    const { questions, customName } = req.body;
+    const { subject, questions, pdfName } = req.body;
 
-    if (!questions || questions.length === 0) {
-        return res.status(400).json({ success: false, error: 'No questions selected' });
+    if (!subject || !questions || questions.length === 0 || !pdfName) {
+        return res.status(400).json({ success: false, error: 'Missing required fields' });
     }
 
-    // Sanitize custom name to prevent any invalid characters
-    const sanitizedCustomName = customName ? customName.replace(/[^a-zA-Z0-9-_ ]/g, '') : null;
-    const pdfFileName = sanitizedCustomName ? `${sanitizedCustomName}.pdf` : `ExamPaper-${Date.now()}.pdf`;
-    const pdfFilePath = path.join(__dirname, 'papers', pdfFileName);
+    const query = `
+        SELECT question_text
+        FROM subjective_questions
+        WHERE id IN (?) AND subject = ?
+    `;
 
-    try {
-        const doc = new PDFDocument();
-        doc.pipe(fs.createWriteStream(pdfFilePath));
+    db.query(query, [questions, subject], (err, results) => {
+        if (err) {
+            console.error('Error fetching selected questions:', err);
+            return res.status(500).json({ success: false, error: 'Failed to fetch selected questions' });
+        }
 
-        doc.fontSize(20).text('Exam Paper', { align: 'center' }).moveDown();
+        if (results.length === 0) {
+            return res.status(404).json({ success: false, error: 'No questions found for the selected IDs' });
+        }
 
-        questions.forEach((question, index) => {
-            const questionText = question || '(No question text available)';
-            doc.fontSize(12).text(`${index + 1}. ${questionText}`, { align: 'left' }).moveDown();
-        });
+        const sanitizedSubject = subject.replace(/[^a-zA-Z0-9-_ ]/g, '');
+        const pdfFileName = `${pdfName.replace(/[^a-zA-Z0-9-_ ]/g, '')}-${sanitizedSubject}-${Date.now()}.pdf`;
+        const pdfFilePath = path.join(papersDir, pdfFileName);
 
-        doc.end();
+        try {
+            const doc = new PDFDocument();
+            const writeStream = fs.createWriteStream(pdfFilePath);
 
-        // Save generated PDF file details in the database
-        const query = 'INSERT INTO generated_pdfs (filename, created_at) VALUES (?, NOW())';
-        db.query(query, [pdfFileName], (err) => {
-            if (err) {
-                console.error('Error saving PDF details:', err);
-                return res.status(500).json({ success: false, error: 'Failed to save PDF details' });
-            }
-            res.json({ success: true, pdfFileName });
-        });
-    } catch (error) {
-        console.error('Error generating PDF:', error);
-        res.status(500).json({ success: false, error: 'Failed to generate PDF' });
-    }
+            doc.pipe(writeStream);
+
+            doc.fontSize(20).text(`Exam Paper: ${subject.toUpperCase()}`, { align: 'center' }).moveDown();
+            doc.fontSize(12).text('Questions:').moveDown();
+
+            results.forEach((question, index) => {
+                const questionText = question.question_text || '(No question text available)';
+                doc.text(`${index + 1}. ${questionText}`).moveDown();
+            });
+
+            doc.end();
+
+            writeStream.on('finish', () => {
+                const insertQuery = 'INSERT INTO generated_pdfs (filename, created_at) VALUES (?, NOW())';
+                db.query(insertQuery, [pdfFileName], (err) => {
+                    if (err) {
+                        console.error('Error saving PDF details:', err);
+                        return res.status(500).json({ success: false, error: 'Failed to save PDF details in the database' });
+                    }
+                    res.json({ success: true, pdfFileName });
+                });
+            });
+
+            writeStream.on('error', (error) => {
+                console.error('Error writing PDF:', error);
+                res.status(500).json({ success: false, error: 'Failed to generate PDF' });
+            });
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            res.status(500).json({ success: false, error: 'Internal server error' });
+        }
+    });
 });
 
-// Serve the Generated Papers Page
-app.get('/generatedPapers', (req, res) => {
-    console.log("Serving generatedPapers.html"); // Debugging log
-    res.sendFile(path.join(__dirname, 'views', 'generatedPapers.html'));
+
+// Get Subjects Dynamically
+const subjectMapping = {
+    math: "Mathematics",
+    physics: "Physics",
+    chemistry: "Chemistry",
+    biology: "Biology",
+    computer: "Computer Science"
+};
+
+app.get('/get-subjects', (req, res) => {
+    const subjects = Object.keys(subjectMapping).map((key) => ({
+        id: key,
+        name: subjectMapping[key]
+    }));
+    res.json({ success: true, subjects });
 });
 
-// API to Fetch Generated Papers with Details
+// Generated Papers List
 app.get('/api/generated-papers', (req, res) => {
     const query = 'SELECT filename, created_at FROM generated_pdfs ORDER BY created_at DESC';
-    db.query(query, async (err, results) => {
+
+    db.query(query, (err, results) => {
         if (err) {
             console.error('Error fetching generated papers:', err);
             return res.status(500).json({ error: 'Failed to fetch generated papers' });
         }
 
-        try {
-            // Enrich results with file size, formatted date, and time
-            const enrichedResults = await Promise.all(results.map(async (paper) => {
-                const filePath = path.join(__dirname, 'papers', paper.filename);
+        const enrichedResults = results.map((paper) => {
+            const filePath = path.join(papersDir, paper.filename);
+            let fileSize = 'Unknown';
 
-                let fileSize = 'Unknown';
-                try {
-                    const stats = fs.statSync(filePath);
-                    fileSize = (stats.size / 1024).toFixed(2) + ' KB'; // Convert size to KB
-                } catch {
-                    console.error(`File not found: ${paper.filename}`);
-                }
+            try {
+                const stats = fs.statSync(filePath);
+                fileSize = (stats.size / 1024).toFixed(2) + ' KB';
+            } catch {
+                console.error(`File not found: ${paper.filename}`);
+            }
 
-                const createdAt = new Date(paper.created_at);
-                const creationDate = createdAt.toLocaleDateString(); // Format: MM/DD/YYYY
-                const creationTime = createdAt.toLocaleTimeString(); // Format: HH:MM:SS AM/PM
+            return {
+                filename: paper.filename,
+                size: fileSize,
+                creationDate: new Date(paper.created_at).toLocaleDateString(),
+                creationTime: new Date(paper.created_at).toLocaleTimeString()
+            };
+        });
 
-                return {
-                    filename: paper.filename,
-                    size: fileSize,
-                    creationDate,
-                    creationTime
-                };
-            }));
-
-            res.json(enrichedResults);
-        } catch (error) {
-            console.error('Error processing papers:', error);
-            res.status(500).json({ error: 'Failed to process generated papers' });
-        }
+        res.json(enrichedResults);
     });
 });
 
-// Download PDF Route (downloads the generated paper)
+// Download PDF
 app.get('/download-pdf/:filename', (req, res) => {
-    const filePath = path.join(__dirname, 'papers', req.params.filename);
+    const filePath = path.join(papersDir, req.params.filename);
 
-    // Check if file exists before attempting to download
     fs.access(filePath, fs.constants.F_OK, (err) => {
         if (err) {
             return res.status(404).json({ error: 'File not found' });

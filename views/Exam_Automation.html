@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Exam Automation</title>
     <link rel="stylesheet" href="stylesheets/style.css">
     <link rel="stylesheet" href="stylesheets/Exam_automation.css">
 </head>
@@ -12,7 +12,7 @@
         <div class="logo">
             <span><a href="/">CIE²T</a></span>
         </div>
-        <nav>   
+        <nav>
             <ul>
                 <li><a href="/questionBank">Question Databank</a></li>
                 <li><a href="/reporting">Assessment Reporting</a></li>
@@ -22,45 +22,40 @@
                 <li><a href="#contact">Contact</a></li>
             </ul>
         </nav>
-        
+
         <div class="auth-buttons">
             <a href="/signup" class="sign-up">Sign Up</a>
         </div>
     </header>
 
-
     <div class="container">
         <h1>Exam Paper Generator</h1>
         <p>Create custom exam papers with ease. Easily add questions, preview, and publish for your students.</p>
         <div class="form-and-image">
-            <form>
+            <form id="exam-form">
                 <div class="form-group">
                     <label for="subject">Subject</label>
-                    <input type="text" id="subject" name="subject" placeholder="Enter subject">
+                    <select id="subject" name="subject" required>
+                        <!-- Subject options will be populated here dynamically -->
+                    </select>
                 </div>
                 <div class="form-group">
                     <label for="duration">Duration</label>
-                    <input type="text" id="duration" name="duration" placeholder="Enter duration in minutes">
+                    <input type="text" id="duration" name="duration" placeholder="Enter duration in minutes" required>
                 </div>
                 <div class="form-group">
                     <label for="number-of-questions">Number of Questions</label>
-                    <input type="text" id="number-of-questions" name="number-of-questions" placeholder="Enter number of questions">
-                </div>
-                <div class="form-group">
-                    <label for="question-types">Question Types</label>
-                    <select id="question-types" name="question-types">
-                        <option value="" disabled selected>Select question types</option>
-                        <option value="multiple-choice">Multiple Choice</option>
-                        <option value="true-false">True/False</option>
-                        <option value="short-answer">Short Answer</option>
-                        <option value="essay">Essay</option>
-                    </select>
+                    <input type="number" id="number-of-questions" name="number-of-questions" placeholder="Enter number of questions" required>
                 </div>
                 <button type="submit">Generate Exam Paper</button>
             </form>
+
+            <div id="feedback"></div> <!-- To display success or error messages -->
+
             <img src="Cieet Docs/exam vector img/vecteezy_flat-isometric-concept-illustration-problem-in-studying_6202183.jpg" alt="">
         </div>
     </div>
+
     <footer id="contact">
         <div class="footer-content">
             <div class="footer-section">
@@ -83,7 +78,7 @@
                 <h3>Contact Us</h3>
                 <p>Email: support@cie2t.com</p>
                 <p>Phone: +123 456 7890</p>
-                <p>Address: Hamdard University, madinat al-hikmah</p>
+                <p>Address: Hamdard University, Madinat al-Hikmah</p>
             </div>
             <div class="footer-section">
                 <h3>Follow Us</h3>
@@ -98,5 +93,70 @@
             <p>&copy; 2024 CIE²T. All rights reserved.</p>
         </div>
     </footer>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> <!-- Add jQuery for easier DOM manipulation -->
+    <script>
+        // Fetch the subjects from the backend when the page loads
+        $(document).ready(function() {
+            $.ajax({
+                url: '/get-subjects', // Backend route to get available subjects
+                method: 'GET',
+                success: function(response) {
+                    if (response.success && response.subjects.length > 0) {
+                        const subjectSelect = $('#subject');
+                        response.subjects.forEach(subject => {
+                            subjectSelect.append(`<option value="${subject}">${subject}</option>`);
+                        });
+                    } else {
+                        $('#feedback').html('Error: No subjects available.');
+                    }
+                },
+                error: function() {
+                    $('#feedback').html('Error: Unable to load subjects.');
+                }
+            });
+        });
+
+        // Handle form submission
+        document.getElementById('exam-form').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent default form submission
+
+            // Get form data
+            const subject = document.getElementById('subject').value;
+            const duration = document.getElementById('duration').value;
+            const numQuestions = document.getElementById('number-of-questions').value;
+
+            // Show loading message while the paper is being generated
+            const feedback = document.getElementById('feedback');
+            feedback.innerHTML = 'Generating exam paper... Please wait.';
+
+            // Prepare the data to send to the backend
+            const data = {
+                subject: subject,
+                duration: duration,
+                numQuestions: numQuestions
+            };
+
+            // Make AJAX request to generate the exam paper
+            $.ajax({
+                url: '/generate-pdf', // Backend route to generate the exam paper
+                method: 'POST',
+                data: JSON.stringify(data), // Send form data as JSON
+                contentType: 'application/json',
+                success: function(response) {
+                    // Success: show the generated paper link
+                    if (response.success) {
+                        feedback.innerHTML = `Exam paper generated successfully! You can download it <a href="/download-pdf/${response.pdfFileName}">here</a>.`;
+                    } else {
+                        feedback.innerHTML = `Error: ${response.error}`;
+                    }
+                },
+                error: function(xhr, status, error) {
+                    // Error: display error message
+                    feedback.innerHTML = `Error: Unable to generate the paper. Please try again later.`;
+                }
+            });
+        });
+    </script>
 </body>
 </html>

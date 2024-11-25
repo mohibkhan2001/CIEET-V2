@@ -7,28 +7,6 @@
     <title>Question Bank</title>
     <link rel="stylesheet" href="stylesheets/style.css">
     <link rel="stylesheet" href="stylesheets/questionbank.css">
-    <style>
-        #viewGeneratedPapersButton {
-            display: none;
-            margin-top: 20px;
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-size: 1rem;
-            border-radius: 5px;
-        }
-
-        #viewGeneratedPapersButton:hover {
-            background-color: #0056b3;
-        }
-
-        .question-item {
-            margin-bottom: 15px;
-        }
-
-    </style>
 </head>
 
 <body>
@@ -46,7 +24,7 @@
                 <li><a href="#contact">Contact</a></li>
             </ul>
         </nav>
-        
+
         <div class="auth-buttons">
             <a href="/signup" class="sign-up">Sign Up</a>
         </div>
@@ -54,14 +32,14 @@
 
     <main class="container">
         <h1>Select Subject</h1>
-        <p>Welcome to the Cambridge Exam Question Bank! Here, you can explore various subjects and select questions to generate your custom exam papers. Click on any subject below to see the available questions.</p>
+        <p>Welcome to the Cambridge Exam Question Bank! Explore subjects and select questions to generate custom exam papers. Click a subject below to view its questions.</p>
 
         <div class="subject-selection">
-            <button onclick="showQuestions('math')">Math</button>
-            <button onclick="showQuestions('physics')">Physics</button>
-            <button onclick="showQuestions('biology')">Biology</button>
-            <button onclick="showQuestions('chemistry')">Chemistry</button>
-            <button onclick="showQuestions('computer')">Computer Science</button>
+            <button data-subject="math" onclick="showQuestions('math')">Math</button>
+            <button data-subject="physics" onclick="showQuestions('physics')">Physics</button>
+            <button data-subject="biology" onclick="showQuestions('biology')">Biology</button>
+            <button data-subject="chemistry" onclick="showQuestions('chemistry')">Chemistry</button>
+            <button data-subject="computer science" onclick="showQuestions('computer science')">Computer Science</button>
         </div>
 
         <div id="questions-container" style="display:none;">
@@ -70,154 +48,107 @@
                 <div id="question-list" class="question-list">
                     <!-- Questions will be dynamically inserted here -->
                 </div>
-                
-                <!-- New input for custom PDF name -->
-                <label for="pdfName">Enter PDF Name:</label>
-                <input type="text" id="pdfName" name="pdfName" placeholder="Enter custom name for the PDF" required>
+
+                <input type="text" id="pdfName" name="pdfName" placeholder="Enter PDF name" required>
                 <button type="submit">Generate PDF</button>
             </form>
-            <button id="viewGeneratedPapersButton" onclick="toggleGeneratedPapers()">View Generated Papers</button>
-        </div>
-
-        <div id="generatedPapersContainer" style="display: none;">
-            <h2>Generated Papers</h2>
-            <table id="generatedPapersTable">
-                <thead>
-                    <tr>
-                        <th>Paper Name</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Dynamic content will be inserted here -->
-                </tbody>
-            </table>
         </div>
     </main>
 
-    <footer id="contact">
-        <p>&copy; 2024 CIE²T. All rights reserved.</p>
-    </footer>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script>
-        // Fetch and display questions based on subject from the backend
+        // Function to dynamically load and display questions for the selected subject
         async function showQuestions(subject) {
             const questionList = document.getElementById('question-list');
-            questionList.innerHTML = ''; // Clear existing questions
-            document.getElementById('questions-container').style.display = 'none'; // Hide container initially
+            questionList.innerHTML = '';  // Clear previous questions
+            document.getElementById('questions-container').style.display = 'block';
+
+            // Highlight the clicked button
+            document.querySelectorAll('.subject-selection button').forEach(button => {
+                button.classList.remove('active');  // Remove active class from all
+            });
+            document.querySelector(`button[data-subject="${subject}"]`).classList.add('active');  // Add active class to clicked button
 
             try {
                 const response = await fetch(`/api/questions/${subject}`);
-                if (!response.ok) throw new Error(`Error fetching questions: ${response.statusText}`);
-
+                if (!response.ok) throw new Error('Failed to fetch questions');
+                
                 const questions = await response.json();
-
-                if (!questions || questions.length === 0) {
+                if (questions.length === 0) {
                     questionList.innerHTML = '<p>No questions found for this subject.</p>';
                 } else {
                     questions.forEach((question) => {
                         const questionItem = document.createElement('div');
                         questionItem.classList.add('question-item');
-
-                        questionItem.innerHTML = ` 
-                            <input type="checkbox" value="${question.question_text}" name="questions">
+                        questionItem.innerHTML = `
+                            <input type="checkbox" value="${question.id}" name="questions"> <!-- Ensure value is question.id -->
                             <span>${question.question_text}</span>
-                        `;
+                            <div class="question-details">
+                                <div class="question-header">${question.year}</div>
+                                <div class="question-header">Subject: ${question.subject}</div>
+                                <div class="question-header">Type: ${question.question_type}</div>
+                            </div>`;
                         questionList.appendChild(questionItem);
                     });
                 }
-                document.getElementById('questions-container').style.display = 'block';
             } catch (error) {
                 console.error('Error fetching questions:', error);
-                questionList.innerHTML = '<p>Failed to load questions. Please try again later.</p>';
+                questionList.innerHTML = '<p>Failed to load questions. Try again later.</p>';
             }
         }
 
-        // Handle PDF generation form submission
-        document.getElementById('pdfForm').addEventListener('submit', async function (event) {
-            event.preventDefault();
-            const formData = new FormData(event.target);
-            const selectedQuestions = Array.from(formData.getAll('questions'));
-            const pdfName = formData.get('pdfName').trim();  // Get the custom PDF name entered by the user
+        // Handle form submission to generate PDF
+        document.getElementById('pdfForm').addEventListener('submit', function (event) {
+            event.preventDefault();  // Prevent default form submission
 
+            const selectedButton = document.querySelector('button.active');  // Get the active button (selected subject)
+            if (!selectedButton) {
+                alert('Please select a subject.');
+                return;
+            }
+
+            const subject = selectedButton.getAttribute('data-subject');  // Get the selected subject
+            const selectedQuestions = Array.from(document.querySelectorAll('input[name="questions"]:checked'))
+                .map(el => el.value);  // Get selected question IDs
+
+            const pdfName = document.getElementById('pdfName').value.trim();
+
+            // Check if at least one question is selected and PDF name is provided
             if (selectedQuestions.length === 0) {
                 alert('Please select at least one question.');
                 return;
             }
-
             if (!pdfName) {
-                alert('Please enter a name for the PDF.');
+                alert('Please provide a name for the PDF.');
                 return;
             }
 
-            try {
-                const response = await fetch('/generate-pdf', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ questions: selectedQuestions, customName: pdfName })
-                });
+            // Log the data for debugging
+            console.log('Selected Questions:', selectedQuestions);
+            console.log('PDF Name:', pdfName);
 
-                const result = await response.json();
-
-                if (response.ok && result.success) {
-                    alert('PDF generated successfully!');
-                    document.getElementById('viewGeneratedPapersButton').style.display = 'inline-block';
-                    fetchGeneratedPapers(); // Refresh the list of generated papers
+            // Send the request to the backend to generate the PDF
+            fetch('/generate-pdf', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    subject: subject,
+                    questions: selectedQuestions,
+                    pdfName: pdfName
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`PDF Generated Successfully: ${data.pdfFileName}`);
                 } else {
-                    alert('Failed to generate PDF. Please try again.');
+                    alert(`Error: ${data.error}`);
                 }
-            } catch (error) {
+            })
+            .catch(error => {
                 console.error('Error generating PDF:', error);
-                alert('An error occurred. Please try again.');
-            }
+                alert('Failed to generate PDF. Please try again.');
+            });
         });
-
-        // Fetch and display generated papers
-        async function fetchGeneratedPapers() {
-            try {
-                const response = await fetch('/api/generated-papers');
-                if (!response.ok) throw new Error('Failed to fetch generated papers');
-
-                const papers = await response.json();
-                const tableBody = document.getElementById('generatedPapersTable').querySelector('tbody');
-                tableBody.innerHTML = ''; // Clear existing rows
-
-                if (papers.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="2">No papers generated yet.</td></tr>';
-                } else {
-                    papers.forEach((paper) => {
-                        if (paper.filename) {
-                            const row = document.createElement('tr');
-                            row.innerHTML = ` 
-                                <td>${paper.filename}</td>
-                                <td><button onclick="downloadPaper('${paper.filename}')">Download PDF</button>
-                                </td>
-                            `;
-                            tableBody.appendChild(row);
-                        }
-                    });
-                }
-            } catch (error) {
-                console.error('Error fetching generated papers:', error);
-                alert('Failed to fetch generated papers.');
-            }
-        }
-
-        // Download generated paper
-        function downloadPaper(fileName) {
-            if (fileName) {
-                window.location.href = `/download-pdf/${fileName}`;
-            } else {
-                alert('Filename is invalid or not found.');
-            }
-        }
-
-        // Toggle visibility of the generated papers container
-        function toggleGeneratedPapers() {
-            const container = document.getElementById('generatedPapersContainer');
-            container.style.display = container.style.display === 'none' ? 'block' : 'none';
-        }
     </script>
 </body>
 
