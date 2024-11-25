@@ -23,6 +23,10 @@ app.get('/', (req, res) => {
     console.log("Serving index.html");
     res.sendFile(path.join(__dirname, 'views', 'index.html'));
 });
+app.get('/reporting', (req, res) => {
+    console.log("Serving reporting.html");
+    res.sendFile(path.join(__dirname, 'views', 'reporting.html'));
+});
 
 app.get('/questionBank', (req, res) => {
     console.log("Serving questionBank.html");

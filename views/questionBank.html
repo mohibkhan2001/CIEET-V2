@@ -44,6 +44,32 @@
 
         <div id="questions-container" style="display:none;">
             <h2>Questions</h2>
+
+            <!-- Search Bar and Filters -->
+            <div class="question-filters">
+                <input type="text" id="searchInput" placeholder="Search questions..." onkeyup="filterQuestions()">
+                <div class="filter-options">
+                    <label for="yearFilter">Year:</label>
+                    <select id="yearFilter" onchange="filterQuestions()">
+                        <option value="">All Years</option>
+                        <option value="2023">2023</option>
+                        <option value="2022">2022</option>
+                        <option value="2021">2021</option>
+                        <option value="2020">2020</option>
+                    </select>
+                    <label for="typeFilter">Type:</label>
+                    <select id="typeFilter" onchange="filterQuestions()">
+                        <option value="">All Types</option>
+                        <option value="Multiple Choice">Multiple Choice</option>
+                        <option value="Short Answer">Short Answer</option>
+                        <option value="Essay">Essay</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Select All Button -->
+            <button id="selectAllButton" onclick="selectAllQuestions()">Select All Questions</button>
+
             <form id="pdfForm">
                 <div id="question-list" class="question-list">
                     <!-- Questions will be dynamically inserted here -->
@@ -94,6 +120,36 @@
                 console.error('Error fetching questions:', error);
                 questionList.innerHTML = '<p>Failed to load questions. Try again later.</p>';
             }
+        }
+
+        // Function to filter questions based on search and selected filters
+        function filterQuestions() {
+            const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            const yearFilter = document.getElementById('yearFilter').value;
+            const typeFilter = document.getElementById('typeFilter').value;
+            const questions = document.querySelectorAll('.question-item');
+
+            questions.forEach(question => {
+                const questionText = question.querySelector('span').textContent.toLowerCase();
+                const questionYear = question.querySelector('.question-header:nth-child(1)').textContent;
+                const questionType = question.querySelector('.question-header:nth-child(3)').textContent;
+
+                const matchesSearch = questionText.includes(searchQuery);
+                const matchesYear = yearFilter ? questionYear.includes(yearFilter) : true;
+                const matchesType = typeFilter ? questionType.includes(typeFilter) : true;
+
+                if (matchesSearch && matchesYear && matchesType) {
+                    question.style.display = '';
+                } else {
+                    question.style.display = 'none';
+                }
+            });
+        }
+
+        // Function to select all questions
+        function selectAllQuestions() {
+            const checkboxes = document.querySelectorAll('input[name="questions"]');
+            checkboxes.forEach(checkbox => checkbox.checked = true);
         }
 
         // Handle form submission to generate PDF
