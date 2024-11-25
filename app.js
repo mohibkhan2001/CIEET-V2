@@ -33,7 +33,7 @@ app.get('/questionBank', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'questionBank.html'));
 });
 app.get('/generatedPapers', (req, res) => {
-    console.log("Serving questionBank.html");
+    console.log("Serving generatedPapers.html");
     res.sendFile(path.join(__dirname, 'views', 'generatedPapers.html'));
 });
 
@@ -131,7 +131,6 @@ app.post('/generate-pdf', (req, res) => {
     });
 });
 
-
 // Get Subjects Dynamically
 const subjectMapping = {
     math: "Mathematics",
@@ -191,6 +190,57 @@ app.get('/download-pdf/:filename', (req, res) => {
             return res.status(404).json({ error: 'File not found' });
         }
         res.download(filePath);
+    });
+});
+
+// Rename PDF File
+app.post('/rename-file', (req, res) => {
+    const { oldFileName, newFileName } = req.body;
+    const oldFilePath = path.join(papersDir, oldFileName);
+    const newFilePath = path.join(papersDir, newFileName);
+
+    // Rename file in the file system
+    fs.rename(oldFilePath, newFilePath, (err) => {
+        if (err) {
+            console.error('Error renaming file:', err);
+            return res.status(500).json({ success: false, error: 'Failed to rename file in the system' });
+        }
+
+        // Update file name in the database
+        const updateQuery = 'UPDATE generated_pdfs SET filename = ? WHERE filename = ?';
+        db.query(updateQuery, [newFileName, oldFileName], (err) => {
+            if (err) {
+                console.error('Error updating file name in the database:', err);
+                return res.status(500).json({ success: false, error: 'Failed to update file name in the database' });
+            }
+
+            res.json({ success: true, message: 'File renamed successfully' });
+        });
+    });
+});
+
+// Delete PDF File
+app.post('/delete-file', (req, res) => {
+    const { fileName } = req.body;
+    const filePath = path.join(papersDir, fileName);
+
+    // Delete file from the file system
+    fs.unlink(filePath, (err) => {
+        if (err) {
+            console.error('Error deleting file:', err);
+            return res.status(500).json({ success: false, error: 'Failed to delete file from the system' });
+        }
+
+        // Delete file record from the database
+        const deleteQuery = 'DELETE FROM generated_pdfs WHERE filename = ?';
+        db.query(deleteQuery, [fileName], (err) => {
+            if (err) {
+                console.error('Error deleting file record from database:', err);
+                return res.status(500).json({ success: false, error: 'Failed to delete file record from database' });
+            }
+
+            res.json({ success: true, message: 'File deleted successfully' });
+        });
     });
 });
 

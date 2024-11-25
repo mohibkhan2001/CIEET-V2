@@ -36,6 +36,7 @@
                 <span class="header-title">File Size</span>
                 <span class="header-title">Creation Date</span>
                 <span class="header-title">Creation Time</span>
+                <span class="header-title">Actions</span>
             </div>
             <hr>
             <p>Loading generated papers...</p>
@@ -55,17 +56,18 @@
                 // Add header row again after clearing the content
                 const headerRow = document.createElement('div');
                 headerRow.classList.add('header-row');
-                headerRow.innerHTML = `
+                headerRow.innerHTML = `        
                     <span class="header-title">File Name</span>
                     <span class="header-title">File Size</span>
                     <span class="header-title">Creation Date</span>
                     <span class="header-title">Creation Time</span>
+                    <span class="header-title">Actions</span>
                 `;
                 papersListContainer.appendChild(headerRow);
-                papersListContainer.appendChild(document.createElement('hr'));
+                // papersListContainer.appendChild(document.createElement('hr'));
 
                 if (papers.length === 0) {
-                    papersListContainer.innerHTML += '<p>No papers have been generated yet.</p>';
+                    papersListContainer.innerHTML += '<p id="comment">No papers have been generated yet.</p>';
                 } else {
                     papers.forEach(paper => {
                         const paperItem = document.createElement('div');
@@ -79,6 +81,10 @@
                                 <span class="file-size">${paper.size}</span>
                                 <span class="date-created">${paper.creationDate}</span>
                                 <span class="time-created">${paper.creationTime}</span>
+                                <span class="actions">
+                                    <button class="rename-btn" onclick="renameFile('${paper.filename}')">Rename</button>
+                                    <button class="delete-btn" onclick="deleteFile('${paper.filename}')">Delete</button>
+                                </span>
                             </div>
                             <hr>
                         `;
@@ -88,6 +94,73 @@
             } catch (error) {
                 console.error('Error:', error);
                 document.getElementById('generated-papers-list').innerHTML = '<p>Failed to load papers. Please try again later.</p>';
+            }
+        }
+
+        // Function to handle renaming of the file
+        function renameFile(oldFileName) {
+            const fileExtension = '.pdf'; // Assuming all files are PDFs
+            const newFileName = prompt("Enter the new name for the file:", oldFileName);
+
+            if (newFileName && newFileName !== oldFileName) {
+                // Remove the old extension if it exists, and append the .pdf extension
+                let updatedFileName = newFileName;
+                if (!updatedFileName.endsWith(fileExtension)) {
+                    updatedFileName += fileExtension;
+                }
+
+                fetch('/rename-file', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        oldFileName: oldFileName,
+                        newFileName: updatedFileName
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('File renamed successfully');
+                        fetchGeneratedPapers();  // Reload the papers list
+                    } else {
+                        alert('Error renaming file');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error renaming file:', error);
+                    alert('Error renaming file');
+                });
+            }
+        }
+
+        // Function to handle deletion of the file
+        function deleteFile(fileName) {
+            const confirmDelete = confirm(`Are you sure you want to delete the file: ${fileName}?`);
+            if (confirmDelete) {
+                fetch('/delete-file', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fileName: fileName
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('File deleted successfully');
+                        fetchGeneratedPapers();  // Reload the papers list
+                    } else {
+                        alert('Error deleting file');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting file:', error);
+                    alert('Error deleting file');
+                });
             }
         }
 

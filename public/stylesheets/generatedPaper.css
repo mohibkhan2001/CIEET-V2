@@ -25,6 +25,7 @@ h1 {
 
 /* Loading and Empty State Styling */
 #generated-papers-list p {
+    padding-top: 20px;
     text-align: center;
     font-size: 18px;
     color: #555;
@@ -110,4 +111,17 @@ h1 {
     font-size: 0.8rem;
     font-weight: 100;
     color: #918888;
+}
+
+.rename-btn, .delete-btn{
+    padding: 10px ;
+    background: #0056b3;
+    color: #fff;
+    border: 0;
+    border-radius: 8px;
+}
+
+.delete-btn{
+    background: rgb(139, 9, 9);
+    color: #fff;
 }
