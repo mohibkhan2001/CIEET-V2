@@ -6,6 +6,13 @@
     <title>Generated Papers</title>
     <link rel="stylesheet" href="stylesheets/style.css">
     <link rel="stylesheet" href="stylesheets/generatedPaper.css">
+    <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
+    integrity="sha512-5Hs3dF2AEPkpNAR7UiOHba+lRSJNeM2ECkwxUIxC1Q/FLycGTbNapWXB4tP889k5T5Ju8fs4b1P5z/iB4nMfSQ=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
 </head>
 <body>
     <header>
@@ -82,8 +89,8 @@
                                 <span class="date-created">${paper.creationDate}</span>
                                 <span class="time-created">${paper.creationTime}</span>
                                 <span class="actions">
-                                    <button class="rename-btn" onclick="renameFile('${paper.filename}')">Rename</button>
-                                    <button class="delete-btn" onclick="deleteFile('${paper.filename}')">Delete</button>
+                                    <button class="rename-btn" onclick="renameFile('${paper.filename}')">Rename<i class="fa-solid fa-pen"></i></button>
+                                    <button class="delete-btn" onclick="deleteFile('${paper.filename}')">Delete<i class="fa-solid fa-trash"></i></button>
                                 </span>
                             </div>
                             <hr>

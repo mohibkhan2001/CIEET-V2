@@ -1,111 +1,200 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Question Bank</title>
-    <link rel="stylesheet" href="stylesheets/style.css">
-    <link rel="stylesheet" href="stylesheets/questionbank.css">
-</head>
+    <link rel="stylesheet" href="stylesheets/style.css" />
+    <link rel="stylesheet" href="stylesheets/questionbank.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
+      integrity="sha512-5Hs3dF2AEPkpNAR7UiOHba+lRSJNeM2ECkwxUIxC1Q/FLycGTbNapWXB4tP889k5T5Ju8fs4b1P5z/iB4nMfSQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+  </head>
 
-<body>
+  <body>
     <header>
-        <div class="logo">
-            <span><a href="/">CIE²T</a></span>
-        </div>
-        <nav>
-            <ul>
-                <li><a href="/questionBank">Question Databank</a></li>
-                <li><a href="/reporting">Assessment Reporting</a></li>
-                <li><a href="/Exam_Automation">Exam Automation</a></li>
-                <li><a href="/generatedPapers">Generated Papers</a></li>
-                <li><a href="#about">About</a></li>
-                <li><a href="#contact">Contact</a></li>
-            </ul>
-        </nav>
+      <div class="logo">
+        <span><a href="/">CIE²T</a></span>
+      </div>
+      <nav>
+        <ul>
+          <li><a href="/questionBank">Question Databank</a></li>
+          <li><a href="/reporting">Assessment Reporting</a></li>
+          <li><a href="/Exam_Automation">Exam Automation</a></li>
+          <li><a href="/generatedPapers">Generated Papers</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </nav>
 
-        <div class="auth-buttons">
-            <a href="/signup" class="sign-up">Sign Up</a>
-        </div>
+      <div class="auth-buttons">
+        <a href="/signup" class="sign-up">Sign Up</a>
+      </div>
     </header>
 
     <main class="container">
-        <h1>Select Subject</h1>
-        <p>Welcome to the Cambridge Exam Question Bank! Explore subjects and select questions to generate custom exam papers. Click a subject below to view its questions.</p>
+      <h1>Select Subject</h1>
+      <p>
+        Welcome to the Cambridge Exam Question Bank! Explore subjects and select
+        questions to generate custom exam papers. Click a subject below to view
+        its questions.
+      </p>
 
-        <div class="subject-selection">
-            <button data-subject="math" onclick="showQuestions('math')">Math</button>
-            <button data-subject="physics" onclick="showQuestions('physics')">Physics</button>
-            <button data-subject="biology" onclick="showQuestions('biology')">Biology</button>
-            <button data-subject="chemistry" onclick="showQuestions('chemistry')">Chemistry</button>
-            <button data-subject="computer science" onclick="showQuestions('computer science')">Computer Science</button>
+      <div class="subject-selection">
+        <button data-subject="math" onclick="showQuestions('math')">
+          <i class="fa-solid fa-square-root-alt"></i> Math
+        </button>
+        <button data-subject="physics" onclick="showQuestions('physics')">
+          <i class="fa-solid fa-atom"></i> Physics
+        </button>
+        <button data-subject="biology" onclick="showQuestions('biology')">
+          <i class="fa-solid fa-dna"></i> Biology
+        </button>
+        <button data-subject="chemistry" onclick="showQuestions('chemistry')">
+          <i class="fa-solid fa-flask"></i> Chemistry
+        </button>
+        <button data-subject="computer science" onclick="showQuestions('computer science')">
+          <i class="fa-solid fa-laptop-code"></i> Computer
+        </button>
+      </div>
+      
+
+      <div id="questions-container" style="display: none">
+        <h2>Questions</h2>
+
+        <!-- Search Bar and Filters -->
+        <div class="question-filters">
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Search questions..."
+            onkeyup="filterQuestions()"
+          />
+          <div class="filter-options">
+            <label for="yearFilter">Year:</label>
+            <select id="yearFilter" onchange="filterQuestions()">
+              <option value="">All Years</option>
+              <option value="2023">2023</option>
+              <option value="2022">2022</option>
+              <option value="2021">2021</option>
+              <option value="2020">2020</option>
+            </select>
+            <label for="typeFilter">Type:</label>
+            <select id="typeFilter" onchange="filterQuestions()">
+              <option value="">All Types</option>
+              <option value="Multiple Choice">Multiple Choice</option>
+              <option value="Short Answer">Short Answer</option>
+              <option value="Essay">Essay</option>
+            </select>
+          </div>
         </div>
 
-        <div id="questions-container" style="display:none;">
-            <h2>Questions</h2>
-
-            <!-- Search Bar and Filters -->
-            <div class="question-filters">
-                <input type="text" id="searchInput" placeholder="Search questions..." onkeyup="filterQuestions()">
-                <div class="filter-options">
-                    <label for="yearFilter">Year:</label>
-                    <select id="yearFilter" onchange="filterQuestions()">
-                        <option value="">All Years</option>
-                        <option value="2023">2023</option>
-                        <option value="2022">2022</option>
-                        <option value="2021">2021</option>
-                        <option value="2020">2020</option>
-                    </select>
-                    <label for="typeFilter">Type:</label>
-                    <select id="typeFilter" onchange="filterQuestions()">
-                        <option value="">All Types</option>
-                        <option value="Multiple Choice">Multiple Choice</option>
-                        <option value="Short Answer">Short Answer</option>
-                        <option value="Essay">Essay</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- Select All Button -->
-            <button id="selectAllButton" onclick="selectAllQuestions()">Select All Questions</button>
-
-            <form id="pdfForm">
-                <div id="question-list" class="question-list">
-                    <!-- Questions will be dynamically inserted here -->
-                </div>
-
-                <input type="text" id="pdfName" name="pdfName" placeholder="Enter PDF name" required>
-                <button type="submit">Generate PDF</button>
-            </form>
+        <!-- Buttons for Actions -->
+        <div class="action-buttons">
+          <button id="selectAllButton" onclick="selectAllQuestions()">
+            Select All Questions
+          </button>
+          <button id="addQuestionButton" onclick="openAddQuestionModal()">
+            Add New Question
+            <i class="fa-solid fa-plus"></i>
+          </button>
         </div>
+
+        <form id="pdfForm">
+          <div id="question-list" class="question-list">
+            <!-- Questions will be dynamically inserted here -->
+          </div>
+
+          <input itemid="generate-pdf-search"
+            type="text"
+            id="pdfName"
+            name="pdfName"
+            placeholder="Enter PDF name"
+            required
+          />
+          <button type="submit" id="generate-pdf-button">Generate PDF</button>
+        </form>
+      </div>
     </main>
 
+    <!-- Modal for Adding a New Question -->
+    <div id="addQuestionModal" class="modal" style="display: none">
+      <div class="modal-overlay" onclick="closeAddQuestionModal()"></div>
+      <div class="modal-content">
+        <span class="close" onclick="closeAddQuestionModal()">&times;</span>
+        <h2 id="addNew">Add New Question</h2>
+        <form id="addQuestionForm">
+          <label for="subject">Subject:</label>
+          <select id="subject" name="subject" required>
+            <option value="math">Math</option>
+            <option value="physics">Physics</option>
+            <option value="biology">Biology</option>
+            <option value="chemistry">Chemistry</option>
+            <option value="computer science">Computer Science</option>
+          </select>
+
+          <label for="year">Year:</label>
+          <input
+            type="number"
+            id="year"
+            name="year"
+            min="2000"
+            max="2030"
+            required
+          />
+
+          <label for="type">Type:</label>
+          <select id="type" name="type" required>
+            <option value="Objective">Objective</option>
+            <option value="Subjective">Subjective</option>
+          </select>
+          <label for="questionText">Question Text:</label>
+          <textarea
+            id="questionText"
+            name="questionText"
+            rows="4"
+            required
+          ></textarea>
+
+          <button type="submit" id="submitQuestionButton">Add Question</button>
+        </form>
+      </div>
+    </div>
+
     <script>
-        // Function to dynamically load and display questions for the selected subject
-        async function showQuestions(subject) {
-            const questionList = document.getElementById('question-list');
-            questionList.innerHTML = '';  // Clear previous questions
-            document.getElementById('questions-container').style.display = 'block';
+      // Function to dynamically load and display questions for the selected subject
+      async function showQuestions(subject) {
+        const questionList = document.getElementById("question-list");
+        questionList.innerHTML = ""; // Clear previous questions
+        document.getElementById("questions-container").style.display = "block";
 
-            // Highlight the clicked button
-            document.querySelectorAll('.subject-selection button').forEach(button => {
-                button.classList.remove('active');  // Remove active class from all
-            });
-            document.querySelector(`button[data-subject="${subject}"]`).classList.add('active');  // Add active class to clicked button
+        // Highlight the clicked button
+        document
+          .querySelectorAll(".subject-selection button")
+          .forEach((button) => {
+            button.classList.remove("active"); // Remove active class from all
+          });
+        document
+          .querySelector(`button[data-subject="${subject}"]`)
+          .classList.add("active"); // Add active class to clicked button
 
-            try {
-                const response = await fetch(`/api/questions/${subject}`);
-                if (!response.ok) throw new Error('Failed to fetch questions');
-                
-                const questions = await response.json();
-                if (questions.length === 0) {
-                    questionList.innerHTML = '<p>No questions found for this subject.</p>';
-                } else {
-                    questions.forEach((question) => {
-                        const questionItem = document.createElement('div');
-                        questionItem.classList.add('question-item');
-                        questionItem.innerHTML = `
+        try {
+          const response = await fetch(`/api/questions/${subject}`);
+          if (!response.ok) throw new Error("Failed to fetch questions");
+
+          const questions = await response.json();
+          if (questions.length === 0) {
+            questionList.innerHTML =
+              "<p>No questions found for this subject.</p>";
+          } else {
+            questions.forEach((question) => {
+              const questionItem = document.createElement("div");
+              questionItem.classList.add("question-item");
+              questionItem.innerHTML = `
                             <input type="checkbox" value="${question.id}" name="questions"> <!-- Ensure value is question.id -->
                             <span>${question.question_text}</span>
                             <div class="question-details">
@@ -113,99 +202,163 @@
                                 <div class="question-header">Subject: ${question.subject}</div>
                                 <div class="question-header">Type: ${question.question_type}</div>
                             </div>`;
-                        questionList.appendChild(questionItem);
-                    });
-                }
-            } catch (error) {
-                console.error('Error fetching questions:', error);
-                questionList.innerHTML = '<p>Failed to load questions. Try again later.</p>';
-            }
-        }
-
-        // Function to filter questions based on search and selected filters
-        function filterQuestions() {
-            const searchQuery = document.getElementById('searchInput').value.toLowerCase();
-            const yearFilter = document.getElementById('yearFilter').value;
-            const typeFilter = document.getElementById('typeFilter').value;
-            const questions = document.querySelectorAll('.question-item');
-
-            questions.forEach(question => {
-                const questionText = question.querySelector('span').textContent.toLowerCase();
-                const questionYear = question.querySelector('.question-header:nth-child(1)').textContent;
-                const questionType = question.querySelector('.question-header:nth-child(3)').textContent;
-
-                const matchesSearch = questionText.includes(searchQuery);
-                const matchesYear = yearFilter ? questionYear.includes(yearFilter) : true;
-                const matchesType = typeFilter ? questionType.includes(typeFilter) : true;
-
-                if (matchesSearch && matchesYear && matchesType) {
-                    question.style.display = '';
-                } else {
-                    question.style.display = 'none';
-                }
+              questionList.appendChild(questionItem);
             });
+          }
+        } catch (error) {
+          console.error("Error fetching questions:", error);
+          questionList.innerHTML =
+            "<p>Failed to load questions. Try again later.</p>";
         }
+      }
 
-        // Function to select all questions
-        function selectAllQuestions() {
-            const checkboxes = document.querySelectorAll('input[name="questions"]');
-            checkboxes.forEach(checkbox => checkbox.checked = true);
-        }
+      // Function to filter questions based on search and selected filters
+      function filterQuestions() {
+        const searchQuery = document
+          .getElementById("searchInput")
+          .value.toLowerCase();
+        const yearFilter = document.getElementById("yearFilter").value;
+        const typeFilter = document.getElementById("typeFilter").value;
+        const questions = document.querySelectorAll(".question-item");
 
-        // Handle form submission to generate PDF
-        document.getElementById('pdfForm').addEventListener('submit', function (event) {
-            event.preventDefault();  // Prevent default form submission
+        questions.forEach((question) => {
+          const questionText = question
+            .querySelector("span")
+            .textContent.toLowerCase();
+          const questionYear = question.querySelector(
+            ".question-header:nth-child(1)"
+          ).textContent;
+          const questionType = question.querySelector(
+            ".question-header:nth-child(3)"
+          ).textContent;
 
-            const selectedButton = document.querySelector('button.active');  // Get the active button (selected subject)
-            if (!selectedButton) {
-                alert('Please select a subject.');
-                return;
-            }
+          const matchesSearch = questionText.includes(searchQuery);
+          const matchesYear = yearFilter
+            ? questionYear.includes(yearFilter)
+            : true;
+          const matchesType = typeFilter
+            ? questionType.includes(typeFilter)
+            : true;
 
-            const subject = selectedButton.getAttribute('data-subject');  // Get the selected subject
-            const selectedQuestions = Array.from(document.querySelectorAll('input[name="questions"]:checked'))
-                .map(el => el.value);  // Get selected question IDs
+          if (matchesSearch && matchesYear && matchesType) {
+            question.style.display = "";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
 
-            const pdfName = document.getElementById('pdfName').value.trim();
+      // Function to select all questions
+      function selectAllQuestions() {
+        const checkboxes = document.querySelectorAll('input[name="questions"]');
+        checkboxes.forEach((checkbox) => (checkbox.checked = true));
+      }
+      // Handle form submission to generate PDF
+      document
+        .getElementById("pdfForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault(); // Prevent default form submission
 
-            // Check if at least one question is selected and PDF name is provided
-            if (selectedQuestions.length === 0) {
-                alert('Please select at least one question.');
-                return;
-            }
-            if (!pdfName) {
-                alert('Please provide a name for the PDF.');
-                return;
-            }
+          const selectedButton = document.querySelector("button.active"); // Get the active button (selected subject)
+          if (!selectedButton) {
+            alert("Please select a subject.");
+            return;
+          }
 
-            // Log the data for debugging
-            console.log('Selected Questions:', selectedQuestions);
-            console.log('PDF Name:', pdfName);
+          const subject = selectedButton.getAttribute("data-subject"); // Get the selected subject
+          const selectedQuestions = Array.from(
+            document.querySelectorAll('input[name="questions"]:checked')
+          ).map((el) => el.value); // Get selected question IDs
 
-            // Send the request to the backend to generate the PDF
-            fetch('/generate-pdf', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    subject: subject,
-                    questions: selectedQuestions,
-                    pdfName: pdfName
-                })
+          const pdfName = document.getElementById("pdfName").value.trim();
+
+          // Check if at least one question is selected and PDF name is provided
+          if (selectedQuestions.length === 0) {
+            alert("Please select at least one question.");
+            return;
+          }
+          if (!pdfName) {
+            alert("Please provide a name for the PDF.");
+            return;
+          }
+
+          // Log the data for debugging
+          console.log("Selected Questions:", selectedQuestions);
+          console.log("PDF Name:", pdfName);
+
+          // Send the request to the backend to generate the PDF
+          fetch("/generate-pdf", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              subject: subject,
+              questions: selectedQuestions,
+              pdfName: pdfName,
+            }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                alert(`PDF Generated Successfully: ${data.pdfFileName}`);
+              } else {
+                alert(`Error: ${data.error}`);
+              }
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert(`PDF Generated Successfully: ${data.pdfFileName}`);
-                } else {
-                    alert(`Error: ${data.error}`);
-                }
-            })
-            .catch(error => {
-                console.error('Error generating PDF:', error);
-                alert('Failed to generate PDF. Please try again.');
+            .catch((error) => {
+              console.error("Error generating PDF:", error);
+              alert("Failed to generate PDF. Please try again.");
             });
         });
-    </script>
-</body>
+      // Open and Close Modal Functions
+      function openAddQuestionModal() {
+        document.getElementById("addQuestionModal").style.display = "flex";
+      }
 
+      function closeAddQuestionModal() {
+        document.getElementById("addQuestionModal").style.display = "none";
+      }
+
+      // Handle New Question Submission
+      document
+        .getElementById("addQuestionForm")
+        .addEventListener("submit", async function (event) {
+          event.preventDefault();
+
+          // Gather form data
+          const formData = {
+            subject: document.getElementById("subject").value,
+            year: document.getElementById("year").value,
+            type: document.getElementById("type").value,
+            questionText: document.getElementById("questionText").value,
+          };
+
+          try {
+            const response = await fetch("/api/add-question", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(formData),
+            });
+
+            if (!response.ok) throw new Error("Failed to add question");
+
+            alert("Question added successfully!");
+
+            // Close modal and reset the form
+            closeAddQuestionModal();
+            document.getElementById("addQuestionForm").reset();
+
+            // Optionally, reload questions to reflect the new addition
+            const activeSubject = document.querySelector(
+              ".subject-selection button.active"
+            );
+            if (activeSubject) {
+              showQuestions(activeSubject.dataset.subject);
+            }
+          } catch (error) {
+            console.error("Error adding question:", error);
+            alert("Failed to add question. Please try again.");
+          }
+        });
+    </script>
+  </body>
 </html>

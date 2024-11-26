@@ -64,6 +64,35 @@ app.get('/api/questions/:subject', (req, res) => {
         res.json(formattedResults);
     });
 });
+// Add New Question
+app.post('/api/add-question', (req, res) => {
+    const { subject, year, type, questionText } = req.body;
+
+    // Validate input
+    if (!subject || !year || !type || !questionText) {
+        return res.status(400).json({ success: false, error: 'Missing required fields' });
+    }
+
+    // Insert the new question into the database
+    const query = `
+        INSERT INTO subjective_questions (question_text, year, subject, question_type)
+        VALUES (?, ?, ?, ?)
+    `;
+
+    db.query(query, [questionText, year, subject, type], (err, result) => {
+        if (err) {
+            console.error('Error inserting new question:', err);
+            return res.status(500).json({ success: false, error: 'Failed to save the question' });
+        }
+
+        // Return the inserted question ID as confirmation
+        res.json({
+            success: true,
+            message: 'Question added successfully',
+            questionId: result.insertId,
+        });
+    });
+});
 
 // Generate PDF Route
 app.post('/generate-pdf', (req, res) => {

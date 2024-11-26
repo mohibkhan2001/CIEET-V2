@@ -120,8 +120,8 @@ p {
 /* Question Bank Table Styles */
 #questions-container {
     margin-top: 30px;
-    overflow-y: auto;
-    max-height: 500px;
+    /* overflow-y: auto; */
+    /* max-height: 500px; */
 }
 
 table {
@@ -222,6 +222,41 @@ td:first-child {
     transition: background-color 0.3s ease;
 }
 
+#pdfName{
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    width: 60%;
+    margin-right: 15px;
+    max-width: 300px;
+    margin-bottom: 10px;
+}
+
+#addQuestionButton {
+    background-color: #28a745;
+    color: white;
+    padding: 12px 25px;
+    margin-bottom: 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#addQuestionButton:hover .fa-plus {
+    transform: rotate(360);
+}
+
+.fa-plus {
+    padding-left: 10px;
+}
+
+
+
 #viewGeneratedPapersButton:hover {
     background-color: #218838;
 }
@@ -259,3 +294,120 @@ td:first-child {
         flex-direction: column;
     }
 }
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* Center the modal */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+    z-index: 1000;
+    width: 100%; /* Ensures full width */
+    height: 100%; /* Ensures full height */
+}
+
+.modal-content {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 10px;
+    width: 90%; /* Adjust the width of the modal */
+    max-width: 500px; /* Set a maximum width */
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    position: relative;
+    animation: modalFadeIn 0.3s ease-in-out;
+}
+
+/* Close Button */
+.modal-content .close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #333;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.modal-content .close:hover {
+    color: #007BFF;
+}
+
+/* Modal Form Styling */
+.modal-content h2 {
+    margin-bottom: 20px;
+    text-align: center;
+    font-size: 1.5rem;
+    color: #333;
+}
+
+.modal-content form {
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-content label {
+    font-size: 1rem;
+    margin-bottom: 5px;
+    color: #555;
+}
+
+.modal-content input,
+.modal-content select,
+.modal-content textarea {
+    padding: 10px;
+    font-size: 1rem;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    width: 100%;
+}
+
+.modal-content button {
+    padding: 12px;
+    font-size: 1rem;
+    background-color: #007BFF;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s;
+}
+
+.modal-content button:hover {
+    background-color: #0056b3;
+    transform: scale(1.05);
+}
+
+/* Modal Animation */
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive Modal */
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%; /* Adjust width for smaller screens */
+        padding: 20px;
+    }
+
+    .modal-content h2 {
+        font-size: 1.3rem;
+    }
+}
+
+.subject-selection button i {
+    margin-right: 8px; /* Adds space between icon and text */
+  }
+  
