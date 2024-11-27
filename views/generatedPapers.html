@@ -37,11 +37,6 @@
 
     <div class="container">
         <h1>Exam Papers Archive <p id="download-link">Click on the file to download</p></h1>
-        
-        <!-- Loading spinner -->
-        <div id="loadingSpinner" style="display: none;">
-            <img src="spinner.gif" alt="Loading..." />
-        </div>
 
         <table id="generated-papers-list">
             <thead>
@@ -63,54 +58,58 @@
 
     <script>
         // Function to format file size (bytes to human-readable format)
-        function formatFileSize(bytes) {
-            const units = ['B', 'KB', 'MB', 'GB'];
-            let size = bytes;
-            let unitIndex = 0;
-            while (size >= 1024 && unitIndex < units.length - 1) {
-                size /= 1024;
-                unitIndex++;
-            }
-            return `${size.toFixed(2)} ${units[unitIndex]}`;
-        }
+
+            // Function to format file size (bytes to human-readable format)
+function formatFileSize(bytes) {
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let size = Number(bytes); // Ensure it's treated as a number
+    if (isNaN(size)) {
+        return 'Invalid Size'; // Return a default message if it's not a valid number
+    }
+
+    let unitIndex = 0;
+    while (size >= 1024 && unitIndex < units.length - 1) {
+        size /= 1024;
+        unitIndex++;
+    }
+    return `${size.toFixed(2)} ${units[unitIndex]}`;
+}
 
         // Function to fetch generated papers and display them
         async function fetchGeneratedPapers() {
-            document.getElementById('loadingSpinner').style.display = 'block';  // Show loading spinner
-
             try {
                 const response = await fetch('/api/generated-papers');
                 if (!response.ok) throw new Error(`Error fetching papers: ${response.statusText}`);
-                const papers = await response.json();
+                
+                const data = await response.json(); // Adjust based on backend response
+                console.log('Fetched Papers:', data);
 
-                const papersListContainer = document.getElementById('generated-papers-list');
+                const papers = Array.isArray(data) ? data : data.papers || [];
+                const papersListContainer = document.getElementById('generated-papers-list').querySelector('tbody');
                 papersListContainer.innerHTML = ''; // Clear loading text
 
-                // Check if there are papers
                 if (papers.length === 0) {
                     papersListContainer.innerHTML = '<tr><td colspan="5">No papers have been generated yet.</td></tr>';
-                } else {
-                    papers.forEach(paper => {
-                        const paperRow = document.createElement('tr');
-
-                        paperRow.innerHTML = `
-                            <td><a href="/download-pdf/${paper.filename}" class="paper-name">${paper.filename}</a></td>
-                            <td class="file-size">${formatFileSize(paper.size)}</td>
-                            <td class="date-created">${paper.creationDate}</td>
-                            <td class="time-created">${paper.creationTime}</td>
-                            <td class="actions">
-                                <button class="rename-btn" onclick="renameFile('${paper.filename}')">Rename<i class="fa-solid fa-pen"></i></button>
-                                <button class="delete-btn" onclick="deleteFile('${paper.filename}')">Delete<i class="fa-solid fa-trash"></i></button>
-                            </td>
-                        `;
-                        papersListContainer.appendChild(paperRow);
-                    });
+                    return;
                 }
+
+                papers.forEach(paper => {
+                    const paperRow = document.createElement('tr');
+                    paperRow.innerHTML = `
+                        <td><a href="/download-pdf/${paper.filename}" class="paper-name">${paper.filename}</a></td>
+                        <td class="file-size">${formatFileSize(paper.size)}</td>
+                        <td class="date-created">${paper.creationDate || paper.creation_date}</td>
+                        <td class="time-created">${paper.creationTime || paper.creation_time}</td>
+                        <td class="actions">
+                            <button class="rename-btn" onclick="renameFile('${paper.filename}')">Rename <i class="fa-solid fa-pen"></i></button>
+                            <button class="delete-btn" onclick="deleteFile('${paper.filename}')">Delete <i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    `;
+                    papersListContainer.appendChild(paperRow);
+                });
             } catch (error) {
                 console.error('Error:', error);
-                document.getElementById('generated-papers-list').innerHTML = '<tr><td colspan="5">Failed to load papers. Please try again later.</td></tr>';
-            } finally {
-                document.getElementById('loadingSpinner').style.display = 'none';  // Hide loading spinner
+                document.getElementById('generated-papers-list').querySelector('tbody').innerHTML = '<tr><td colspan="5">Failed to load papers. Please try again later.</td></tr>';
             }
         }
 

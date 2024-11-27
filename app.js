@@ -17,10 +17,69 @@ const papersDir = path.join(__dirname, "papers");
 if (!fs.existsSync(papersDir)) {
   fs.mkdirSync(papersDir);
 }
+app.get('/download-pdf/:filename', (req, res) => {
+    const fileName = req.params.filename;
+    const filePath = path.join(papersDir, fileName); // Corrected path
+    
+    res.sendFile(filePath, (err) => {
+        if (err) {
+            console.error('Error sending file:', err);
+            res.status(500).send('Unable to download file');
+        }
+    });
+});
+app.post('/rename-file', (req, res) => {
+    const { oldFileName, newFileName } = req.body;
+    const oldFilePath = path.join(papersDir, oldFileName);
+    const newFilePath = path.join(papersDir, newFileName);
+
+    fs.rename(oldFilePath, newFilePath, (err) => {
+        if (err) {
+            console.error('Error renaming file:', err);
+            return res.status(500).json({ success: false, error: 'Error renaming file' });
+        }
+
+        // Update the database with the new filename
+        const updateQuery = 'UPDATE generated_pdfs SET filename = ? WHERE filename = ?';
+        db.query(updateQuery, [newFileName, oldFileName], (err) => {
+            if (err) {
+                console.error('Error updating filename in database:', err);
+                return res.status(500).json({ success: false, error: 'Error updating filename in database' });
+            }
+
+            res.json({ success: true });
+        });
+    });
+});
+app.post('/delete-file', (req, res) => {
+    const { fileName } = req.body;
+    const filePath = path.join(papersDir, fileName);
+
+    fs.unlink(filePath, (err) => {
+        if (err) {
+            console.error('Error deleting file:', err);
+            return res.status(500).json({ success: false, error: 'Error deleting file' });
+        }
+
+        // Remove from the database as well
+        const deleteQuery = 'DELETE FROM generated_pdfs WHERE filename = ?';
+        db.query(deleteQuery, [fileName], (err) => {
+            if (err) {
+                console.error('Error deleting file from database:', err);
+                return res.status(500).json({ success: false, error: 'Error deleting file from database' });
+            }
+
+            res.json({ success: true });
+        });
+    });
+});
 
 // Serve Views
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "views", "index.html"));
+});
+app.get("/Exam_Automation", (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "Exam_Automation.html"));
 });
 app.get("/reporting", (req, res) => {
   res.sendFile(path.join(__dirname, "views", "reporting.html"));
@@ -30,6 +89,9 @@ app.get("/questionBank", (req, res) => {
 });
 app.get("/generatedPapers", (req, res) => {
   res.sendFile(path.join(__dirname, "views", "generatedPapers.html"));
+});
+app.get("/signup", (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "signup.html"));
 });
 
 // API Route to Fetch Both Subjective and MCQ Questions for a Specific Subject
@@ -110,39 +172,81 @@ app.post("/generate-pdf", async (req, res) => {
 
       // Generate HTML for the PDF
       const htmlContent = `
-        <html>
-          <head>
-            <style>
-              body { font-family: Arial, sans-serif; line-height: 1.6; }
-              h1 { text-align: center; }
-              .question { margin-bottom: 20px; }
-              .options { margin-left: 20px; }
-            </style>
-          </head>
-          <body>
-            <h1>${subject.toUpperCase()} Exam Paper</h1>
-            <h2>Subjective Questions</h2>
-            ${subjectiveResults
-              .map((q, i) => `<div class="question">${i + 1}. ${q.question_text}</div>`)
-              .join("")}
-            <h2>MCQ Questions</h2>
-            ${mcqResults
-              .map(
-                (q, i) => `
-              <div class="question">
-                ${i + 1 + subjectiveResults.length}. ${q.question_text}
-                <div class="options">
-                  A: ${q.option_a}<br>
-                  B: ${q.option_b}<br>
-                  C: ${q.option_c}<br>
-                  D: ${q.option_d}
-                </div>
-              </div>`
-              )
-              .join("")}
-          </body>
-        </html>
-      `;
+  <html>
+    <head>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          line-height: 1.6;
+          margin: 0;
+          padding: 0;
+        }
+        h1 {
+          text-align: center;
+        }
+        .header {
+          text-align: center;
+          margin-bottom: 20px;
+        }
+        .name {
+          display: inline-block;
+          width: 30%;  /* Adjust the width as needed */
+          text-align: center;
+        }
+        .question {
+          margin: 20px 0;  /* Add margin for space between questions */
+          padding-left: 20px; /* Left padding for the question text */
+          padding-top: 10px;  /* Top padding for the question text */
+          padding-bottom: 10px; /* Bottom padding for the question text */
+          page-break-inside: avoid; /* Prevent question splitting across pages */
+        }
+        h2 {
+          margin-left: 20px;
+        }
+        .options {
+          margin-left: 40px; /* Increase left margin for options */
+          margin-top: 10px; /* Top margin between question and options */
+        }
+        .option {
+          display: inline-block;
+          width: 45%;
+          margin: 5px 0;
+        }
+        .page-break {
+          page-break-before: always;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div class="name">Mohib Khan</div>
+        <div class="name">Hassan Shaheer</div>
+        <div class="name">Musadiq Balouch</div>
+      </div>
+      <h1>${subject.toUpperCase()} Exam Paper</h1>
+      <h2>Subjective Questions</h2>
+      ${subjectiveResults
+        .map((q, i) => `<div class="question">${i + 1}. ${q.question_text}</div>`)
+        .join("")}
+      <h2>MCQ Questions</h2>
+      ${mcqResults
+        .map(
+          (q, i) => `
+            <div class="question">
+              ${i + 1 + subjectiveResults.length}. ${q.question_text}
+              <div class="options">
+                <div class="option">a) ${q.option_a}</div>
+                <div class="option">b) ${q.option_b}</div>
+                <div class="option">c) ${q.option_c}</div>
+                <div class="option">d) ${q.option_d}</div>
+              </div>
+            </div>`
+        )
+        .join("")}
+    </body>
+  </html>
+`;
+
 
       try {
         const browser = await puppeteer.launch();
@@ -169,29 +273,29 @@ app.post("/generate-pdf", async (req, res) => {
 
 // Generated Papers List
 app.get("/api/generated-papers", (req, res) => {
-  const query = "SELECT filename, created_at FROM generated_pdfs ORDER BY created_at DESC";
-
-  db.query(query, (err, results) => {
-    if (err) return res.status(500).json({ error: "Failed to fetch generated papers" });
-
-    const enrichedResults = results.map((paper) => {
-      const filePath = path.join(papersDir, paper.filename);
-      let fileSize = "Unknown";
-
-      try {
-        const stats = fs.statSync(filePath);
-        fileSize = (stats.size / 1024).toFixed(2) + " KB";
-      } catch {
-        console.error(`File not found: ${paper.filename}`);
-      }
-
-      return { ...paper, size: fileSize };
+    const query = "SELECT filename, created_at FROM generated_pdfs ORDER BY created_at DESC";
+  
+    db.query(query, (err, results) => {
+      if (err) return res.status(500).json({ error: "Failed to fetch generated papers" });
+  
+      const enrichedResults = results.map((paper) => {
+        const filePath = path.join(papersDir, paper.filename);
+        let fileSize = "Unknown";
+  
+        try {
+          const stats = fs.statSync(filePath);
+          fileSize = (stats.size / 1024).toFixed(2) + " KB";
+        } catch {
+          console.error(`File not found: ${paper.filename}`);
+        }
+  
+        return { ...paper, size: fileSize };
+      });
+  
+      res.json({ papers: enrichedResults });
     });
-
-    res.json({ papers: enrichedResults });
   });
-});
-
+  
 // Start server
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
