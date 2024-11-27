@@ -91,7 +91,11 @@ p {
     gap: 15px;
     align-items: center;
 }
-
+.option {
+    display: block !important; /* Ensure options are displayed */
+    visibility: visible !important; /* Ensure options are visible */
+    opacity: 1 !important; /* Ensure options are fully opaque */
+}
 .filter-options select {
     padding: 8px;
     font-size: 1rem;
@@ -411,3 +415,17 @@ td:first-child {
     margin-right: 8px; /* Adds space between icon and text */
   }
   
+
+  #no-questions-message {
+    color: red;
+    font-size: 16px;
+    margin-top: 10px;
+    text-align: center;
+  }
+  
+  
+
+  .subject-selection button:hover {
+    background-color: #0056b3; /* Darker blue on hover */
+    transform: scale(1.05); /* Slightly enlarge on hover */
+}
