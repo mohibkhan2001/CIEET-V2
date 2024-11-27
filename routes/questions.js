@@ -9,7 +9,7 @@ router.get('/questions/:subject', (req, res) => {
 
     db.query(query, [subject], (err, results) => {
         if (err) {
-            console.error(err);
+            console.error(err); 
             res.status(500).send('Error fetching questions.');
             return;
         }

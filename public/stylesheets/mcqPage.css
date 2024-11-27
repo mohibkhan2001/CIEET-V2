@@ -1,0 +1,50 @@
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    background-color: #f4f4f4;
+}
+
+.subject-selection button {
+    padding: 10px 20px;
+    margin: 5px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.subject-selection button.active {
+    background-color: #45a049;
+}
+
+#mcq-container {
+    margin-top: 20px;
+}
+
+.question-item {
+    background-color: white;
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.options label {
+    display: block;
+    margin: 5px 0;
+}
+
+.correct-answer {
+    font-size: 14px;
+    color: #555;
+    margin-top: 10px;
+}
+.options{
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    max-width: 500px;
+    justify-content: space-around;
+    align-items: center;
+    padding: 20px;
+}

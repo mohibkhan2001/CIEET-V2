@@ -30,7 +30,6 @@
           <li><a href="#contact">Contact</a></li>
         </ul>
       </nav>
-
       <div class="auth-buttons">
         <a href="/signup" class="sign-up">Sign Up</a>
       </div>
@@ -57,11 +56,10 @@
         <button data-subject="chemistry" onclick="showQuestions('chemistry')">
           <i class="fa-solid fa-flask"></i> Chemistry
         </button>
-        <button data-subject="computer science" onclick="showQuestions('computer science')">
-          <i class="fa-solid fa-laptop-code"></i> Computer
+        <button data-subject="computer-science" onclick="showQuestions('computer-science')">
+          <i class="fa-solid fa-laptop-code"></i> Computer Science
         </button>
       </div>
-      
 
       <div id="questions-container" style="display: none">
         <h2>Questions</h2>
@@ -86,9 +84,8 @@
             <label for="typeFilter">Type:</label>
             <select id="typeFilter" onchange="filterQuestions()">
               <option value="">All Types</option>
-              <option value="Multiple Choice">Multiple Choice</option>
-              <option value="Short Answer">Short Answer</option>
-              <option value="Essay">Essay</option>
+              <option value="Objective">Objective</option>
+              <option value="Subjective">Subjective</option>
             </select>
           </div>
         </div>
@@ -97,6 +94,9 @@
         <div class="action-buttons">
           <button id="selectAllButton" onclick="selectAllQuestions()">
             Select All Questions
+          </button>
+          <button id="randomSelectButton" onclick="selectRandomQuestions()">
+            Select Randomly
           </button>
           <button id="addQuestionButton" onclick="openAddQuestionModal()">
             Add New Question
@@ -109,7 +109,7 @@
             <!-- Questions will be dynamically inserted here -->
           </div>
 
-          <input itemid="generate-pdf-search"
+          <input
             type="text"
             id="pdfName"
             name="pdfName"
@@ -126,7 +126,7 @@
       <div class="modal-overlay" onclick="closeAddQuestionModal()"></div>
       <div class="modal-content">
         <span class="close" onclick="closeAddQuestionModal()">&times;</span>
-        <h2 id="addNew">Add New Question</h2>
+        <h2>Add New Question</h2>
         <form id="addQuestionForm">
           <label for="subject">Subject:</label>
           <select id="subject" name="subject" required>
@@ -134,7 +134,7 @@
             <option value="physics">Physics</option>
             <option value="biology">Biology</option>
             <option value="chemistry">Chemistry</option>
-            <option value="computer science">Computer Science</option>
+            <option value="computer-science">Computer Science</option>
           </select>
 
           <label for="year">Year:</label>
@@ -152,6 +152,21 @@
             <option value="Objective">Objective</option>
             <option value="Subjective">Subjective</option>
           </select>
+          <div id="objectiveOptions" style="display: none">
+            <label for="options">Options:</label>
+            <textarea
+              id="options"
+              name="options"
+              placeholder="Enter options separated by newline"
+            ></textarea>
+            <label for="correctAnswer">Correct Answer:</label>
+            <input
+              type="text"
+              id="correctAnswer"
+              name="correctAnswer"
+              placeholder="Enter correct answer"
+            />
+          </div>
           <label for="questionText">Question Text:</label>
           <textarea
             id="questionText"
@@ -165,7 +180,7 @@
       </div>
     </div>
 
-    <script src="scripts/questionBank.js">
-    </script>
+    <!-- Script for Question Bank -->
+    <script src="scripts/questionBank.js"></script>
   </body>
 </html>

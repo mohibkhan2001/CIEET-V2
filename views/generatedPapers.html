@@ -37,21 +37,47 @@
 
     <div class="container">
         <h1>Exam Papers Archive <p id="download-link">Click on the file to download</p></h1>
-        <div id="generated-papers-list">
-            <div class="header-row">
-                <span class="header-title">File Name</span>
-                <span class="header-title">File Size</span>
-                <span class="header-title">Creation Date</span>
-                <span class="header-title">Creation Time</span>
-                <span class="header-title">Actions</span>
-            </div>
-            <hr>
-            <p>Loading generated papers...</p>
+        
+        <!-- Loading spinner -->
+        <div id="loadingSpinner" style="display: none;">
+            <img src="spinner.gif" alt="Loading..." />
         </div>
+
+        <table id="generated-papers-list">
+            <thead>
+                <tr>
+                    <th class="header-title">File Name</th>
+                    <th class="header-title">File Size</th>
+                    <th class="header-title">Creation Date</th>
+                    <th class="header-title">Creation Time</th>
+                    <th class="header-title">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="5">Loading generated papers...</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
     <script>
+        // Function to format file size (bytes to human-readable format)
+        function formatFileSize(bytes) {
+            const units = ['B', 'KB', 'MB', 'GB'];
+            let size = bytes;
+            let unitIndex = 0;
+            while (size >= 1024 && unitIndex < units.length - 1) {
+                size /= 1024;
+                unitIndex++;
+            }
+            return `${size.toFixed(2)} ${units[unitIndex]}`;
+        }
+
+        // Function to fetch generated papers and display them
         async function fetchGeneratedPapers() {
+            document.getElementById('loadingSpinner').style.display = 'block';  // Show loading spinner
+
             try {
                 const response = await fetch('/api/generated-papers');
                 if (!response.ok) throw new Error(`Error fetching papers: ${response.statusText}`);
@@ -60,47 +86,31 @@
                 const papersListContainer = document.getElementById('generated-papers-list');
                 papersListContainer.innerHTML = ''; // Clear loading text
 
-                // Add header row again after clearing the content
-                const headerRow = document.createElement('div');
-                headerRow.classList.add('header-row');
-                headerRow.innerHTML = `        
-                    <span class="header-title">File Name</span>
-                    <span class="header-title">File Size</span>
-                    <span class="header-title">Creation Date</span>
-                    <span class="header-title">Creation Time</span>
-                    <span class="header-title">Actions</span>
-                `;
-                papersListContainer.appendChild(headerRow);
-                // papersListContainer.appendChild(document.createElement('hr'));
-
+                // Check if there are papers
                 if (papers.length === 0) {
-                    papersListContainer.innerHTML += '<p id="comment">No papers have been generated yet.</p>';
+                    papersListContainer.innerHTML = '<tr><td colspan="5">No papers have been generated yet.</td></tr>';
                 } else {
                     papers.forEach(paper => {
-                        const paperItem = document.createElement('div');
-                        paperItem.classList.add('paper-item');
+                        const paperRow = document.createElement('tr');
 
-                        paperItem.innerHTML = `
-                            <div class="paper-row">
-                                <a href="/download-pdf/${paper.filename}" class="paper-name">
-                                    ${paper.filename}
-                                </a>
-                                <span class="file-size">${paper.size}</span>
-                                <span class="date-created">${paper.creationDate}</span>
-                                <span class="time-created">${paper.creationTime}</span>
-                                <span class="actions">
-                                    <button class="rename-btn" onclick="renameFile('${paper.filename}')">Rename<i class="fa-solid fa-pen"></i></button>
-                                    <button class="delete-btn" onclick="deleteFile('${paper.filename}')">Delete<i class="fa-solid fa-trash"></i></button>
-                                </span>
-                            </div>
-                            <hr>
+                        paperRow.innerHTML = `
+                            <td><a href="/download-pdf/${paper.filename}" class="paper-name">${paper.filename}</a></td>
+                            <td class="file-size">${formatFileSize(paper.size)}</td>
+                            <td class="date-created">${paper.creationDate}</td>
+                            <td class="time-created">${paper.creationTime}</td>
+                            <td class="actions">
+                                <button class="rename-btn" onclick="renameFile('${paper.filename}')">Rename<i class="fa-solid fa-pen"></i></button>
+                                <button class="delete-btn" onclick="deleteFile('${paper.filename}')">Delete<i class="fa-solid fa-trash"></i></button>
+                            </td>
                         `;
-                        papersListContainer.appendChild(paperItem);
+                        papersListContainer.appendChild(paperRow);
                     });
                 }
             } catch (error) {
                 console.error('Error:', error);
-                document.getElementById('generated-papers-list').innerHTML = '<p>Failed to load papers. Please try again later.</p>';
+                document.getElementById('generated-papers-list').innerHTML = '<tr><td colspan="5">Failed to load papers. Please try again later.</td></tr>';
+            } finally {
+                document.getElementById('loadingSpinner').style.display = 'none';  // Hide loading spinner
             }
         }
 

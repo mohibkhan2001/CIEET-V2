@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCQ Questions</title>
+    <link rel="stylesheet" href="stylesheets/mcqPage.css">
+</head>
+<body>
+
+    <div class="subject-selection">
+        <button data-subject="math" onclick="showMCQs('math')">Math</button>
+        <button data-subject="biology" onclick="showMCQs('biology')">Biology</button>
+        <button data-subject="physics" onclick="showMCQs('physics')">Physics</button>
+        <button data-subject="chemistry" onclick="showMCQs('chemistry')">Chemistry</button>
+        <button data-subject="computer-science" onclick="showMCQs('computer-science')">Computer Science</button>
+    </div>
+
+    <div id="mcq-container">
+        <h2>Multiple Choice Questions</h2>
+        <div id="question-list"></div>
+    </div>
+
+    <script src="scripts/mcqPage.js"></script>
+</body>
+</html>
