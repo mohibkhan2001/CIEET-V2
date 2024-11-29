@@ -15,6 +15,7 @@ function initializeEventListeners() {
 }
 
 // Function to dynamically load and display questions for the selected subject
+// Function to dynamically load and display questions for the selected subject
 async function showQuestions(subject) {
   const questionContainer = document.getElementById("questions-container");
   const questionList = document.getElementById("question-list");
@@ -50,7 +51,10 @@ async function showQuestions(subject) {
       const questionItem = document.createElement("div");
       questionItem.classList.add("question-item");
       questionItem.innerHTML = `
-        <input type="checkbox" value="${question.id}" name="questions">
+        <div class="check_container">
+          <input id="checkbox-${question.id}" class="hidden" type="checkbox" value="${question.id}" name="questions">
+          <label class="checkbox" for="checkbox-${question.id}"></label>
+        </div>
         <span>${question.question_text}</span>
         <div class="question-details">
           <div>Year: ${question.year}</div>
@@ -64,7 +68,10 @@ async function showQuestions(subject) {
       const questionItem = document.createElement("div");
       questionItem.classList.add("question-item");
       questionItem.innerHTML = `
-        <input type="checkbox" value="${question.id}" name="questions">
+        <div class="check_container">
+          <input id="checkbox-${question.id}" class="hidden" type="checkbox" value="${question.id}" name="questions">
+          <label class="checkbox" for="checkbox-${question.id}"></label>
+        </div>
         <span>${question.question_text}</span>
         <div class="question-details">
           <div>Options:</div>
