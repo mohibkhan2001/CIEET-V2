@@ -84,8 +84,8 @@
             <label for="typeFilter">Type:</label>
             <select id="typeFilter" onchange="filterQuestions()">
               <option value="">All Types</option>
-              <option value="Objective">Objective</option>
-              <option value="Subjective">Subjective</option>
+              <option value="mcq_questions">Objective</option>
+              <option value="subjective_questions">Subjective</option>
             </select>
           </div>
         </div>
@@ -95,20 +95,39 @@
           <button id="selectAllButton" onclick="selectAllQuestions()">
             Select All Questions
           </button>
-          <button id="randomSelectButton" onclick="selectRandomQuestions()">
+          <button id="randomSelectButton" onclick="selectRandomly()">
             Select Randomly
           </button>
-          <button id="addQuestionButton" onclick="openAddQuestionModal()">
-            Add New Question
-            <i class="fa-solid fa-plus"></i>
-          </button>
+
+          <!-- Input field for selecting number of random questions -->
+          <div id="random-selection-container" style="display: none;">
+            <label for="random-question-count">Number of questions:</label>
+            <input
+              type="number"
+              id="random-question-count"
+              min="1"
+              placeholder="Enter number of questions"
+            />
+          </div>
         </div>
 
         <form id="pdfForm">
           <div id="question-list" class="question-list">
             <!-- Questions will be dynamically inserted here -->
           </div>
-
+          <div id="loader-container" style="display: none;">
+            <div class="spinner">
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+          
           <input
             type="text"
             id="pdfName"
@@ -118,67 +137,10 @@
           />
           <button type="submit" id="generate-pdf-button">Generate PDF</button>
         </form>
+
+        <a href="/generatedPapers" ><button id="viewPapersBtn">View Papers</button></a>
       </div>
     </main>
-
-    <!-- Modal for Adding a New Question -->
-    <div id="addQuestionModal" class="modal" style="display: none">
-      <div class="modal-overlay" onclick="closeAddQuestionModal()"></div>
-      <div class="modal-content">
-        <span class="close" onclick="closeAddQuestionModal()">&times;</span>
-        <h2>Add New Question</h2>
-        <form id="addQuestionForm">
-          <label for="subject">Subject:</label>
-          <select id="subject" name="subject" required>
-            <option value="math">Math</option>
-            <option value="physics">Physics</option>
-            <option value="biology">Biology</option>
-            <option value="chemistry">Chemistry</option>
-            <option value="computer-science">Computer Science</option>
-          </select>
-
-          <label for="year">Year:</label>
-          <input
-            type="number"
-            id="year"
-            name="year"
-            min="2000"
-            max="2030"
-            required
-          />
-
-          <label for="type">Type:</label>
-          <select id="type" name="type" required>
-            <option value="Objective">Objective</option>
-            <option value="Subjective">Subjective</option>
-          </select>
-          <div id="objectiveOptions" style="display: none">
-            <label for="options">Options:</label>
-            <textarea
-              id="options"
-              name="options"
-              placeholder="Enter options separated by newline"
-            ></textarea>
-            <label for="correctAnswer">Correct Answer:</label>
-            <input
-              type="text"
-              id="correctAnswer"
-              name="correctAnswer"
-              placeholder="Enter correct answer"
-            />
-          </div>
-          <label for="questionText">Question Text:</label>
-          <textarea
-            id="questionText"
-            name="questionText"
-            rows="4"
-            required
-          ></textarea>
-
-          <button type="submit" id="submitQuestionButton">Add Question</button>
-        </form>
-      </div>
-    </div>
 
     <!-- Script for Question Bank -->
     <script src="scripts/questionBank.js"></script>

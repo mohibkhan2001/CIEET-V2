@@ -1,187 +1,225 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Generated Papers</title>
-    <link rel="stylesheet" href="stylesheets/style.css">
-    <link rel="stylesheet" href="stylesheets/generatedPaper.css">
+    <link rel="stylesheet" href="stylesheets/style.css" />
+    <link rel="stylesheet" href="stylesheets/generatedPaper.css" />
     <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
-    integrity="sha512-5Hs3dF2AEPkpNAR7UiOHba+lRSJNeM2ECkwxUIxC1Q/FLycGTbNapWXB4tP889k5T5Ju8fs4b1P5z/iB4nMfSQ=="
-    crossorigin="anonymous"
-    referrerpolicy="no-referrer"
-  />
-</head>
-<body>
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
+      integrity="sha512-5Hs3dF2AEPkpNAR7UiOHba+lRSJNeM2ECkwxUIxC1Q/FLycGTbNapWXB4tP889k5T5Ju8fs4b1P5z/iB4nMfSQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+  </head>
+  <body>
     <header>
-        <div class="logo">
-            <span><a href="/">CIE²T</a></span>
-        </div>
-        <nav>
-            <ul>
-                <li><a href="/questionBank">Question Databank</a></li>
-                <li><a href="/reporting">Assessment Reporting</a></li>
-                <li><a href="/Exam_Automation">Exam Automation</a></li>
-                <li><a href="/generatedPapers">Generated Papers</a></li>
-                <li><a href="#about">About</a></li>
-                <li><a href="#contact">Contact</a></li>
-            </ul>
-        </nav>
-        
-        <div class="auth-buttons">
-            <a href="/signup" class="sign-up">Sign Up</a>
-        </div>
+      <div class="logo">
+        <span><a href="/">CIE²T</a></span>
+      </div>
+      <nav>
+        <ul>
+          <li><a href="/questionBank">Question Databank</a></li>
+          <li><a href="/reporting">Assessment Reporting</a></li>
+          <li><a href="/Exam_Automation">Exam Automation</a></li>
+          <li><a href="/generatedPapers">Generated Papers</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </nav>
+
+      <div class="auth-buttons">
+        <a href="/signup" class="sign-up">Sign Up</a>
+      </div>
     </header>
 
     <div class="container">
-        <h1>Exam Papers Archive <p id="download-link">Click on the file to download</p></h1>
+      <h1>
+        Exam Papers Archive
+        <p id="download-link">Click on the file to download</p>
+      </h1>
 
-        <table id="generated-papers-list">
-            <thead>
-                <tr>
-                    <th class="header-title">File Name</th>
-                    <th class="header-title">File Size</th>
-                    <th class="header-title">Creation Date</th>
-                    <th class="header-title">Creation Time</th>
-                    <th class="header-title">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td colspan="5">Loading generated papers...</td>
-                </tr>
-            </tbody>
-        </table>
+      <table id="generated-papers-list">
+        <thead>
+          <tr>
+            <th class="header-title">File Name</th>
+            <th class="header-title">File Size</th>
+            <th class="header-title">Creation Date</th>
+            <th class="header-title">Creation Time</th>
+            <th class="header-title">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="5">Loading generated papers...</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <script>
-        // Function to format file size (bytes to human-readable format)
+      // Function to format file size (bytes to human-readable format)
+      function formatFileSize(bytes) {
+        if (!bytes || isNaN(bytes)) {
+          return "N/A"; // Return 'N/A' if size is not available or invalid
+        }
+        const units = ["B", "KB", "MB", "GB"];
+        let size = Number(bytes); // Ensure it's treated as a number
 
-            // Function to format file size (bytes to human-readable format)
-function formatFileSize(bytes) {
-    const units = ['B', 'KB', 'MB', 'GB'];
-    let size = Number(bytes); // Ensure it's treated as a number
-    if (isNaN(size)) {
-        return 'Invalid Size'; // Return a default message if it's not a valid number
-    }
+        let unitIndex = 0;
+        while (size >= 1024 && unitIndex < units.length - 1) {
+          size /= 1024;
+          unitIndex++;
+        }
+        return `${size.toFixed(2)} ${units[unitIndex]}`;
+      }
 
-    let unitIndex = 0;
-    while (size >= 1024 && unitIndex < units.length - 1) {
-        size /= 1024;
-        unitIndex++;
-    }
-    return `${size.toFixed(2)} ${units[unitIndex]}`;
-}
+      // Function to fetch generated papers and display them
+      async function fetchGeneratedPapers() {
+        try {
+          const response = await fetch("/api/generated-papers");
+          if (!response.ok)
+            throw new Error(`Error fetching papers: ${response.statusText}`);
 
-        // Function to fetch generated papers and display them
-        async function fetchGeneratedPapers() {
-            try {
-                const response = await fetch('/api/generated-papers');
-                if (!response.ok) throw new Error(`Error fetching papers: ${response.statusText}`);
-                
-                const data = await response.json(); // Adjust based on backend response
-                console.log('Fetched Papers:', data);
+          const data = await response.json(); // Adjust based on backend response
+          console.log("Fetched Papers:", data);
 
-                const papers = Array.isArray(data) ? data : data.papers || [];
-                const papersListContainer = document.getElementById('generated-papers-list').querySelector('tbody');
-                papersListContainer.innerHTML = ''; // Clear loading text
+          const papers = Array.isArray(data) ? data : data.papers || [];
+          const papersListContainer = document
+            .getElementById("generated-papers-list")
+            .querySelector("tbody");
+          papersListContainer.innerHTML = ""; // Clear loading text
 
-                if (papers.length === 0) {
-                    papersListContainer.innerHTML = '<tr><td colspan="5">No papers have been generated yet.</td></tr>';
-                    return;
-                }
+          if (papers.length === 0) {
+            papersListContainer.innerHTML =
+              '<tr><td colspan="5">No papers have been generated yet.</td></tr>';
+            return;
+          }
 
-                papers.forEach(paper => {
-                    const paperRow = document.createElement('tr');
-                    paperRow.innerHTML = `
-                        <td><a href="/download-pdf/${paper.filename}" class="paper-name">${paper.filename}</a></td>
-                        <td class="file-size">${formatFileSize(paper.size)}</td>
-                        <td class="date-created">${paper.creationDate || paper.creation_date}</td>
-                        <td class="time-created">${paper.creationTime || paper.creation_time}</td>
+          papers.forEach((paper) => {
+            // Use default values if any of the fields are missing or undefined
+            const fileSize = paper.fileSize
+              ? formatFileSize(paper.size)
+              : "N/A"; // Default to 'N/A' if size is missing
+            const creationDate =
+              paper.creationDate || paper.creation_date || "Unknown"; // Handle missing date
+            const creationTime =
+              paper.creationTime || paper.creation_time || "Unknown"; // Handle missing time
+
+            const paperRow = document.createElement("tr");
+            paperRow.innerHTML = `
+                    <td><a href="/download-pdf/${paper.filename}" class="paper-name" data-filename="${paper.filename}" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${paper.filename}</a></td>
+                        <td class="file-size">${fileSize}</td>
+                        <td class="date-created">${creationDate}</td>
+                        <td class="time-created">${creationTime}</td>
                         <td class="actions">
                             <button class="rename-btn" onclick="renameFile('${paper.filename}')">Rename <i class="fa-solid fa-pen"></i></button>
                             <button class="delete-btn" onclick="deleteFile('${paper.filename}')">Delete <i class="fa-solid fa-trash"></i></button>
                         </td>
                     `;
-                    papersListContainer.appendChild(paperRow);
-                });
-            } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('generated-papers-list').querySelector('tbody').innerHTML = '<tr><td colspan="5">Failed to load papers. Please try again later.</td></tr>';
-            }
+            papersListContainer.appendChild(paperRow);
+          });
+
+          // Attach download event to each paper link
+          document.querySelectorAll(".paper-name").forEach((link) => {
+            link.addEventListener("click", function (event) {
+              event.preventDefault(); // Prevent default link behavior
+
+              const fileUrl = this.getAttribute("href");
+              const fileName = this.getAttribute("data-filename");
+
+              // Trigger download with a simulated anchor click
+              const downloadLink = document.createElement("a");
+              downloadLink.href = fileUrl;
+              downloadLink.download = fileName; // This will prompt the browser to ask where to save
+              downloadLink.click();
+            });
+          });
+        } catch (error) {
+          console.error("Error:", error);
+          document
+            .getElementById("generated-papers-list")
+            .querySelector("tbody").innerHTML =
+            '<tr><td colspan="5">Failed to load papers. Please try again later.</td></tr>';
         }
+      }
 
-        // Function to handle renaming of the file
-        function renameFile(oldFileName) {
-            const fileExtension = '.pdf'; // Assuming all files are PDFs
-            const newFileName = prompt("Enter the new name for the file:", oldFileName);
+      // Function to handle renaming of the file
+      function renameFile(oldFileName) {
+        const fileExtension = ".pdf"; // Assuming all files are PDFs
+        const newFileName = prompt(
+          "Enter the new name for the file:",
+          oldFileName
+        );
 
-            if (newFileName && newFileName !== oldFileName) {
-                // Remove the old extension if it exists, and append the .pdf extension
-                let updatedFileName = newFileName;
-                if (!updatedFileName.endsWith(fileExtension)) {
-                    updatedFileName += fileExtension;
-                }
+        if (newFileName && newFileName !== oldFileName) {
+          // Remove the old extension if it exists, and append the .pdf extension
+          let updatedFileName = newFileName;
+          if (!updatedFileName.endsWith(fileExtension)) {
+            updatedFileName += fileExtension;
+          }
 
-                fetch('/rename-file', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        oldFileName: oldFileName,
-                        newFileName: updatedFileName
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('File renamed successfully');
-                        fetchGeneratedPapers();  // Reload the papers list
-                    } else {
-                        alert('Error renaming file');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error renaming file:', error);
-                    alert('Error renaming file');
-                });
-            }
+          fetch("/rename-file", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              oldFileName: oldFileName,
+              newFileName: updatedFileName,
+            }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                alert("File renamed successfully");
+                fetchGeneratedPapers(); // Reload the papers list
+              } else {
+                alert("Error renaming file");
+              }
+            })
+            .catch((error) => {
+              console.error("Error renaming file:", error);
+              alert("Error renaming file");
+            });
         }
+      }
 
-        // Function to handle deletion of the file
-        function deleteFile(fileName) {
-            const confirmDelete = confirm(`Are you sure you want to delete the file: ${fileName}?`);
-            if (confirmDelete) {
-                fetch('/delete-file', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        fileName: fileName
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('File deleted successfully');
-                        fetchGeneratedPapers();  // Reload the papers list
-                    } else {
-                        alert('Error deleting file');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error deleting file:', error);
-                    alert('Error deleting file');
-                });
-            }
+      // Function to handle deletion of the file
+      function deleteFile(fileName) {
+        const confirmDelete = confirm(
+          `Are you sure you want to delete the file: ${fileName}?`
+        );
+        if (confirmDelete) {
+          fetch("/delete-file", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              fileName: fileName,
+            }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                alert("File deleted successfully");
+                fetchGeneratedPapers(); // Reload the papers list
+              } else {
+                alert("Error deleting file");
+              }
+            })
+            .catch((error) => {
+              console.error("Error deleting file:", error);
+              alert("Error deleting file");
+            });
         }
+      }
 
-        // Fetch the generated papers when the page loads
-        window.onload = fetchGeneratedPapers;
+      // Fetch the generated papers when the page loads
+      window.onload = fetchGeneratedPapers;
     </script>
-</body>
+  </body>
 </html>

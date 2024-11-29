@@ -6,12 +6,12 @@ function toggleModalVisibility(modalId, isVisible) {
 // Initialize Event Listeners
 function initializeEventListeners() {
   document.getElementById("pdfForm").addEventListener("submit", handleGeneratePDF);
-  document.getElementById("addQuestionForm").addEventListener("submit", handleAddQuestion);
-  document.getElementById("type").addEventListener("change", handleTypeChange);
   document.getElementById("selectAllButton").addEventListener("click", selectAllQuestions);
   document.getElementById("searchInput").addEventListener("keyup", filterQuestions);
   document.getElementById("yearFilter").addEventListener("change", filterQuestions);
   document.getElementById("typeFilter").addEventListener("change", filterQuestions);
+  document.getElementById("randomSelectButton").addEventListener("click", toggleRandomSelectionInput);
+  document.getElementById("random-question-count").addEventListener("input", validateRandomInput);
 }
 
 // Function to dynamically load and display questions for the selected subject
@@ -28,6 +28,9 @@ async function showQuestions(subject) {
   document
     .querySelector(`button[data-subject="${subject}"]`)
     .classList.add("active");
+
+  // Show the loader while fetching questions
+  showLoader();
 
   try {
     const response = await fetch(`/api/questions/${subject}`);
@@ -77,6 +80,9 @@ async function showQuestions(subject) {
   } catch (error) {
     console.error("Error fetching questions:", error);
     questionList.innerHTML = "<p>Failed to load questions. Try again later.</p>";
+  } finally {
+    // Hide the loader after questions are fetched
+    hideLoader();
   }
 }
 
@@ -111,6 +117,19 @@ function selectAllQuestions() {
   checkboxes.forEach((checkbox) => (checkbox.checked = true));
 }
 
+// Select the loader container
+const loaderContainer = document.getElementById("loader-container");
+
+// Function to show the loader
+function showLoader() {
+  loaderContainer.style.display = "flex";
+}
+
+// Function to hide the loader
+function hideLoader() {
+  loaderContainer.style.display = "none";
+}
+
 // Handle form submission to generate PDF
 async function handleGeneratePDF(event) {
   event.preventDefault(); // Prevent default form submission
@@ -137,6 +156,9 @@ async function handleGeneratePDF(event) {
     return;
   }
 
+  // Show the loader while generating PDF
+  showLoader();
+
   try {
     const response = await fetch("/generate-pdf", {
       method: "POST",
@@ -154,58 +176,90 @@ async function handleGeneratePDF(event) {
   } catch (error) {
     console.error("Error generating PDF:", error);
     alert("Failed to generate PDF. Please try again.");
+  } finally {
+    // Hide the loader after processing
+    hideLoader();
   }
 }
 
-// Handle Type Change in Modal
-function handleTypeChange() {
-  const type = document.getElementById("type").value;
-  const objectiveOptions = document.getElementById("objectiveOptions");
-  objectiveOptions.style.display = type === "Objective" ? "block" : "none";
-}
+// Function to handle random selection
+async function selectRandomly() {
+  const subject = document.querySelector("button.active").getAttribute("data-subject");
+  const questionCount = parseInt(document.getElementById("random-question-count").value, 10);
 
-// Handle New Question Submission
-async function handleAddQuestion(event) {
-  event.preventDefault();
-
-  const formData = {
-    subject: document.getElementById("subject").value,
-    year: document.getElementById("year").value,
-    type: document.getElementById("type").value,
-    questionText: document.getElementById("questionText").value,
-  };
-
-  if (formData.type === "Objective") {
-    formData.options = document
-      .getElementById("options")
-      .value.split("\n")
-      .map((option) => option.trim());
-    formData.correctAnswer = document.getElementById("correctAnswer").value.trim();
+  if (isNaN(questionCount) || questionCount <= 0) {
+    alert("Please enter a valid number of questions.");
+    return;
   }
 
-  try {
-    const response = await fetch("/api/add-question", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
-    });
+  // Fetch questions for the selected subject
+  const response = await fetch(`/api/questions/${subject}`);
+  const data = await response.json();
 
-    if (!response.ok) throw new Error("Failed to add question");
+  // Combine both subjective and MCQ questions
+  const allQuestions = [
+    ...data.subjective,
+    ...data.mcqs
+  ];
 
-    alert("Question added successfully!");
+  if (questionCount > allQuestions.length) {
+    alert("The number of questions exceeds the available questions. Try again.");
+    return;
+  }
 
-    toggleModalVisibility("addQuestionModal", false);
-    document.getElementById("addQuestionForm").reset();
+  // Shuffle the questions and select the specified number
+  const selectedQuestions = shuffle(allQuestions).slice(0, questionCount);
 
-    const activeSubject = document.querySelector(".subject-selection button.active");
-    if (activeSubject) {
-      showQuestions(activeSubject.dataset.subject);
+  // Select the checkboxes for the randomly chosen questions
+  document.querySelectorAll('input[name="questions"]').forEach((checkbox) => {
+    checkbox.checked = false;
+  });
+
+  selectedQuestions.forEach((question) => {
+    const checkbox = document.querySelector(`input[value="${question.id}"]`);
+    if (checkbox) {
+      checkbox.checked = true;
     }
-  } catch (error) {
-    console.error("Error adding question:", error);
-    alert("Failed to add question. Please try again.");
+  });
+}
+
+// Function to shuffle an array (Fisher-Yates algorithm)
+function shuffle(array) {
+  let currentIndex = array.length, randomIndex, temporaryValue;
+
+  // While there remain elements to shuffle
+  while (currentIndex !== 0) {
+    // Pick a remaining element
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    // Swap it with the current element
+    temporaryValue = array[currentIndex];
+    array[currentIndex] = array[randomIndex];
+    array[randomIndex] = temporaryValue;
+  }
+
+  return array;
+}
+
+// Function to toggle the random selection input field visibility
+function toggleRandomSelectionInput() {
+  const randomSelectionContainer = document.getElementById("random-selection-container");
+  randomSelectionContainer.style.display = randomSelectionContainer.style.display === "none" ? "block" : "none";
+}
+
+// Function to validate random question input
+function validateRandomInput() {
+  const inputField = document.getElementById("random-question-count");
+  if (inputField.value <= 0) {
+    inputField.setCustomValidity("Please enter a valid number.");
+  } else {
+    inputField.setCustomValidity("");
   }
 }
 
-// Initialize Event Listeners
+// Add event listener to the PDF generation form
+document.getElementById("pdfForm").addEventListener("submit", handleGeneratePDF);
+
+// Initialize event listeners after DOM content is loaded
 document.addEventListener("DOMContentLoaded", initializeEventListeners);
