@@ -270,3 +270,15 @@ document.getElementById("pdfForm").addEventListener("submit", handleGeneratePDF)
 
 // Initialize event listeners after DOM content is loaded
 document.addEventListener("DOMContentLoaded", initializeEventListeners);
+
+// Ensure the DOM is fully loaded before attaching the event listener
+document.addEventListener("DOMContentLoaded", function() {
+  let viewPapersBtn = document.getElementById("viewBtn");
+  
+  // Check if the button exists
+  if(viewPapersBtn) {
+    viewPapersBtn.addEventListener("click", function() {
+      window.location.href = "/generatedPapers";  // Redirect to the generated papers route
+    });
+  }
+});

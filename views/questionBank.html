@@ -84,8 +84,8 @@
             <label for="typeFilter">Type:</label>
             <select id="typeFilter" onchange="filterQuestions()">
               <option value="">All Types</option>
-              <option value="mcq_questions">Objective</option>
-              <option value="subjective_questions">Subjective</option>
+              <option value="Objective">Objective</option>
+              <option value="Subjective">Subjective</option>
             </select>
           </div>
         </div>
@@ -137,8 +137,10 @@
           />
           <button type="submit" id="generate-pdf-button">Generate PDF</button>
         </form>
+        <button onclick="ViewPaperBtn()" id="viewBtn">View papers</button>
 
-        <a href="/generatedPapers" ><button id="viewPapersBtn">View Papers</button></a>
+
+        
       </div>
     </main>
 
