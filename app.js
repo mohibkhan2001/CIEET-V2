@@ -1,5 +1,7 @@
 
 const express = require("express");
+const bcrypt = require("bcrypt");
+const { body, validationResult } = require("express-validator");
 const path = require("path");
 const fs = require("fs");
 const puppeteer = require("puppeteer"); // Puppeteer for PDF generation
@@ -12,6 +14,102 @@ const port = 3000;
 app.use(express.static(path.join(__dirname, "public"))); // Static files in 'public' folder
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Route to handle user registration (POST)
+// const { body, validationResult } = require("express-validator");
+
+app.post(
+  "/signup",
+  [
+    body("firstname").notEmpty().withMessage("First name is required").trim().escape(),
+    body("lastname").notEmpty().withMessage("Last name is required").trim().escape(),
+    body("email").isEmail().withMessage("Enter a valid email").normalizeEmail(),
+    body("password")
+      .isLength({ min: 6 })
+      .withMessage("Password must be at least 6 characters long"),
+    body("confirmPassword")
+      .custom((value, { req }) => value === req.body.password)
+      .withMessage("Passwords must match"),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        errors: errors.array().map((error) => error.msg),
+      });
+    }
+
+    const { firstname, lastname, email, password } = req.body;
+
+    // Check if the email already exists
+    const checkEmailQuery = "SELECT * FROM users WHERE email = ?";
+    db.query(checkEmailQuery, [email], async (err, result) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ errors: ["Database error occurred"] });
+      }
+      if (result.length > 0) {
+        return res.status(400).json({ errors: ["Email already registered"] });
+      }
+
+      try {
+        // Hash the password and save user to database
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const insertUserQuery =
+          "INSERT INTO users (firstname, lastname, email, password) VALUES (?, ?, ?, ?)";
+        db.query(insertUserQuery, [firstname, lastname, email, hashedPassword], (err) => {
+          if (err) {
+            console.error(err);
+            return res.status(500).json({ errors: ["Error saving user"] });
+          }
+          res.json({ success: "Registered successfully" });
+        });
+      } catch (err) {
+        console.error(err);
+        res.status(500).json({ errors: ["Server error"] });
+      }
+    });
+  }
+);
+
+app.post("/", async (req, res) => {
+  const { email, password } = req.body;
+
+  // Basic validation
+  if (!email || !password) {
+    return res
+      .status(400)
+      .json({ errors: ["Email and password are required"] });
+  }
+
+  const query = "SELECT * FROM users WHERE email = ?";
+  db.query(query, [email], async (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res
+        .status(500)
+        .json({ errors: ["An unexpected error occurred. Please try again."] });
+    }
+
+    if (results.length === 0) {
+      return res
+        .status(401)
+        .json({ errors: ["Invalid email or password"] });
+    }
+
+    const user = results[0];
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return res
+        .status(401)
+        .json({ errors: ["Invalid email or password"] });
+    }
+
+    return res.json({ success: "Login successful" });
+  });
+});
+
 
 // Ensure papers directory exists
 const papersDir = path.join(__dirname, "papers");
@@ -86,7 +184,11 @@ app.post('/delete-file', (req, res) => {
 });
 
 // Serve Views
+
 app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "login.html"));
+});
+app.get("/index", (req, res) => {
   res.sendFile(path.join(__dirname, "views", "index.html"));
 });
 app.get("/Exam_Automation", (req, res) => {

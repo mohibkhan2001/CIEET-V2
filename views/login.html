@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CIEET Login</title>
+    <link rel="stylesheet" href="stylesheets/style.css" />
+    <link rel="stylesheet" href="stylesheets/signup.css" />
+  </head>
+  <body>
+    <header>
+      <div class="logo">
+        <span><a href="/index">CIE²T</a></span>
+      </div>
+      <nav>
+        <ul>
+          <li><a href="/questionBank">Question Databank</a></li>
+          <li><a href="/reporting">Assessment Reporting</a></li>
+          <li><a href="/Exam_Automation">Exam Automation</a></li>
+          <li><a href="/generatedPapers">Generated Papers</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </nav>
+      <div class="auth-buttons">
+        <a href="/signup" class="sign-up">Sign Up</a>
+      </div>
+    </header>
+
+    <div class="form-section">
+      <form id="loginForm">
+        <p class="title">Login</p>
+        <p class="message">Login now and get full access to CIEET.</p>
+
+        <!-- Error Messages -->
+        <div id="errorMessages" class="error-messages" style="color: red; padding: 10px; border: 1px solid red; display: none;">
+          <ul id="errorList"></ul>
+        </div>
+
+        <label>
+          <input class="input" type="email" name="email" placeholder="Enter your email" required />
+          <span>Email</span>
+        </label>
+
+        <label>
+          <input class="input" type="password" name="password" placeholder="Enter your password" required />
+          <span>Password</span>
+        </label>
+        <button type="submit" class="submit">Submit</button>
+        <p class="signin">Need an account? <a href="/signup">Sign Up</a></p>
+      </form>
+    </div>
+
+    <footer>
+      <p>&copy; 2024 CIE²T. All rights reserved.</p>
+    </footer>
+
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  // Gather form data
+  const formData = new FormData(e.target);
+  const data = Object.fromEntries(formData.entries());
+
+  try {
+    const response = await fetch("/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      // Display errors
+      const errorMessagesDiv = document.getElementById("errorMessages");
+      const errorList = document.getElementById("errorList");
+      errorMessagesDiv.style.display = "block";
+      errorList.innerHTML = result.errors.map((err) => `<li>${err}</li>`).join("");
+    } else {
+      // Success: Redirect to the homepage
+      alert(result.success);
+      window.location.href = "/index"; // Redirect to /homepage
+    }
+  } catch (err) {
+    console.error("Error during login request:", err);
+  }
+});
+
+  </script>
+  </body>
+</html>

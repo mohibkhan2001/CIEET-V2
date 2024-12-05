@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>CIEET</title>
     <link rel="stylesheet" href="stylesheets/style.css">
     <link rel="stylesheet" href="stylesheets/signup.css">
 </head>
@@ -28,39 +28,44 @@
         </div>
     </header>
 
-    <div class="form-section"><form class="form" action="/signup" method="POST">
-        <p class="title">Register </p>
-        <p class="message">Signup now and get full access to our app. </p>
-            <div class="flex">
+    <div class="form-section">
+        <form class="form" action="/signup" method="POST">
+          <p class="title">Register</p>
+          <p class="message">Signup now and get full access to our app.</p>
+          <div id="errorMessages" style="display: none; color: red; margin-bottom: 1em;">
+            <ul id="errorList"></ul>
+          </div>
+          <div class="flex">
             <label>
-                <input class="input" type="text" placeholder="" required="">
-                <span>Firstname</span>
+              <input class="input" type="text" name="firstname" placeholder="" required>
+              <span>Firstname</span>
             </label>
-    
+      
             <label>
-                <input class="input" type="text" placeholder="" required="">
-                <span>Lastname</span>
+              <input class="input" type="text" name="lastname" placeholder="" required>
+              <span>Lastname</span>
             </label>
-        </div>  
-                
-        <label>
-            <input class="input" type="email" placeholder="" required="">
+          </div>
+      
+          <label>
+            <input class="input" type="email" name="email" placeholder="" required>
             <span>Email</span>
-        </label> 
-            
-        <label>
-            <input class="input" type="password" placeholder="" required="">
+          </label>
+      
+          <label>
+            <input class="input" type="password" name="password" placeholder="" required>
             <span>Password</span>
-        </label>
-        <label>
-            <input class="input" type="password" placeholder="" required="">
+          </label>
+      
+          <label>
+            <input class="input" type="password" name="confirmPassword" placeholder="" required>
             <span>Confirm password</span>
-        </label>
-        <button class="submit">Submit</button>
-        <p class="signin">Already have an acount ? <a href="#">Signin</a> </p>
-    </form>
-</div>
-    
+          </label>
+      
+          <button class="submit">Submit</button>
+          <p class="signin">Already have an account? <a href="/">Signin</a></p>
+        </form>
+      </div>
     <footer id="contact">
         <div class="footer-content">
             <div class="footer-section">
@@ -98,5 +103,45 @@
             <p>&copy; 2024 CIE²T. All rights reserved.</p>
         </div>
     </footer>
+
+    <script>
+        document.querySelector(".form").addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const errorMessagesDiv = document.getElementById("errorMessages");
+          const errorList = document.getElementById("errorList");
+      
+          // Clear any previous error messages
+          errorMessagesDiv.style.display = "none";
+          errorList.innerHTML = "";
+      
+          const formData = new FormData(e.target);
+          const data = Object.fromEntries(formData.entries());
+      
+          try {
+            const response = await fetch("/signup", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(data),
+            });
+      
+            const result = await response.json();
+            if (!response.ok) {
+              // Display error messages
+              errorMessagesDiv.style.display = "block";
+              errorList.innerHTML = result.errors.map((msg) => `<li>${msg}</li>`).join("");
+            } else {
+              alert(result.success); // Display popup for success
+              window.location.href = "/"; // Redirect to home
+            }
+          } catch (err) {
+            console.error("Error submitting form", err);
+            errorMessagesDiv.style.display = "block";
+            errorList.innerHTML = `<li>An unexpected error occurred</li>`;
+          }
+        });
+      </script>
+      
 </body>
 </html>

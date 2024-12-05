@@ -194,10 +194,7 @@ async function selectRandomly() {
   const subject = document.querySelector("button.active").getAttribute("data-subject");
   const questionCount = parseInt(document.getElementById("random-question-count").value, 10);
 
-  if (isNaN(questionCount) || questionCount <= 0) {
-    alert("Please enter a valid number of questions.");
-    return;
-  }
+
 
   // Fetch questions for the selected subject
   const response = await fetch(`/api/questions/${subject}`);
@@ -208,6 +205,11 @@ async function selectRandomly() {
     ...data.subjective,
     ...data.mcqs
   ];
+
+  // if (isNaN(questionCount) || questionCount <= 0) {
+  //   alert("Please enter a valid number of questions.");
+  //   return;
+  // }
 
   if (questionCount > allQuestions.length) {
     alert("The number of questions exceeds the available questions. Try again.");
