@@ -284,3 +284,49 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+  fetch("/api/user-info") // Endpoint to fetch the user's session info
+    .then((response) => {
+      if (!response.ok) {
+        console.error("User not logged in");
+        return;
+      }
+      return response.json();
+    })
+    .then((data) => {
+      const user = data.user;
+      const usernameSpan = document.getElementById("username");
+
+      if (user && usernameSpan) {
+        // Display user's first and last name
+        usernameSpan.textContent = ` abcd, ${user.firstname} ${user.lastname}`;
+      }
+    })
+    .catch((err) => {
+      console.error("Failed to fetch user info:", err);
+    });
+
+  // Handle the logout button click
+  const logoutButton = document.getElementById("logout-btn");
+  if (logoutButton) {
+    logoutButton.addEventListener("click", () => {
+      fetch("/logout", {
+        method: "POST",
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            // Redirect to the homepage after successful logout
+            window.location.href = "/";
+          } else {
+            console.error("Failed to log out");
+          }
+        })
+        .catch((err) => {
+          console.error("Error logging out:", err);
+        });
+    });
+  }
+});
+

@@ -1,5 +1,6 @@
 
 const express = require("express");
+const session = require("express-session"); // Add express-session
 const bcrypt = require("bcrypt");
 const { body, validationResult } = require("express-validator");
 const path = require("path");
@@ -15,9 +16,20 @@ app.use(express.static(path.join(__dirname, "public"))); // Static files in 'pub
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+
+// Session Configuration
+app.use(
+  session({
+    secret: "your-secret-key", // Replace with a strong secret key
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false, maxAge: 60 * 60 * 1000 }, // 1-hour session
+  })
+);
 // Route to handle user registration (POST)
 // const { body, validationResult } = require("express-validator");
 
+// --------- SIGNUP ROUTE -----------
 app.post(
   "/signup",
   [
@@ -34,80 +46,101 @@ app.post(
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({
-        errors: errors.array().map((error) => error.msg),
-      });
+      return res.status(400).json({ errors: errors.array().map((error) => error.msg) });
     }
 
     const { firstname, lastname, email, password } = req.body;
 
-    // Check if the email already exists
     const checkEmailQuery = "SELECT * FROM users WHERE email = ?";
     db.query(checkEmailQuery, [email], async (err, result) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ errors: ["Database error occurred"] });
-      }
-      if (result.length > 0) {
-        return res.status(400).json({ errors: ["Email already registered"] });
-      }
+      if (err) return res.status(500).json({ errors: ["Database error occurred"] });
+      if (result.length > 0) return res.status(400).json({ errors: ["Email already registered"] });
 
       try {
-        // Hash the password and save user to database
         const hashedPassword = await bcrypt.hash(password, 10);
         const insertUserQuery =
           "INSERT INTO users (firstname, lastname, email, password) VALUES (?, ?, ?, ?)";
         db.query(insertUserQuery, [firstname, lastname, email, hashedPassword], (err) => {
-          if (err) {
-            console.error(err);
-            return res.status(500).json({ errors: ["Error saving user"] });
-          }
+          if (err) return res.status(500).json({ errors: ["Error saving user"] });
           res.json({ success: "Registered successfully" });
         });
       } catch (err) {
-        console.error(err);
         res.status(500).json({ errors: ["Server error"] });
       }
     });
   }
 );
 
+// --------- LOGIN ROUTE -----------
 app.post("/", async (req, res) => {
   const { email, password } = req.body;
 
-  // Basic validation
   if (!email || !password) {
-    return res
-      .status(400)
-      .json({ errors: ["Email and password are required"] });
+    return res.status(400).json({ errors: ["Email and password are required"] });
   }
 
   const query = "SELECT * FROM users WHERE email = ?";
   db.query(query, [email], async (err, results) => {
     if (err) {
-      console.error("Database error:", err);
-      return res
-        .status(500)
-        .json({ errors: ["An unexpected error occurred. Please try again."] });
+      return res.status(500).json({ errors: ["Database error"] });
     }
-
     if (results.length === 0) {
-      return res
-        .status(401)
-        .json({ errors: ["Invalid email or password"] });
+      return res.status(401).json({ errors: ["Invalid email or password"] });
     }
 
     const user = results[0];
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-      return res
-        .status(401)
-        .json({ errors: ["Invalid email or password"] });
+      return res.status(401).json({ errors: ["Invalid email or password"] });
     }
 
-    return res.json({ success: "Login successful" });
+    // Store user details in session
+    req.session.user = {
+      id: user.user_id, // Ensure this matches the actual column name in your 'users' table
+      firstname: user.firstname,
+      lastname: user.lastname,
+      email: user.email,
+    };
+
+    res.json({ success: "Login successful" });
   });
+});
+
+
+app.get('/api/user-info', (req, res) => {
+  if (req.session.user) {
+    res.json({ user: req.session.user });
+  } else {
+    res.status(401).json({ message: "Not logged in" });
+  }
+});
+
+// --------- LOGOUT ROUTE -----------
+app.post("/logout", (req, res) => {
+  if (req.session.user) {
+    req.session.destroy((err) => {
+      if (err) return res.status(500).json({ error: "Failed to logout" });
+      res.json({ success: "Logged out successfully" });
+    });
+  } else {
+    res.status(400).json({ error: "No active session" });
+  }
+});
+
+
+// --------- PROTECT ROUTE MIDDLEWARE -----------
+const requireAuth = (req, res, next) => {
+  if (req.session.user) {
+    next();
+  } else {
+    res.status(401).json({ error: "Unauthorized access. Please login." });
+  }
+};
+
+// --------- PROTECTED ROUTE EXAMPLE -----------
+app.get("/protected", requireAuth, (req, res) => {
+  res.json({ message: `Welcome, ${req.session.user.name}! You are logged in.` });
 });
 
 
@@ -201,8 +234,60 @@ app.get("/questionBank", (req, res) => {
   res.sendFile(path.join(__dirname, "views", "questionBank.html"));
 });
 app.get("/generatedPapers", (req, res) => {
-  res.sendFile(path.join(__dirname, "views", "generatedPapers.html"));
+  // Ensure the user is logged in
+  if (!req.session.user) {
+    return res.status(401).json({ errors: ["Please log in to access generated papers"] });
+  }
+
+  const userId = req.session.user.id; // Get user_id from session
+
+  // Query the database to get PDFs created by the logged-in user
+  const query = "SELECT * FROM generated_pdfs WHERE user_id = ?";
+  db.query(query, [userId], (err, results) => {
+    if (err) {
+      return res.status(500).json({ errors: ["Database error"] });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: "No generated papers found" });
+    }
+
+    // Render the page or send the PDF list as response
+    res.render("generatedPapers", { pdfs: results });
+  });
 });
+
+
+app.post("/generatePdf", (req, res) => {
+  // Ensure the user is logged in
+  if (!req.session.user) {
+    return res.status(401).json({ errors: ["Please log in to generate a PDF"] });
+  }
+
+  const userId = req.session.user.id; // Get user_id from session
+  const { fileName, content } = req.body; // Assuming you're passing file name and content for the PDF
+
+  // Generate PDF (using a hypothetical `generatePdf` function)
+  const pdfPath = path.join(__dirname, "pdfs", `${fileName}.pdf`);
+  
+  generatePdf(content, pdfPath)  // Your function that generates the PDF
+    .then(() => {
+      // Insert the generated PDF details into the database
+      const query = "INSERT INTO generated_pdfs (file_name, user_id, created_at) VALUES (?, ?, NOW())";
+      db.query(query, [fileName, userId], (err, results) => {
+        if (err) {
+          return res.status(500).json({ errors: ["Failed to save the generated PDF"] });
+        }
+
+        // Return a success response
+        res.json({ success: "PDF generated successfully" });
+      });
+    })
+    .catch((err) => {
+      return res.status(500).json({ errors: ["Failed to generate PDF"] });
+    });
+});
+
 app.get("/signup", (req, res) => {
   res.sendFile(path.join(__dirname, "views", "signup.html"));
 });

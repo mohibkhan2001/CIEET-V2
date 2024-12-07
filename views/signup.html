@@ -141,6 +141,34 @@
             errorList.innerHTML = `<li>An unexpected error occurred</li>`;
           }
         });
+
+        // Simulated user data (replace with actual user data from backend)
+const authContainer = document.getElementById("auth-buttons");
+
+// Fetch user info from backend API after page loads
+document.addEventListener("DOMContentLoaded", () => {
+  fetch("/api/user-info") // Fetch user session info from backend
+    .then((response) => {
+      if (!response.ok) {
+        console.error("User not logged in");
+        return;
+      }
+      return response.json();
+    })
+    .then((data) => {
+      const user = data.user;
+      const usernameSpan = document.getElementById("username");
+
+      if (user && usernameSpan) {
+        // Display user's first and last name
+        usernameSpan.textContent = `Welcome, ${user.firstname} ${user.lastname}`;
+      }
+    })
+    .catch((err) => {
+      console.error("Failed to fetch user info:", err);
+    });
+});
+
       </script>
       
 </body>
