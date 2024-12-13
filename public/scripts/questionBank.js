@@ -38,6 +38,7 @@ async function showQuestions(subject) {
     if (!response.ok) throw new Error("Failed to fetch questions");
 
     const data = await response.json();
+
     if (
       (!data.subjective || data.subjective.length === 0) &&
       (!data.mcqs || data.mcqs.length === 0)
@@ -47,43 +48,50 @@ async function showQuestions(subject) {
     }
 
     // Display Subjective Questions
-    data.subjective.forEach((question) => {
-      const questionItem = document.createElement("div");
-      questionItem.classList.add("question-item");
-      questionItem.innerHTML = `
-        <div class="check_container">
-          <input id="checkbox-${question.id}" class="hidden" type="checkbox" value="${question.id}" name="questions">
-          <label class="checkbox" for="checkbox-${question.id}"></label>
-        </div>
-        <span>${question.question_text}</span>
-        <div class="question-details">
-          <div>Year: ${question.year}</div>
-          <div>Type: ${question.question_type}</div>
-        </div>`;
-      questionList.appendChild(questionItem);
-    });
+    if (data.subjective && data.subjective.length > 0) {
+      data.subjective.forEach((question) => {
+        const questionItem = document.createElement("div");
+        questionItem.classList.add("question-item");
+        questionItem.innerHTML = `
+          <div class="check_container">
+            <input id="checkbox-${question.id}" class="hidden" type="checkbox" value="${question.id}" name="questions">
+            <label class="checkbox" for="checkbox-${question.id}"></label>
+          </div>
+          <span>${question.question_text}</span>
+          <div class="question-details">
+            <div><strong>Year:</strong> ${question.year}</div>
+            <div><strong>Type:</strong> ${question.question_type}</div>
+          </div>`;
+        questionList.appendChild(questionItem);
+      });
+    }
 
     // Display MCQ Questions
-    data.mcqs.forEach((question) => {
-      const questionItem = document.createElement("div");
-      questionItem.classList.add("question-item");
-      questionItem.innerHTML = `
-        <div class="check_container">
-          <input id="checkbox-${question.id}" class="hidden" type="checkbox" value="${question.id}" name="questions">
-          <label class="checkbox" for="checkbox-${question.id}"></label>
-        </div>
-        <span>${question.question_text}</span>
-        <div class="question-details">
-          <div>Options:</div>
-          <ul>
-            ${question.options
-              .map((option) => `<li>${option.option}: ${option.text}</li>`)
-              .join("")}
-          </ul>
-          <div>Correct Answer: ${question.correct_answer}</div>
-        </div>`;
-      questionList.appendChild(questionItem);
-    });
+    if (data.mcqs && data.mcqs.length > 0) {
+      data.mcqs.forEach((question) => {
+        const questionItem = document.createElement("div");
+        questionItem.classList.add("question-item");
+        questionItem.innerHTML = `
+          <div class="check_container">
+            <input id="checkbox-${question.id}" class="hidden" type="checkbox" value="${question.id}" name="questions">
+            <label class="checkbox" for="checkbox-${question.id}"></label>
+          </div>
+          <span>${question.question_text}</span>
+          <div class="question-details">
+            <div><strong>Options:</strong></div>
+            <ul>
+              ${question.options
+                .map((opt) => `<li>${opt.option}: ${opt.text}</li>`)
+                .join("")}
+            </ul>
+            <div><strong>Correct Answer:</strong> ${question.correct_answer}</div>
+            <div><strong>Year:</strong> ${question.year}</div>
+            <div><strong>Type:</strong> ${question.type || "N/A"}</div>
+          </div>`;
+        questionList.appendChild(questionItem);
+      });
+    }
+    
   } catch (error) {
     console.error("Error fetching questions:", error);
     questionList.innerHTML = "<p>Failed to load questions. Try again later.</p>";
@@ -92,6 +100,7 @@ async function showQuestions(subject) {
     hideLoader();
   }
 }
+
 
 // Function to filter questions based on search and selected filters
 function filterQuestions() {

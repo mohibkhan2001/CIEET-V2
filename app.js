@@ -23,7 +23,7 @@ app.use(
     secret: "your-secret-key", // Replace with a strong secret key
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false, maxAge: 60 * 60 * 1000 }, // 1-hour session
+    cookie: { secure: process.env.NODE_ENV === "production", maxAge: 60 * 60 * 1000 }, // 1-hour session // 1-hour session
   })
 );
 // Route to handle user registration (POST)
@@ -180,7 +180,10 @@ app.post('/rename-file', validateInput,  (req, res) => {
             console.error('Error renaming file:', err);
             return res.status(500).json({ success: false, error: 'Error renaming file' });
         }
-
+        if (!fs.existsSync(oldFilePath)) {
+          return res.status(404).json({ error: "File not found" });
+        }
+        
         // Update the database with the new filename
         const updateQuery = 'UPDATE generated_pdfs SET filename = ? WHERE filename = ?';
         db.query(updateQuery, [newFileName, oldFileName], (err) => {
@@ -236,7 +239,7 @@ app.get("/questionBank", (req, res) => {
 app.get("/generatedPapers", (req, res) => {
   // Ensure the user is logged in
   if (!req.session.user) {
-    return res.status(401).json({ errors: ["Please log in to access generated papers"] });
+    return res.status(401).json({ errors: ["Please log in to generate a PDF"] });
   }
 
   const userId = req.session.user.id; // Get user_id from session
@@ -248,12 +251,23 @@ app.get("/generatedPapers", (req, res) => {
       return res.status(500).json({ errors: ["Database error"] });
     }
 
+    // Serve the generatedPapers.html page if no errors
+    res.sendFile(path.join(__dirname, "views", "generatedPapers.html"));
+
+    // Ensure we handle the response after serving the page (for database query)
     if (results.length === 0) {
       return res.status(404).json({ message: "No generated papers found" });
     }
 
-    // Render the page or send the PDF list as response
-    res.render("generatedPapers", { pdfs: results });
+    // Pass the generated papers data to the frontend
+    res.json({
+      papers: results.map(paper => ({
+        filename: paper.filename,
+        fileSize: paper.size,
+        creationDate: paper.creation_date,
+        creationTime: paper.creation_time
+      }))
+    });
   });
 });
 
@@ -274,7 +288,8 @@ app.post("/generatePdf", (req, res) => {
     .then(() => {
       // Insert the generated PDF details into the database
       const query = "INSERT INTO generated_pdfs (file_name, user_id, created_at) VALUES (?, ?, NOW())";
-      db.query(query, [fileName, userId], (err, results) => {
+db.query(query, [fileName, userId], (err, results) => {
+
         if (err) {
           return res.status(500).json({ errors: ["Failed to save the generated PDF"] });
         }
@@ -302,7 +317,7 @@ app.get("/api/questions/:subject", (req, res) => {
         WHERE subject = ?
     `;
   const mcqQuery = `
-        SELECT id, question_text, option_a, option_b, option_c, option_d, correct_answer
+        SELECT id, question_text, option_a, option_b, option_c, option_d, correct_answer, year
         FROM mcq_questions
         WHERE subject = ?
     `;
@@ -313,6 +328,7 @@ app.get("/api/questions/:subject", (req, res) => {
     db.query(mcqQuery, [subject], (err, mcqResults) => {
       if (err) return res.status(500).json({ error: "Failed to fetch MCQs" });
 
+      // Format subjective questions
       const formattedSubjective = subjectiveResults.map((q) => ({
         id: q.id,
         question_text: q.question_text,
@@ -321,22 +337,27 @@ app.get("/api/questions/:subject", (req, res) => {
         question_type: `TYPE: ${q.question_type.toUpperCase()}`,
       }));
 
+      // Format MCQs (Ensure options and year are correctly displayed)
       const formattedMcqs = mcqResults.map((q) => ({
         id: q.id,
         question_text: q.question_text,
+        year: `YEAR: ${q.year || "N/A"}`,
         options: [
-          { option: "A", text: q.option_a },
-          { option: "B", text: q.option_b },
-          { option: "C", text: q.option_c },
-          { option: "D", text: q.option_d },
+          { option: "A", text: q.option_a || "N/A" },
+          { option: "B", text: q.option_b || "N/A" },
+          { option: "C", text: q.option_c || "N/A" },
+          { option: "D", text: q.option_d || "N/A" },
         ],
-        correct_answer: q.correct_answer,
+        correct_answer: q.correct_answer || "N/A",
       }));
+      
+      
 
       res.json({ subjective: formattedSubjective, mcqs: formattedMcqs });
     });
   });
 });
+
 
 // Generate PDF Route with Puppeteer
 app.post("/generate-pdf", async (req, res) => {
@@ -486,8 +507,9 @@ app.post("/generate-pdf", async (req, res) => {
 
         await browser.close();
 
-        const insertQuery = "INSERT INTO generated_pdfs (filename, created_at) VALUES (?, NOW())";
-        db.query(insertQuery, [pdfFileName], (err) => {
+        const insertQuery = "INSERT INTO generated_pdfs (filename, user_id, created_at) VALUES (?, ?, NOW())";
+        db.query(insertQuery, [pdfFileName, req.session.user.id], (err) => {
+        
           if (err) return res.status(500).json({ success: false, error: "Failed to save PDF details" });
 
           res.json({ success: true, pdfFileName });
@@ -502,9 +524,8 @@ app.post("/generate-pdf", async (req, res) => {
 
 // Generated Papers List
 app.get("/api/generated-papers", (req, res) => {
-  const query = "SELECT filename, created_at FROM generated_pdfs ORDER BY created_at DESC";
-
-  db.query(query, (err, results) => {
+  const query = "SELECT filename, created_at FROM generated_pdfs WHERE user_id = ? ORDER BY created_at DESC";
+db.query(query, [req.session.user.id], (err, results) => {
     if (err) return res.status(500).json({ error: "Failed to fetch generated papers" });
 
     const enrichedResults = results.map((paper) => {
