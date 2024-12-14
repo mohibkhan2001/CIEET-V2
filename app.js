@@ -1,4 +1,3 @@
-
 const express = require("express");
 const session = require("express-session"); // Add express-session
 const bcrypt = require("bcrypt");
@@ -16,14 +15,16 @@ app.use(express.static(path.join(__dirname, "public"))); // Static files in 'pub
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-
 // Session Configuration
 app.use(
   session({
     secret: "your-secret-key", // Replace with a strong secret key
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: process.env.NODE_ENV === "production", maxAge: 60 * 60 * 1000 }, // 1-hour session // 1-hour session
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 1000,
+    }, // 1-hour session // 1-hour session
   })
 );
 // Route to handle user registration (POST)
@@ -33,8 +34,16 @@ app.use(
 app.post(
   "/signup",
   [
-    body("firstname").notEmpty().withMessage("First name is required").trim().escape(),
-    body("lastname").notEmpty().withMessage("Last name is required").trim().escape(),
+    body("firstname")
+      .notEmpty()
+      .withMessage("First name is required")
+      .trim()
+      .escape(),
+    body("lastname")
+      .notEmpty()
+      .withMessage("Last name is required")
+      .trim()
+      .escape(),
     body("email").isEmail().withMessage("Enter a valid email").normalizeEmail(),
     body("password")
       .isLength({ min: 6 })
@@ -46,24 +55,33 @@ app.post(
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array().map((error) => error.msg) });
+      return res
+        .status(400)
+        .json({ errors: errors.array().map((error) => error.msg) });
     }
 
     const { firstname, lastname, email, password } = req.body;
 
     const checkEmailQuery = "SELECT * FROM users WHERE email = ?";
     db.query(checkEmailQuery, [email], async (err, result) => {
-      if (err) return res.status(500).json({ errors: ["Database error occurred"] });
-      if (result.length > 0) return res.status(400).json({ errors: ["Email already registered"] });
+      if (err)
+        return res.status(500).json({ errors: ["Database error occurred"] });
+      if (result.length > 0)
+        return res.status(400).json({ errors: ["Email already registered"] });
 
       try {
         const hashedPassword = await bcrypt.hash(password, 10);
         const insertUserQuery =
           "INSERT INTO users (firstname, lastname, email, password) VALUES (?, ?, ?, ?)";
-        db.query(insertUserQuery, [firstname, lastname, email, hashedPassword], (err) => {
-          if (err) return res.status(500).json({ errors: ["Error saving user"] });
-          res.json({ success: "Registered successfully" });
-        });
+        db.query(
+          insertUserQuery,
+          [firstname, lastname, email, hashedPassword],
+          (err) => {
+            if (err)
+              return res.status(500).json({ errors: ["Error saving user"] });
+            res.json({ success: "Registered successfully" });
+          }
+        );
       } catch (err) {
         res.status(500).json({ errors: ["Server error"] });
       }
@@ -76,7 +94,9 @@ app.post("/", async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return res.status(400).json({ errors: ["Email and password are required"] });
+    return res
+      .status(400)
+      .json({ errors: ["Email and password are required"] });
   }
 
   const query = "SELECT * FROM users WHERE email = ?";
@@ -107,8 +127,7 @@ app.post("/", async (req, res) => {
   });
 });
 
-
-app.get('/api/user-info', (req, res) => {
+app.get("/api/user-info", (req, res) => {
   if (req.session.user) {
     res.json({ user: req.session.user });
   } else {
@@ -128,7 +147,6 @@ app.post("/logout", (req, res) => {
   }
 });
 
-
 // --------- PROTECT ROUTE MIDDLEWARE -----------
 const requireAuth = (req, res, next) => {
   if (req.session.user) {
@@ -140,29 +158,42 @@ const requireAuth = (req, res, next) => {
 
 // --------- PROTECTED ROUTE EXAMPLE -----------
 app.get("/protected", requireAuth, (req, res) => {
-  res.json({ message: `Welcome, ${req.session.user.name}! You are logged in.` });
+  res.json({
+    message: `Welcome, ${req.session.user.name}! You are logged in.`,
+  });
 });
-
 
 // Ensure papers directory exists
 const papersDir = path.join(__dirname, "papers");
 if (!fs.existsSync(papersDir)) {
   fs.mkdirSync(papersDir);
 }
-app.get('/download-pdf/:filename', (req, res) => {
-    const fileName = req.params.filename;
-    const filePath = path.join(papersDir, fileName); // Corrected path
-    
+
+app.get("/download-pdf/:filename", (req, res) => {
+  const fileName = req.params.filename;
+  const filePath = path.join(papersDir, fileName); // Construct the correct file path
+
+  // Check if the file exists
+  fs.access(filePath, fs.constants.F_OK, (err) => {
+    if (err) {
+      console.error("File not found:", err);
+      return res.status(404).send("File not found");
+    }
+
+    // Send the file if it exists
     res.sendFile(filePath, (err) => {
-        if (err) {
-            console.error('Error sending file:', err);
-            res.status(500).send('Unable to download file');
-        }
+      if (err) {
+        console.error("Error sending file:", err);
+        return res.status(500).send("Unable to download file");
+      }
     });
+  });
 });
 const validateInput = (req, res, next) => {
   const { oldFileName, newFileName } = req.body;
-  const isValidName = /^[a-zA-Z0-9-_ ]+$/.test(oldFileName) && /^[a-zA-Z0-9-_ ]+$/.test(newFileName);
+  const isValidName =
+    /^[a-zA-Z0-9-_ ]+$/.test(oldFileName) &&
+    /^[a-zA-Z0-9-_ ]+$/.test(newFileName);
 
   if (!isValidName) {
     return res.status(400).json({ success: false, error: "Invalid file name" });
@@ -170,53 +201,68 @@ const validateInput = (req, res, next) => {
   next();
 };
 
-app.post('/rename-file', validateInput,  (req, res) => {
-    const { oldFileName, newFileName } = req.body;
-    const oldFilePath = path.join(papersDir, oldFileName);
-    const newFilePath = path.join(papersDir, newFileName);
+app.post("/rename-file", validateInput, (req, res) => {
+  const { oldFileName, newFileName } = req.body;
+  const oldFilePath = path.join(papersDir, oldFileName);
+  const newFilePath = path.join(papersDir, newFileName);
 
-    fs.rename(oldFilePath, newFilePath, (err) => {
-        if (err) {
-            console.error('Error renaming file:', err);
-            return res.status(500).json({ success: false, error: 'Error renaming file' });
-        }
-        if (!fs.existsSync(oldFilePath)) {
-          return res.status(404).json({ error: "File not found" });
-        }
-        
-        // Update the database with the new filename
-        const updateQuery = 'UPDATE generated_pdfs SET filename = ? WHERE filename = ?';
-        db.query(updateQuery, [newFileName, oldFileName], (err) => {
-            if (err) {
-                console.error('Error updating filename in database:', err);
-                return res.status(500).json({ success: false, error: 'Error updating filename in database' });
-            }
+  // Check if the old file exists before renaming
+  if (!fs.existsSync(oldFilePath)) {
+    return res.status(404).json({ error: "File not found" });
+  }
 
-            res.json({ success: true });
-        });
+  fs.rename(oldFilePath, newFilePath, (err) => {
+    if (err) {
+      console.error("Error renaming file:", err);
+      return res
+        .status(500)
+        .json({ success: false, error: "Error renaming file" });
+    }
+
+    // Update the database with the new filename
+    const updateQuery =
+      "UPDATE generated_pdfs SET filename = ? WHERE filename = ?";
+    db.query(updateQuery, [newFileName, oldFileName], (err) => {
+      if (err) {
+        console.error("Error updating filename in database:", err);
+        return res
+          .status(500)
+          .json({
+            success: false,
+            error: "Error updating filename in database",
+          });
+      }
+
+      res.json({ success: true });
     });
+  });
 });
-app.post('/delete-file', (req, res) => {
-    const { fileName } = req.body;
-    const filePath = path.join(papersDir, fileName);
 
-    fs.unlink(filePath, (err) => {
-        if (err) {
-            console.error('Error deleting file:', err);
-            return res.status(500).json({ success: false, error: 'Error deleting file' });
-        }
+app.post("/delete-file", (req, res) => {
+  const { fileName } = req.body;
+  const filePath = path.join(papersDir, fileName);
 
-        // Remove from the database as well
-        const deleteQuery = 'DELETE FROM generated_pdfs WHERE filename = ?';
-        db.query(deleteQuery, [fileName], (err) => {
-            if (err) {
-                console.error('Error deleting file from database:', err);
-                return res.status(500).json({ success: false, error: 'Error deleting file from database' });
-            }
+  fs.unlink(filePath, (err) => {
+    if (err) {
+      console.error("Error deleting file:", err);
+      return res
+        .status(500)
+        .json({ success: false, error: "Error deleting file" });
+    }
 
-            res.json({ success: true });
-        });
+    // Remove from the database as well
+    const deleteQuery = "DELETE FROM generated_pdfs WHERE filename = ?";
+    db.query(deleteQuery, [fileName], (err) => {
+      if (err) {
+        console.error("Error deleting file from database:", err);
+        return res
+          .status(500)
+          .json({ success: false, error: "Error deleting file from database" });
+      }
+
+      res.json({ success: true });
     });
+  });
 });
 
 // Serve Views
@@ -236,46 +282,65 @@ app.get("/reporting", (req, res) => {
 app.get("/questionBank", (req, res) => {
   res.sendFile(path.join(__dirname, "views", "questionBank.html"));
 });
+// Route to serve the generatedPapers page (HTML)
 app.get("/generatedPapers", (req, res) => {
   // Ensure the user is logged in
   if (!req.session.user) {
-    return res.status(401).json({ errors: ["Please log in to generate a PDF"] });
+    return res
+      .status(401)
+      .json({ errors: ["Please log in to generate a PDF"] });
   }
 
-  const userId = req.session.user.id; // Get user_id from session
+  // Serve the generatedPapers.html page
+  res.sendFile(path.join(__dirname, "views", "generatedPapers.html"));
+});
+
+// Route to fetch the generated papers (API)
+app.get("/api/generated-papers", (req, res) => {
+  // Ensure the user is logged in
+  if (!req.session.user) {
+    return res.status(401).json({ errors: ["Please log in to view generated PDFs"] });
+  }
+
+  const userId = req.session.user.id; // Get user_id from the session
 
   // Query the database to get PDFs created by the logged-in user
-  const query = "SELECT * FROM generated_pdfs WHERE user_id = ?";
+  const query = "SELECT filename, created_at FROM generated_pdfs WHERE user_id = ?";
   db.query(query, [userId], (err, results) => {
     if (err) {
+      console.error("Database error:", err);
       return res.status(500).json({ errors: ["Database error"] });
     }
 
-    // Serve the generatedPapers.html page if no errors
-    res.sendFile(path.join(__dirname, "views", "generatedPapers.html"));
-
-    // Ensure we handle the response after serving the page (for database query)
     if (results.length === 0) {
       return res.status(404).json({ message: "No generated papers found" });
     }
 
-    // Pass the generated papers data to the frontend
+    // Send the generated papers as JSON
     res.json({
-      papers: results.map(paper => ({
+      papers: results.map((paper) => ({
         filename: paper.filename,
-        fileSize: paper.size,
-        creationDate: paper.creation_date,
-        creationTime: paper.creation_time
-      }))
+        createdAt: paper.created_at, // Sending created_at as createdAt
+      })),
     });
   });
 });
 
+app.get("/api/user-info", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ errors: ["User not logged in"] });
+  }
+
+  // Return the user's info (adjust as necessary based on your session data)
+  res.json({ user: req.session.user });
+});
 
 app.post("/generatePdf", (req, res) => {
   // Ensure the user is logged in
   if (!req.session.user) {
-    return res.status(401).json({ errors: ["Please log in to generate a PDF"] });
+    return res
+      .status(401)
+      .json({ errors: ["Please log in to generate a PDF"] });
   }
 
   const userId = req.session.user.id; // Get user_id from session
@@ -283,15 +348,17 @@ app.post("/generatePdf", (req, res) => {
 
   // Generate PDF (using a hypothetical `generatePdf` function)
   const pdfPath = path.join(__dirname, "pdfs", `${fileName}.pdf`);
-  
-  generatePdf(content, pdfPath)  // Your function that generates the PDF
+
+  generatePdf(content, pdfPath) // Your function that generates the PDF
     .then(() => {
       // Insert the generated PDF details into the database
-      const query = "INSERT INTO generated_pdfs (file_name, user_id, created_at) VALUES (?, ?, NOW())";
-db.query(query, [fileName, userId], (err, results) => {
-
+      const query =
+        "INSERT INTO generated_pdfs (file_name, user_id, created_at) VALUES (?, ?, NOW())";
+      db.query(query, [fileName, userId], (err, results) => {
         if (err) {
-          return res.status(500).json({ errors: ["Failed to save the generated PDF"] });
+          return res
+            .status(500)
+            .json({ errors: ["Failed to save the generated PDF"] });
         }
 
         // Return a success response
@@ -323,7 +390,10 @@ app.get("/api/questions/:subject", (req, res) => {
     `;
 
   db.query(subjectiveQuery, [subject], (err, subjectiveResults) => {
-    if (err) return res.status(500).json({ error: "Failed to fetch subjective questions" });
+    if (err)
+      return res
+        .status(500)
+        .json({ error: "Failed to fetch subjective questions" });
 
     db.query(mcqQuery, [subject], (err, mcqResults) => {
       if (err) return res.status(500).json({ error: "Failed to fetch MCQs" });
@@ -350,15 +420,13 @@ app.get("/api/questions/:subject", (req, res) => {
         ],
         correct_answer: q.correct_answer || "N/A",
       }));
-      
-      
 
       res.json({ subjective: formattedSubjective, mcqs: formattedMcqs });
     });
   });
 });
 
-
+// Generate PDF Route with Puppeteer
 // Generate PDF Route with Puppeteer
 app.post("/generate-pdf", async (req, res) => {
   const { subject, questions, pdfName } = req.body;
@@ -524,13 +592,17 @@ app.post("/generate-pdf", async (req, res) => {
 
 // Generated Papers List
 app.get("/api/generated-papers", (req, res) => {
-  const query = "SELECT filename, created_at FROM generated_pdfs WHERE user_id = ? ORDER BY created_at DESC";
-db.query(query, [req.session.user.id], (err, results) => {
-    if (err) return res.status(500).json({ error: "Failed to fetch generated papers" });
+  const query =
+    "SELECT filename, created_at FROM generated_pdfs WHERE user_id = ? ORDER BY created_at DESC";
+  db.query(query, [req.session.user.id], (err, results) => {
+    if (err)
+      return res
+        .status(500)
+        .json({ error: "Failed to fetch generated papers" });
 
     const enrichedResults = results.map((paper) => {
       const filePath = path.join(papersDir, paper.filename);
-      
+
       // Log the file path to ensure it's correct
       console.log("Checking file path: ", filePath);
 
@@ -540,15 +612,15 @@ db.query(query, [req.session.user.id], (err, results) => {
 
       try {
         const stats = fs.statSync(filePath);
-        console.log("File stats: ", stats);  // Log stats to verify
+        console.log("File stats: ", stats); // Log stats to verify
 
         // File Size (in KB)
         fileSize = (stats.size / 1024).toFixed(2) + " KB";
 
         // Creation Date and Time
         const birthTime = stats.birthtime;
-        creationDate = birthTime.toISOString().split('T')[0]; // YYYY-MM-DD
-        creationTime = birthTime.toISOString().split('T')[1].split('.')[0]; // HH:MM:SS
+        creationDate = birthTime.toISOString().split("T")[0]; // YYYY-MM-DD
+        creationTime = birthTime.toISOString().split("T")[1].split(".")[0]; // HH:MM:SS
       } catch (err) {
         console.error(`Error fetching stats for file: ${paper.filename}`, err);
       }
@@ -558,7 +630,7 @@ db.query(query, [req.session.user.id], (err, results) => {
         ...paper,
         size: fileSize,
         creationDate: creationDate,
-        creationTime: creationTime
+        creationTime: creationTime,
       };
     });
 

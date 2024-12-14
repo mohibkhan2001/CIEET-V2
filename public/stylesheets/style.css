@@ -403,8 +403,8 @@
 
 /* Username text styling */
 .username {
-  font-weight: bold;
-  color: #fff;
+  background-color: #fff;
+  color: #003366;
   font-size: 16px; /* Keep the font size unchanged */
   padding: 15px;
   transition: background-color 0.3s ease;
@@ -413,7 +413,6 @@
 }
 
 /* Dropdown content container (hidden by default) */
-/* Dropdown content container (hidden by default) */
 .dropdown-content {
   display: none;
   position: absolute;
@@ -421,7 +420,7 @@
   min-width: 160px;
   box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
   z-index: 1;
-  border-radius: 5px;
+  /* border-radius: 5px; */
   top: 100%; /* Position below the username */
   right: 0;
   opacity: 0;
@@ -460,6 +459,5 @@
 .username:hover {
   background-color: #f0f0f0;
   color: #003366;
-  border-radius: 5px;
 }
 
