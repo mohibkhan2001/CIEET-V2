@@ -35,7 +35,7 @@
         <div class="dropdown">
           <span id="username" class="username"></span>
           <div class="dropdown-content">
-            <a href="#" id="logout-btn">Log Out</a>
+            <a href="/" id="logout-btn">Log Out</a>
           </div>
         </div>
       </div>
@@ -51,9 +51,6 @@
         <thead>
           <tr>
             <th class="header-title">File Name</th>
-            <th class="header-title">File Size</th>
-            <th class="header-title">Creation Date</th>
-            <th class="header-title">Creation Time</th>
             <th class="header-title">Actions</th>
           </tr>
         </thead>
@@ -66,22 +63,6 @@
     </div>
 
     <script>
-      // Function to format file size (bytes to human-readable format)
-      function formatFileSize(bytes) {
-        if (!bytes || isNaN(bytes)) {
-          return "N/A"; // Return 'N/A' if size is not available or invalid
-        }
-        const units = ["B", "KB", "MB", "GB"];
-        let size = Number(bytes);
-    
-        let unitIndex = 0;
-        while (size >= 1024 && unitIndex < units.length - 1) {
-          size /= 1024;
-          unitIndex++;
-        }
-        return `${size.toFixed(2)} ${units[unitIndex]}`;
-      }
-    
       // Function to fetch generated papers and display them
       async function fetchGeneratedPapers() {
         try {
@@ -104,9 +85,6 @@
           }
     
           papers.forEach((paper) => {
-            const createdAt = new Date(paper.created_at); // Convert created_at to JS Date
-            const fileSize = paper.size ? formatFileSize(paper.size) : "N/A"; // Default to 'N/A' if size is missing
-    
             const paperRow = document.createElement("tr");
             paperRow.innerHTML = `
               <td>
@@ -117,9 +95,6 @@
                    ${paper.filename}
                 </a>
               </td>
-              <td class="file-size">${fileSize}</td>
-              <td class="date-created">${createdAt.toLocaleDateString()}</td>
-              <td class="time-created">${createdAt.toLocaleTimeString()}</td>
               <td class="actions">
                 <button class="rename-btn" onclick="renameFile('${paper.filename}')">
                   Rename <i class="fa-solid fa-pen"></i>
@@ -206,54 +181,52 @@
         }
       }
     
-      const authContainer = document.getElementById("auth-buttons");
-
-// Fetch user info from backend API after page loads
-document.addEventListener("DOMContentLoaded", () => {
-  fetch("/api/user-info") // Endpoint to fetch the user's session info
-    .then((response) => {
-      if (!response.ok) {
-        console.error("User not logged in");
-        return;
-      }
-      return response.json();
-    })
-    .then((data) => {
-      const user = data.user;
-      const usernameSpan = document.getElementById("username");
-
-      if (user && usernameSpan) {
-        // Display user's first and last name
-        usernameSpan.textContent = `${user.firstname} ${user.lastname}`;
-      }
-    })
-    .catch((err) => {
-      console.error("Failed to fetch user info:", err);
-    });
-
-  // Handle the logout button click
-  const logoutButton = document.getElementById("logout-btn");
-  if (logoutButton) {
-    logoutButton.addEventListener("click", () => {
-      fetch("/logout", {
-        method: "POST",
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.success) {
-            // Redirect to the homepage after successful logout
-            window.location.href = "/";
-          } else {
-            console.error("Failed to log out");
-          }
-        })
-        .catch((err) => {
-          console.error("Error logging out:", err);
-        });
-    });
-  }
-});
-
+      // Fetch user info from backend API after page loads
+      document.addEventListener("DOMContentLoaded", () => {
+        fetch("/api/user-info") // Endpoint to fetch the user's session info
+          .then((response) => {
+            if (!response.ok) {
+              console.error("User not logged in");
+              return;
+            }
+            return response.json();
+          })
+          .then((data) => {
+            const user = data.user;
+            const usernameSpan = document.getElementById("username");
+    
+            if (user && usernameSpan) {
+              // Display user's first and last name
+              usernameSpan.textContent = `${user.firstname} ${user.lastname}`;
+            }
+          })
+          .catch((err) => {
+            console.error("Failed to fetch user info:", err);
+          });
+    
+        // Handle the logout button click
+        const logoutButton = document.getElementById("logout-btn");
+        if (logoutButton) {
+          logoutButton.addEventListener("click", () => {
+            fetch("/logout", {
+              method: "POST",
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.success) {
+                  // Redirect to the homepage after successful logout
+                  window.location.href = "/";
+                } else {
+                  console.error("Failed to log out");
+                }
+              })
+              .catch((err) => {
+                console.error("Error logging out:", err);
+              });
+          });
+        }
+      });
+    
       // Fetch generated papers on page load
       document.addEventListener("DOMContentLoaded", () => {
         fetchGeneratedPapers();
@@ -276,6 +249,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
     </script>
+    
     
   </body>
 </html>

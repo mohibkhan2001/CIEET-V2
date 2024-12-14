@@ -185,6 +185,7 @@ async function handleGeneratePDF(event) {
     const data = await response.json();
 
     if (data.success) {
+      const fileSize = formatFileSize(data.size); // Format the size
       alert(`PDF Generated Successfully: ${data.pdfFileName}`);
     } else {
       alert(`Error: ${data.error}`);
@@ -197,6 +198,15 @@ async function handleGeneratePDF(event) {
     hideLoader();
   }
 }
+
+// Helper function to format file size from bytes to B, KB, MB, etc.
+function formatFileSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  else if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' KB';
+  else if (bytes < 1073741824) return (bytes / 1048576).toFixed(2) + ' MB';
+  else return (bytes / 1073741824).toFixed(2) + ' GB';
+}
+
 
 // Function to handle random selection
 async function selectRandomly() {
@@ -309,7 +319,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (user && usernameSpan) {
         // Display user's first and last name
-        usernameSpan.textContent = ` abcd, ${user.firstname} ${user.lastname}`;
+        usernameSpan.textContent = `${user.firstname} ${user.lastname}`;
       }
     })
     .catch((err) => {

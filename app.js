@@ -342,7 +342,18 @@ app.post("/generatePdf", (req, res) => {
       .status(401)
       .json({ errors: ["Please log in to generate a PDF"] });
   }
-
+  const fileSize = fs.statSync(pdfPath).size; // Get the PDF file size in bytes
+  const query = `
+      INSERT INTO generated_pdfs (file_name, user_id, size, created_at)
+      VALUES (?, ?, ?, NOW())
+  `;
+  db.query(query, [fileName, userId, fileSize], (err, results) => {
+    if (err) {
+      return res.status(500).json({ errors: ["Failed to save the generated PDF"] });
+    }
+    res.json({ success: "PDF generated successfully" });
+  });
+  
   const userId = req.session.user.id; // Get user_id from session
   const { fileName, content } = req.body; // Assuming you're passing file name and content for the PDF
 
@@ -353,7 +364,7 @@ app.post("/generatePdf", (req, res) => {
     .then(() => {
       // Insert the generated PDF details into the database
       const query =
-        "INSERT INTO generated_pdfs (file_name, user_id, created_at) VALUES (?, ?, NOW())";
+        "INSERT INTO generated_pdfs (file_name, user_id, size, created_at) VALUES (?, ?, ?, NOW())";
       db.query(query, [fileName, userId], (err, results) => {
         if (err) {
           return res
@@ -593,7 +604,7 @@ app.post("/generate-pdf", async (req, res) => {
 // Generated Papers List
 app.get("/api/generated-papers", (req, res) => {
   const query =
-    "SELECT filename, created_at FROM generated_pdfs WHERE user_id = ? ORDER BY created_at DESC";
+    "SELECT filename, size, created_at FROM generated_pdfs WHERE user_id = ? ORDER BY created_at DESC";
   db.query(query, [req.session.user.id], (err, results) => {
     if (err)
       return res

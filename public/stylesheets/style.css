@@ -405,8 +405,8 @@
 .username {
   background-color: #fff;
   color: #003366;
-  font-size: 16px; /* Keep the font size unchanged */
-  padding: 15px;
+  font-size: 14px; /* Keep the font size unchanged */
+  padding:10px;
   transition: background-color 0.3s ease;
   text-transform: capitalize;
   

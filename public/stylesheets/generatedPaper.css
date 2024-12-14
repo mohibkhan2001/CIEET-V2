@@ -22,6 +22,9 @@ h1 {
     color: #0056b3;
     margin-bottom: 30px;
 }
+#generated-papers-list{
+    width: 100%;
+}
 
 /* Loading and Empty State Styling */
 #generated-papers-list p {
@@ -44,7 +47,7 @@ h1 {
 /* Grid layout for paper details (Exam Paper, Size, Time, Date) */
 .paper-row {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr;
+    grid-template-columns: 70% 30%; /* 70% for filename, 30% for actions */
     gap: 15px;
     align-items: center;
     margin-bottom: 15px;
@@ -91,14 +94,14 @@ h1 {
         font-size: 14px;
     }
 }
+
 /* Header Row Styling */
 .header-row {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr;
     gap: 15px;
     font-weight: bold;
     font-size: 16px;
-    color: #;
+    color: #000;
     margin-bottom: 10px;
     text-align: left;
 }
@@ -107,39 +110,57 @@ h1 {
     padding: 5px 0;
     border-bottom: 2px solid #ddd;
 }
-#download-link{
+
+#download-link {
     font-size: 0.8rem;
     font-weight: 100;
     color: #918888;
 }
 
-.rename-btn, .delete-btn{
-    padding: 10px ;
+/* Action Button Styles */
+.rename-btn,
+.delete-btn {
+    padding: 12px 6px; /* Smaller padding for compact buttons */
     background: #0056b3;
     color: #fff;
     border: 0;
     border-radius: 8px;
-    margin: 20px 15px;
+    font-size: 14px;
+    width: 30%;
+    text-align: center;
+    box-sizing: border-box; /* Include padding and border in the width calculation */
 }
 
-.delete-btn{
+.delete-btn {
     background: rgb(139, 9, 9);
-    color: #fff;
 }
 
-.rename-btn:hover,.delete-btn:hover{
-transform: scale(1.1);
+.rename-btn:hover,
+.delete-btn:hover {
+    transform: scale(1.05);
 }
-.fa-pen, .fa-trash{
+
+.fa-pen,
+.fa-trash {
     padding-left: 10px;
 }
 
-
 #generated-papers-list .paper-name {
-    width: 2px;
+    width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    margin-left: 20px;
+}
+
+.actions{
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    justify-content: center;
 }
 
 
+#generated-papers-list td{
+    padding: 10px;
+}
