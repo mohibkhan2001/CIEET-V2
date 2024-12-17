@@ -395,69 +395,45 @@
     transform: scale(1.1);
   }
 /* Container for the user info and dropdown */
-.auth-buttons .dropdown {
-  position: relative;
-  display: inline-block;
-  cursor: pointer;
-}
 
-/* Username text styling */
+
 .username {
-  background-color: #fff;
-  color: #003366;
-  font-size: 14px; /* Keep the font size unchanged */
-  padding:10px;
-  transition: background-color 0.3s ease;
-  text-transform: capitalize;
-  
+  margin-right: 15px;
+  font-weight: 500;
+  font-size: 1rem;
 }
 
-/* Dropdown content container (hidden by default) */
-.dropdown-content {
-  display: none;
-  position: absolute;
-  background-color: #f1f1f1;
-  min-width: 160px;
-  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
-  z-index: 1;
-  /* border-radius: 5px; */
-  top: 100%; /* Position below the username */
-  right: 0;
-  opacity: 0;
-  transform: translateY(-10px);
-  transition: opacity 0.3s ease, transform 0.3s ease; /* Subtle fade-in and slide-up animation */
-  margin-top: 7px; /* Adjust this value to control the gap between the username and dropdown */
-  text-align: center;
+.logout-icon {
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.logout-icon:hover {
+  color: #e74c3c;
 }
 
 
-/* Styling for the individual links inside the dropdown */
-.dropdown-content a {
-  color: black;
-  padding: 10px;
+.hero h1 {
+  font-size: 2.5rem;
+  margin-bottom: 20px;
+}
+
+.hero p {
+  font-size: 1.2rem;
+  margin-bottom: 30px;
+}
+
+.explore-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #2c3e50;
+  color: #fff;
   text-decoration: none;
-  display: block;
-  font-size: 14px;
-  /* border-bottom: 1px solid #ddd; */
-  transition: background-color 0.3s ease;
+  border-radius: 5px;
+  transition: background-color 0.3s;
 }
 
-/* Change background color when hovering over the dropdown items */
-.dropdown-content a:hover {
-  background-color: #007bff;
-  color: white;
+.explore-btn:hover {
+  background-color: #f39c12;
 }
-
-/* Show the dropdown when hovering over the parent */
-.dropdown:hover .dropdown-content {
-  display: block;
-  opacity: 1; /* Fade in */
-  transform: translateY(0); /* Slide into place */
-}
-
-/* Hover effect on the username text */
-.username:hover {
-  background-color: #f0f0f0;
-  color: #003366;
-}
-

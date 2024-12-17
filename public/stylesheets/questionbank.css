@@ -52,7 +52,7 @@ p {
 }
 
 .subject-selection button {
-    padding: 12px 25px;
+    padding: 3px 25px;
     background-color: #007BFF;
     color: white;
     border: none;
@@ -360,7 +360,20 @@ td:first-child {
     cursor: pointer;
     font-size: 16px;
 }
-
+#random-selection-container{
+  background-color: #002244;
+  padding: 15px 15px;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  color: #fff;
+}
+#random-question-count{
+  padding: 10px 0;
+  margin-left: 5px;
+  border-radius: 20px;
+  border: none;
+  text-align-last: center;
+}
 /* From Uiverse.io by satyamchaudharydev */
 #loader-container {
     position: fixed;
@@ -603,4 +616,48 @@ td:first-child {
     text-align: center;
     color: #333;
   }
+  .question-list li{
+    list-style: none;
+  }
+
+  .question-item {
+    margin-bottom: 20px;
+    padding: 10px;
+    border: 1px solid #ddd;
+  }
+  
+  .question-text {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  
+  .question-options {
+    margin-bottom: 10px;
+  }
+  
+  .option {
+    margin-left: 20px;
+  }
+  
+  .correct-answer {
+    color: green;
+    margin-top: 10px;
+  }
+  
+  .question-details {
+    margin-top: 10px;
+  }
+  
+  .question-year, .question-type {
+    font-style: italic;
+    font-size: 14px;
+  }
+
+  .subject-selection button.active {
+    background-color: #4CAF50;
+    color: white;
+    border: 2px solid #4CAF50;
+  }
+  
   

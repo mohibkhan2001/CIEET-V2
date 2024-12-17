@@ -118,9 +118,8 @@ h1 {
 }
 
 /* Action Button Styles */
-.rename-btn,
 .delete-btn {
-    padding: 12px 6px; /* Smaller padding for compact buttons */
+    padding: 12px 16px;
     background: #0056b3;
     color: #fff;
     border: 0;
@@ -129,6 +128,9 @@ h1 {
     width: 30%;
     text-align: center;
     box-sizing: border-box; /* Include padding and border in the width calculation */
+    display: flex;
+    justify-content: center; 
+    align-items: center;
 }
 
 .delete-btn {

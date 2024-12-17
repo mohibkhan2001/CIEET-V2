@@ -13,11 +13,15 @@
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
     />
+    <link
+    href="https://fonts.googleapis.com/css2?family=Parkinsans:wght@300..800&display=swap"
+    rel="stylesheet"
+  />
   </head>
   <body>
     <header>
       <div class="logo">
-        <span><a href="/">CIE²T</a></span>
+        <span><a href="/index">CIE²T</a></span>
       </div>
       <nav>
         <ul>
@@ -29,15 +33,14 @@
           <li><a href="#contact">Contact</a></li>
         </ul>
       </nav>
-
       <!-- User Info Display -->
       <div class="auth-buttons" id="auth-buttons">
-        <div class="dropdown">
-          <span id="username" class="username"></span>
-          <div class="dropdown-content">
-            <a href="/" id="logout-btn">Log Out</a>
-          </div>
-        </div>
+        <span id="username" class="username"></span>
+        <i
+          class="fa-solid fa-arrow-right-from-bracket logout-icon"
+          id="logout-btn"
+          title="Logout"
+        ></i>
       </div>
     </header>
 
@@ -67,23 +70,24 @@
       async function fetchGeneratedPapers() {
         try {
           const response = await fetch("/api/generated-papers");
-          if (!response.ok) throw new Error(`Error fetching papers: ${response.statusText}`);
-    
+          if (!response.ok)
+            throw new Error(`Error fetching papers: ${response.statusText}`);
+
           const data = await response.json();
           console.log("Fetched Papers:", data);
-    
+
           const papers = Array.isArray(data.papers) ? data.papers : [];
           const papersListContainer = document
             .getElementById("generated-papers-list")
             .querySelector("tbody");
           papersListContainer.innerHTML = ""; // Clear previous content
-    
+
           if (papers.length === 0) {
             papersListContainer.innerHTML =
               '<tr><td colspan="5">No papers have been generated yet.</td></tr>';
             return;
           }
-    
+
           papers.forEach((paper) => {
             const paperRow = document.createElement("tr");
             paperRow.innerHTML = `
@@ -96,9 +100,7 @@
                 </a>
               </td>
               <td class="actions">
-                <button class="rename-btn" onclick="renameFile('${paper.filename}')">
-                  Rename <i class="fa-solid fa-pen"></i>
-                </button>
+               
                 <button class="delete-btn" onclick="deleteFile('${paper.filename}')">
                   Delete <i class="fa-solid fa-trash"></i>
                 </button>
@@ -114,18 +116,21 @@
             '<tr><td colspan="5">Failed to load papers. Please try again later.</td></tr>';
         }
       }
-    
+
       // Function to handle renaming of the file
       function renameFile(oldFileName) {
         const fileExtension = ".pdf"; // Assuming all files are PDFs
-        const newFileName = prompt("Enter the new name for the file:", oldFileName);
-    
+        const newFileName = prompt(
+          "Enter the new name for the file:",
+          oldFileName
+        );
+
         if (newFileName && newFileName !== oldFileName) {
           let updatedFileName = newFileName;
           if (!updatedFileName.endsWith(fileExtension)) {
             updatedFileName += fileExtension;
           }
-    
+
           fetch("/rename-file", {
             method: "POST",
             headers: {
@@ -151,10 +156,12 @@
             });
         }
       }
-    
+
       // Function to handle deletion of the file
       function deleteFile(fileName) {
-        const confirmDelete = confirm(`Are you sure you want to delete the file: ${fileName}?`);
+        const confirmDelete = confirm(
+          `Are you sure you want to delete the file: ${fileName}?`
+        );
         if (confirmDelete) {
           fetch("/delete-file", {
             method: "POST",
@@ -180,7 +187,7 @@
             });
         }
       }
-    
+
       // Fetch user info from backend API after page loads
       document.addEventListener("DOMContentLoaded", () => {
         fetch("/api/user-info") // Endpoint to fetch the user's session info
@@ -194,7 +201,7 @@
           .then((data) => {
             const user = data.user;
             const usernameSpan = document.getElementById("username");
-    
+
             if (user && usernameSpan) {
               // Display user's first and last name
               usernameSpan.textContent = `${user.firstname} ${user.lastname}`;
@@ -203,7 +210,7 @@
           .catch((err) => {
             console.error("Failed to fetch user info:", err);
           });
-    
+
         // Handle the logout button click
         const logoutButton = document.getElementById("logout-btn");
         if (logoutButton) {
@@ -226,11 +233,11 @@
           });
         }
       });
-    
+
       // Fetch generated papers on page load
       document.addEventListener("DOMContentLoaded", () => {
         fetchGeneratedPapers();
-    
+
         // Handle logout button
         const logoutButton = document.getElementById("logout-btn");
         if (logoutButton) {
@@ -249,7 +256,5 @@
         }
       });
     </script>
-    
-    
   </body>
 </html>

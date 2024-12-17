@@ -201,43 +201,6 @@ const validateInput = (req, res, next) => {
   next();
 };
 
-app.post("/rename-file", validateInput, (req, res) => {
-  const { oldFileName, newFileName } = req.body;
-  const oldFilePath = path.join(papersDir, oldFileName);
-  const newFilePath = path.join(papersDir, newFileName);
-
-  // Check if the old file exists before renaming
-  if (!fs.existsSync(oldFilePath)) {
-    return res.status(404).json({ error: "File not found" });
-  }
-
-  fs.rename(oldFilePath, newFilePath, (err) => {
-    if (err) {
-      console.error("Error renaming file:", err);
-      return res
-        .status(500)
-        .json({ success: false, error: "Error renaming file" });
-    }
-
-    // Update the database with the new filename
-    const updateQuery =
-      "UPDATE generated_pdfs SET filename = ? WHERE filename = ?";
-    db.query(updateQuery, [newFileName, oldFileName], (err) => {
-      if (err) {
-        console.error("Error updating filename in database:", err);
-        return res
-          .status(500)
-          .json({
-            success: false,
-            error: "Error updating filename in database",
-          });
-      }
-
-      res.json({ success: true });
-    });
-  });
-});
-
 app.post("/delete-file", (req, res) => {
   const { fileName } = req.body;
   const filePath = path.join(papersDir, fileName);
@@ -386,28 +349,29 @@ app.get("/signup", (req, res) => {
 });
 
 // API Route to Fetch Both Subjective and MCQ Questions for a Specific Subject
+// API Route to Fetch Both Subjective and MCQ Questions for a Specific Subject
 app.get("/api/questions/:subject", (req, res) => {
   const { subject } = req.params;
 
   const subjectiveQuery = `
         SELECT id, question_text, subject, year, question_type
         FROM subjective_questions
-        WHERE subject = ?
-    `;
+        WHERE subject = ?`;
+
   const mcqQuery = `
-        SELECT id, question_text, option_a, option_b, option_c, option_d, correct_answer, year
+        SELECT id, question_text, option_a, option_b, option_c, option_d, correct_answer, year, type
         FROM mcq_questions
-        WHERE subject = ?
-    `;
+        WHERE subject = ?`;
 
   db.query(subjectiveQuery, [subject], (err, subjectiveResults) => {
-    if (err)
-      return res
-        .status(500)
-        .json({ error: "Failed to fetch subjective questions" });
+    if (err) {
+      return res.status(500).json({ error: "Failed to fetch subjective questions" });
+    }
 
     db.query(mcqQuery, [subject], (err, mcqResults) => {
-      if (err) return res.status(500).json({ error: "Failed to fetch MCQs" });
+      if (err) {
+        return res.status(500).json({ error: "Failed to fetch MCQs" });
+      }
 
       // Format subjective questions
       const formattedSubjective = subjectiveResults.map((q) => ({
@@ -415,14 +379,15 @@ app.get("/api/questions/:subject", (req, res) => {
         question_text: q.question_text,
         subject: q.subject.toUpperCase(),
         year: `YEAR: ${q.year}`,
-        question_type: `TYPE: ${q.question_type.toUpperCase()}`,
+        question_type: `subjective`, // Use "subjective" directly
       }));
 
-      // Format MCQs (Ensure options and year are correctly displayed)
+      // Format MCQs
       const formattedMcqs = mcqResults.map((q) => ({
         id: q.id,
         question_text: q.question_text,
         year: `YEAR: ${q.year || "N/A"}`,
+        type: q.type, // Should be 'objective' or 'subjective'
         options: [
           { option: "A", text: q.option_a || "N/A" },
           { option: "B", text: q.option_b || "N/A" },
@@ -431,11 +396,15 @@ app.get("/api/questions/:subject", (req, res) => {
         ],
         correct_answer: q.correct_answer || "N/A",
       }));
+      
 
       res.json({ subjective: formattedSubjective, mcqs: formattedMcqs });
     });
   });
 });
+
+
+
 
 // Generate PDF Route with Puppeteer
 // Generate PDF Route with Puppeteer

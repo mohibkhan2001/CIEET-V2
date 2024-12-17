@@ -6,11 +6,18 @@
     <title>Exam Automation</title>
     <link rel="stylesheet" href="stylesheets/style.css">
     <link rel="stylesheet" href="stylesheets/Exam_automation.css">
+    <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
+    integrity="sha512-5Hs3dF2AEPkpNAR7UiOHba+lRSJNeM2ECkwxUIxC1Q/FLycGTbNapWXB4tP889k5T5Ju8fs4b1P5z/iB4nMfSQ=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
 </head>
 <body>
     <header>
         <div class="logo">
-          <span><a href="/">CIE²T</a></span>
+          <span><a href="/index">CIE²T</a></span>
         </div>
         <nav>
           <ul>
@@ -23,16 +30,11 @@
           </ul>
         </nav>
       
-        <!-- User Info Display -->
-        <div class="auth-buttons" id="auth-buttons">
-          <!-- Dropdown for user info -->
-          <div class="dropdown">
-            <span id="username" class="username" style="font-weight: bold; color: #007bff;"></span>
-            <div class="dropdown-content">
-              <a href="#" id="logout-btn">Log Out</a>
-            </div>
-          </div>
-        </div>
+       <!-- User Info Display -->
+       <div class="auth-buttons" id="auth-buttons">
+        <span id="username" class="username"></span>
+        <i class="fa-solid fa-arrow-right-from-bracket logout-icon" id="logout-btn" title="Logout"></i>
+      </div>
       </header>
 
     <div class="container">

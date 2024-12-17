@@ -13,12 +13,16 @@
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
     />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Parkinsans:wght@300..800&display=swap"
+      rel="stylesheet"
+    />
   </head>
 
   <body>
     <header>
       <div class="logo">
-        <span><a href="/">CIE²T</a></span>
+        <span><a href="/index">CIE²T</a></span>
       </div>
       <nav>
         <ul>
@@ -30,16 +34,11 @@
           <li><a href="#contact">Contact</a></li>
         </ul>
       </nav>
-    
+
       <!-- User Info Display -->
       <div class="auth-buttons" id="auth-buttons">
-        <!-- Dropdown for user info -->
-        <div class="dropdown">
-          <span id="username" class="username"></span>
-          <div class="dropdown-content">
-            <a href="#" id="logout-btn">Log Out</a>
-          </div>
-        </div>
+        <span id="username" class="username"></span>
+        <i class="fa-solid fa-arrow-right-from-bracket logout-icon" id="logout-btn" title="Logout"></i>
       </div>
     </header>
 
@@ -92,7 +91,7 @@
             <label for="typeFilter">Type:</label>
             <select id="typeFilter" onchange="filterQuestions()">
               <option value="">All Types</option>
-              <option value="mcqs">Objective</option>
+              <option value="objective">Objective</option>
               <option value="subjective">Subjective</option>
             </select>
           </div>
@@ -109,20 +108,21 @@
 
           <!-- Input field for selecting number of random questions -->
           <div id="random-selection-container" style="display: none;">
-            <label for="random-question-count">Number of questions:</label>
+            <label for="random-question-count">&#9733; Number of questions:</label>
             <input
               type="number"
               id="random-question-count"
               min="1"
-              placeholder="Enter number of questions"
+              placeholder="No. of Questions"
             />
           </div>
         </div>
 
-        <form id="pdfForm">
+        <form id="pdfForm" onsubmit="generatePDF(event)">
           <div id="question-list" class="question-list">
             <!-- Questions will be dynamically inserted here -->
           </div>
+        
           <div id="loader-container" style="display: none;">
             <div class="spinner">
               <span></span>
@@ -135,20 +135,12 @@
               <span></span>
             </div>
           </div>
-          
-          <input
-            type="text"
-            id="pdfName"
-            name="pdfName"
-            placeholder="Enter PDF name"
-            required
-          />
+        
+          <input type="text" id="pdfName" name="pdfName" placeholder="Enter PDF name" required />
           <button type="submit" id="generate-pdf-button">Generate PDF</button>
         </form>
+
         <button onclick="ViewPaperBtn()" id="viewBtn">View papers</button>
-
-
-        
       </div>
     </main>
 

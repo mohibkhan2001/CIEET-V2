@@ -12,120 +12,135 @@ function initializeEventListeners() {
   document.getElementById("typeFilter").addEventListener("change", filterQuestions);
   document.getElementById("randomSelectButton").addEventListener("click", toggleRandomSelectionInput);
   document.getElementById("random-question-count").addEventListener("input", validateRandomInput);
-}
 
-// Function to dynamically load and display questions for the selected subject
-// Function to dynamically load and display questions for the selected subject
-async function showQuestions(subject) {
-  const questionContainer = document.getElementById("questions-container");
-  const questionList = document.getElementById("question-list");
-  questionList.innerHTML = ""; // Clear previous questions
-  questionContainer.style.display = "block"; // Show the question container
-
-  // Highlight the clicked button
-  document.querySelectorAll(".subject-selection button").forEach((button) => {
-    button.classList.remove("active");
+  // Event listener for checkbox selection
+  document.querySelectorAll('.question-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', filterQuestions); // Re-filter when a checkbox is clicked
   });
-  document
-    .querySelector(`button[data-subject="${subject}"]`)
-    .classList.add("active");
-
-  // Show the loader while fetching questions
-  showLoader();
-
-  try {
-    const response = await fetch(`/api/questions/${subject}`);
-    if (!response.ok) throw new Error("Failed to fetch questions");
-
-    const data = await response.json();
-
-    if (
-      (!data.subjective || data.subjective.length === 0) &&
-      (!data.mcqs || data.mcqs.length === 0)
-    ) {
-      questionList.innerHTML = "<p>No questions found for this subject.</p>";
-      return;
-    }
-
-    // Display Subjective Questions
-    if (data.subjective && data.subjective.length > 0) {
-      data.subjective.forEach((question) => {
-        const questionItem = document.createElement("div");
-        questionItem.classList.add("question-item");
-        questionItem.innerHTML = `
-          <div class="check_container">
-            <input id="checkbox-${question.id}" class="hidden" type="checkbox" value="${question.id}" name="questions">
-            <label class="checkbox" for="checkbox-${question.id}"></label>
-          </div>
-          <span>${question.question_text}</span>
-          <div class="question-details">
-            <div><strong>Year:</strong> ${question.year}</div>
-            <div><strong>Type:</strong> ${question.question_type}</div>
-          </div>`;
-        questionList.appendChild(questionItem);
-      });
-    }
-
-    // Display MCQ Questions
-    if (data.mcqs && data.mcqs.length > 0) {
-      data.mcqs.forEach((question) => {
-        const questionItem = document.createElement("div");
-        questionItem.classList.add("question-item");
-        questionItem.innerHTML = `
-          <div class="check_container">
-            <input id="checkbox-${question.id}" class="hidden" type="checkbox" value="${question.id}" name="questions">
-            <label class="checkbox" for="checkbox-${question.id}"></label>
-          </div>
-          <span>${question.question_text}</span>
-          <div class="question-details">
-            <div><strong>Options:</strong></div>
-            <ul>
-              ${question.options
-                .map((opt) => `<li>${opt.option}: ${opt.text}</li>`)
-                .join("")}
-            </ul>
-            <div><strong>Correct Answer:</strong> ${question.correct_answer}</div>
-            <div><strong>Year:</strong> ${question.year}</div>
-            <div><strong>Type:</strong> ${question.type || "N/A"}</div>
-          </div>`;
-        questionList.appendChild(questionItem);
-      });
-    }
-    
-  } catch (error) {
-    console.error("Error fetching questions:", error);
-    questionList.innerHTML = "<p>Failed to load questions. Try again later.</p>";
-  } finally {
-    // Hide the loader after questions are fetched
-    hideLoader();
-  }
 }
 
-
-// Function to filter questions based on search and selected filters
 function filterQuestions() {
   const searchQuery = document.getElementById("searchInput").value.toLowerCase();
   const yearFilter = document.getElementById("yearFilter").value;
-  const typeFilter = document.getElementById("typeFilter").value;
+  const typeFilter = document.getElementById("typeFilter").value.toLowerCase(); // Ensure the type filter is lowercase
   const questions = document.querySelectorAll(".question-item");
 
   questions.forEach((question) => {
-    const questionText = question.querySelector("span").textContent.toLowerCase();
-    const questionYear = question
-      .querySelector(".question-details div:nth-child(1)")
-      .textContent;
-    const questionType = question
-      .querySelector(".question-details div:nth-child(2)")
-      .textContent;
+    const questionText = question.querySelector(".question-text")
+      ? question.querySelector(".question-text").textContent.toLowerCase()
+      : "";
 
+    const questionYear = question.querySelector(".question-year")
+      ? question.querySelector(".question-year").textContent.trim()
+      : "";
+
+    const questionType = question.querySelector(".question-type")
+      ? question.querySelector(".question-type").textContent.trim().toLowerCase()
+      : "";
+
+    // Check if the question matches the search query
     const matchesSearch = questionText.includes(searchQuery);
-    const matchesYear = yearFilter ? questionYear.includes(yearFilter) : true;
-    const matchesType = typeFilter ? questionType.includes(typeFilter) : true;
 
-    question.style.display =
-      matchesSearch && matchesYear && matchesType ? "" : "none";
+    // Check if the question matches the selected year filter
+    const matchesYear = yearFilter ? questionYear.includes(yearFilter) : true;
+
+    // Check if the question matches the selected type filter (either 'subjective' or 'objective')
+    const matchesType = typeFilter ? questionType === typeFilter : true;
+
+    // Set the display style based on matching conditions
+    question.style.display = matchesSearch && matchesYear && matchesType ? "" : "none";
   });
 }
+
+// Fetch and display questions when a subject is selected
+function showQuestions(subject) {
+  document.getElementById("questions-container").style.display = "block";
+
+  // Remove active class from all buttons
+  document.querySelectorAll('.subject-selection button').forEach(btn => {
+    btn.classList.remove('active');
+  });
+
+  // Add active class to the clicked button
+  const clickedButton = document.querySelector(`button[data-subject="${subject}"]`);
+  clickedButton.classList.add('active');
+
+  fetch(`/api/questions/${subject}`)
+    .then((response) => response.json())
+    .then((data) => {
+      const { subjective, mcqs } = data;
+      const questionList = document.getElementById("question-list");
+
+      questionList.innerHTML = ""; // Clear previous questions
+
+      // Display subjective questions
+      subjective.forEach((q) => {
+        const questionItem = document.createElement("div");
+        questionItem.classList.add("question-item");
+        questionItem.classList.add("subjective");
+
+        questionItem.innerHTML = `
+          <div class="check_container">
+            <input id="checkbox-${q.id}" class="question-checkbox hidden" type="checkbox" value="${q.id}" name="questions">
+            <label class="checkbox" for="checkbox-${q.id}"></label>
+          </div>
+          <span class="question-text">${q.question_text}</span>
+          <div class="question-details">
+            <div class="question-year">${q.year}</div>
+            <div class="question-type">${q.question_type}</div>
+          </div>
+        `;
+        questionList.appendChild(questionItem);
+      });
+
+      // Display MCQs (Objective Questions)
+      mcqs.forEach((q) => {
+        const questionItem = document.createElement("div");
+        questionItem.classList.add("question-item");
+        questionItem.classList.add("objective");
+
+        // Prepare options HTML
+        const optionsHTML = q.options
+          .map((option) => `<div class="option">${option.option}: ${option.text}</div>`)
+          .join('');
+
+        // Correct answer
+        const correctAnswer = `<div class="correct-answer"><strong>Correct Answer:</strong> ${q.correct_answer}</div>`;
+
+        // Append the question details
+        questionItem.innerHTML = `
+          <div class="check_container">
+            <input id="checkbox-${q.id}" class="question-checkbox hidden" type="checkbox" value="${q.id}" name="questions">
+            <label class="checkbox" for="checkbox-${q.id}"></label>
+          </div>
+          <span class="question-text">${q.question_text}</span>
+          <div class="question-options">
+            ${optionsHTML}
+          </div>
+          ${correctAnswer}
+          <div class="question-details">
+            <div class="question-year">${q.year}</div>
+            <div class="question-type">${q.type}</div>
+          </div>
+        `;
+
+        questionList.appendChild(questionItem);
+      });
+
+      // Reinitialize event listeners for new checkboxes
+      document.querySelectorAll('.question-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', filterQuestions);
+      });
+
+      // Apply the filters after fetching and displaying the questions
+      filterQuestions();
+    })
+    .catch((error) => {
+      console.error("Error fetching questions:", error);
+    });
+}
+
+
 
 // Function to select all questions
 function selectAllQuestions() {
@@ -159,7 +174,7 @@ async function handleGeneratePDF(event) {
   const subject = selectedButton.getAttribute("data-subject");
   const selectedQuestions = Array.from(
     document.querySelectorAll('input[name="questions"]:checked')
-  ).map((el) => el.value);
+  ).map((el) => el.value);  // Get the selected question IDs
 
   const pdfName = document.getElementById("pdfName").value.trim();
 
@@ -199,6 +214,7 @@ async function handleGeneratePDF(event) {
   }
 }
 
+
 // Helper function to format file size from bytes to B, KB, MB, etc.
 function formatFileSize(bytes) {
   if (bytes < 1024) return `${bytes} B`;
@@ -207,13 +223,10 @@ function formatFileSize(bytes) {
   else return (bytes / 1073741824).toFixed(2) + ' GB';
 }
 
-
 // Function to handle random selection
 async function selectRandomly() {
   const subject = document.querySelector("button.active").getAttribute("data-subject");
   const questionCount = parseInt(document.getElementById("random-question-count").value, 10);
-
-
 
   // Fetch questions for the selected subject
   const response = await fetch(`/api/questions/${subject}`);
@@ -224,11 +237,6 @@ async function selectRandomly() {
     ...data.subjective,
     ...data.mcqs
   ];
-
-  // if (isNaN(questionCount) || questionCount <= 0) {
-  //   alert("Please enter a valid number of questions.");
-  //   return;
-  // }
 
   if (questionCount > allQuestions.length) {
     alert("The number of questions exceeds the available questions. Try again.");
@@ -255,13 +263,10 @@ async function selectRandomly() {
 function shuffle(array) {
   let currentIndex = array.length, randomIndex, temporaryValue;
 
-  // While there remain elements to shuffle
   while (currentIndex !== 0) {
-    // Pick a remaining element
     randomIndex = Math.floor(Math.random() * currentIndex);
     currentIndex--;
 
-    // Swap it with the current element
     temporaryValue = array[currentIndex];
     array[currentIndex] = array[randomIndex];
     array[randomIndex] = temporaryValue;
@@ -348,4 +353,3 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
-

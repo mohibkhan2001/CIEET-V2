@@ -1,0 +1,145 @@
+/* Centering the form container */
+.form-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 80vh; /* Take most of the viewport height */
+    background-color: #f8f9fc; /* Light background for contrast */
+  }
+  
+  /* Form Styling */
+  form {
+    background-color: #ffffff; /* White form background */
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    max-width: 400px;
+    width: 100%;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+  }
+  
+  /* Form Title */
+  form .title {
+    font-size: 28px;
+    font-weight: bold;
+    color: #333333;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  
+  /* Form Message */
+  form .message {
+    font-size: 14px;
+    color: #666666;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  /* Label and Input Fields */
+  form label {
+    display: block;
+    position: relative;
+    margin-bottom: 20px;
+  }
+  
+  form .input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+    box-sizing: border-box;
+    transition: border-color 0.3s;
+  }
+  
+  form .input:focus {
+    border-color: #007bff; /* Blue outline on focus */
+    outline: none;
+  }
+  
+  form label span {
+    position: absolute;
+    top: 10px;
+    left: 12px;
+    font-size: 14px;
+    color: #999;
+    transition: 0.3s;
+    pointer-events: none; /* Prevent text interaction */
+  }
+  
+  form .input:focus + span,
+  form .input:not(:placeholder-shown) + span {
+    top: -8px;
+    left: 12px;
+    font-size: 12px;
+    color: #007bff; /* Highlight label */
+    background-color: #ffffff; /* White background for clarity */
+    padding: 0 5px;
+  }
+  
+  /* Submit Button */
+  form .submit {
+    display: block;
+    width: 100%;
+    background-color: #007bff; /* Blue button */
+    color: #ffffff;
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  form .submit:hover {
+    background-color: #0056b3; /* Darker blue on hover */
+  }
+  
+  /* Sign-up Link */
+  form .signin {
+    font-size: 14px;
+    color: #555555;
+    text-align: center;
+    margin-top: 15px;
+  }
+  
+  form .signin a {
+    color: #007bff;
+    text-decoration: none;
+  }
+  
+  form .signin a:hover {
+    text-decoration: underline;
+  }
+  
+  /* Error Message Box */
+  .error-messages {
+    color: red;
+    background-color: #ffecec;
+    border: 1px solid #ff6b6b;
+    padding: 10px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    font-size: 14px;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 480px) {
+    form {
+      padding: 20px;
+    }
+  
+    form .title {
+      font-size: 24px;
+    }
+  
+    form .input {
+      font-size: 14px;
+    }
+  
+    form .submit {
+      font-size: 14px;
+    }
+  }
+  
