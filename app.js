@@ -148,20 +148,20 @@ app.post("/logout", (req, res) => {
 });
 
 // --------- PROTECT ROUTE MIDDLEWARE -----------
-const requireAuth = (req, res, next) => {
-  if (req.session.user) {
-    next();
-  } else {
-    res.status(401).json({ error: "Unauthorized access. Please login." });
-  }
-};
+// const requireAuth = (req, res, next) => {
+//   if (req.session.user) {
+//     next();
+//   } else {
+//     res.status(401).json({ error: "Unauthorized access. Please login." });
+//   }
+// };
 
 // --------- PROTECTED ROUTE EXAMPLE -----------
-app.get("/protected", requireAuth, (req, res) => {
-  res.json({
-    message: `Welcome, ${req.session.user.name}! You are logged in.`,
-  });
-});
+// app.get("/protected", requireAuth, (req, res) => {
+//   res.json({
+//     message: `Welcome, ${req.session.user.name}! You are logged in.`,
+//   });
+// });
 
 // Ensure papers directory exists
 const papersDir = path.join(__dirname, "papers");
@@ -227,37 +227,49 @@ app.post("/delete-file", (req, res) => {
     });
   });
 });
+// Middleware to protect routes
+function isLoggedIn(req, res, next) {
+  if (!req.session.user) {
+    // Redirect to login page if not logged in
+    return res.sendFile(path.join(__dirname, "views", "login.html"));
+  }
+  next(); // Continue to the requested route if logged in
+}
 
-// Serve Views
+// Middleware to block access to "/" if the user is logged in
+function redirectIfLoggedIn(req, res, next) {
+  if (req.session.user) {
+    // Redirect logged-in users to "/index"
+    return res.redirect("/index");
+  }
+  next(); // Continue to login page if not logged in
+}
 
-app.get("/", (req, res) => {
+// Public Route (Login Page) - Block access if already logged in
+app.get("/", redirectIfLoggedIn, (req, res) => {
   res.sendFile(path.join(__dirname, "views", "login.html"));
 });
-app.get("/index", (req, res) => {
+
+// Protected Routes (Require Login)
+app.get("/index", isLoggedIn, (req, res) => {
   res.sendFile(path.join(__dirname, "views", "index.html"));
 });
-app.get("/Exam_Automation", (req, res) => {
+
+app.get("/Exam_Automation", isLoggedIn, (req, res) => {
   res.sendFile(path.join(__dirname, "views", "Exam_Automation.html"));
 });
-app.get("/reporting", (req, res) => {
+
+app.get("/reporting", isLoggedIn, (req, res) => {
   res.sendFile(path.join(__dirname, "views", "reporting.html"));
 });
-app.get("/questionBank", (req, res) => {
+
+app.get("/questionBank", isLoggedIn, (req, res) => {
   res.sendFile(path.join(__dirname, "views", "questionBank.html"));
 });
-// Route to serve the generatedPapers page (HTML)
-app.get("/generatedPapers", (req, res) => {
-  // Ensure the user is logged in
-  if (!req.session.user) {
-    return res
-      .status(401)
-      .json({ errors: ["Please log in to generate a PDF"] });
-  }
 
-  // Serve the generatedPapers.html page
+app.get("/generatedPapers", isLoggedIn, (req, res) => {
   res.sendFile(path.join(__dirname, "views", "generatedPapers.html"));
 });
-
 // Route to fetch the generated papers (API)
 app.get("/api/generated-papers", (req, res) => {
   // Ensure the user is logged in
