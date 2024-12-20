@@ -12,6 +12,10 @@ const port = 3000;
 
 // Middleware
 app.use(express.static(path.join(__dirname, "public"))); // Static files in 'public' folder
+app.use(
+  "/Images/Diagram",
+  express.static(path.join(__dirname, "Images/Diagram"))
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -147,22 +151,6 @@ app.post("/logout", (req, res) => {
   }
 });
 
-// --------- PROTECT ROUTE MIDDLEWARE -----------
-// const requireAuth = (req, res, next) => {
-//   if (req.session.user) {
-//     next();
-//   } else {
-//     res.status(401).json({ error: "Unauthorized access. Please login." });
-//   }
-// };
-
-// --------- PROTECTED ROUTE EXAMPLE -----------
-// app.get("/protected", requireAuth, (req, res) => {
-//   res.json({
-//     message: `Welcome, ${req.session.user.name}! You are logged in.`,
-//   });
-// });
-
 // Ensure papers directory exists
 const papersDir = path.join(__dirname, "papers");
 if (!fs.existsSync(papersDir)) {
@@ -274,13 +262,16 @@ app.get("/generatedPapers", isLoggedIn, (req, res) => {
 app.get("/api/generated-papers", (req, res) => {
   // Ensure the user is logged in
   if (!req.session.user) {
-    return res.status(401).json({ errors: ["Please log in to view generated PDFs"] });
+    return res
+      .status(401)
+      .json({ errors: ["Please log in to view generated PDFs"] });
   }
 
   const userId = req.session.user.id; // Get user_id from the session
 
   // Query the database to get PDFs created by the logged-in user
-  const query = "SELECT filename, created_at FROM generated_pdfs WHERE user_id = ?";
+  const query =
+    "SELECT filename, created_at FROM generated_pdfs WHERE user_id = ?";
   db.query(query, [userId], (err, results) => {
     if (err) {
       console.error("Database error:", err);
@@ -310,57 +301,79 @@ app.get("/api/user-info", (req, res) => {
   res.json({ user: req.session.user });
 });
 
-app.post("/generatePdf", (req, res) => {
+app.post("/generatePdf", async (req, res) => {
   // Ensure the user is logged in
   if (!req.session.user) {
     return res
       .status(401)
       .json({ errors: ["Please log in to generate a PDF"] });
   }
-  const fileSize = fs.statSync(pdfPath).size; // Get the PDF file size in bytes
-  const query = `
-      INSERT INTO generated_pdfs (file_name, user_id, size, created_at)
-      VALUES (?, ?, ?, NOW())
-  `;
-  db.query(query, [fileName, userId, fileSize], (err, results) => {
-    if (err) {
-      return res.status(500).json({ errors: ["Failed to save the generated PDF"] });
+
+  const userId = req.session.user.id; // User ID from session
+  const { fileName, content } = req.body; // File name and content to generate PDF
+
+  if (!fileName || !content) {
+    return res
+      .status(400)
+      .json({ errors: ["File name and content are required"] });
+  }
+
+  try {
+    // Path where the PDF will be saved
+    const pdfDir = path.join(__dirname, "papers");
+    const pdfPath = path.join(pdfDir, `${fileName}.pdf`);
+
+    // Ensure the 'papers' directory exists
+    if (!fs.existsSync(pdfDir)) {
+      fs.mkdirSync(pdfDir);
     }
-    res.json({ success: "PDF generated successfully" });
-  });
-  
-  const userId = req.session.user.id; // Get user_id from session
-  const { fileName, content } = req.body; // Assuming you're passing file name and content for the PDF
 
-  // Generate PDF (using a hypothetical `generatePdf` function)
-  const pdfPath = path.join(__dirname, "pdfs", `${fileName}.pdf`);
+    // Generate PDF using Puppeteer
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
 
-  generatePdf(content, pdfPath) // Your function that generates the PDF
-    .then(() => {
-      // Insert the generated PDF details into the database
-      const query =
-        "INSERT INTO generated_pdfs (file_name, user_id, size, created_at) VALUES (?, ?, ?, NOW())";
-      db.query(query, [fileName, userId], (err, results) => {
-        if (err) {
-          return res
-            .status(500)
-            .json({ errors: ["Failed to save the generated PDF"] });
-        }
+    // Set the content (assuming content is HTML)
+    await page.setContent(content, { waitUntil: "networkidle0" });
 
-        // Return a success response
-        res.json({ success: "PDF generated successfully" });
-      });
-    })
-    .catch((err) => {
-      return res.status(500).json({ errors: ["Failed to generate PDF"] });
+    // Save the PDF
+    await page.pdf({
+      path: pdfPath,
+      format: "A4",
+      printBackground: true,
     });
+
+    await browser.close();
+
+    // Get the file size
+    const fileSize = fs.statSync(pdfPath).size;
+
+    // Insert the PDF details into the database
+    const query = `
+      INSERT INTO generated_pdfs (filename, user_id, size, created_at)
+      VALUES (?, ?, ?, NOW())
+    `;
+    db.query(query, [`${fileName}.pdf`, userId, fileSize], (err) => {
+      if (err) {
+        console.error("Database Error:", err);
+        return res
+          .status(500)
+          .json({ errors: ["Failed to save the generated PDF"] });
+      }
+      res.json({
+        success: "PDF generated successfully",
+        filePath: `/download-pdf/${fileName}.pdf`,
+      });
+    });
+  } catch (err) {
+    console.error("PDF Generation Error:", err);
+    res.status(500).json({ errors: ["Failed to generate PDF"] });
+  }
 });
 
 app.get("/signup", (req, res) => {
   res.sendFile(path.join(__dirname, "views", "signup.html"));
 });
 
-// API Route to Fetch Both Subjective and MCQ Questions for a Specific Subject
 // API Route to Fetch Both Subjective and MCQ Questions for a Specific Subject
 app.get("/api/questions/:subject", (req, res) => {
   const { subject } = req.params;
@@ -375,9 +388,16 @@ app.get("/api/questions/:subject", (req, res) => {
         FROM mcq_questions
         WHERE subject = ?`;
 
+  const diagramsQuery = `
+        SELECT id, question_text, subject, year, type AS question_type, diagram_url
+        FROM diagrams
+        WHERE subject = ?`;
+
   db.query(subjectiveQuery, [subject], (err, subjectiveResults) => {
     if (err) {
-      return res.status(500).json({ error: "Failed to fetch subjective questions" });
+      return res
+        .status(500)
+        .json({ error: "Failed to fetch subjective questions" });
     }
 
     db.query(mcqQuery, [subject], (err, mcqResults) => {
@@ -385,201 +405,308 @@ app.get("/api/questions/:subject", (req, res) => {
         return res.status(500).json({ error: "Failed to fetch MCQs" });
       }
 
-      // Format subjective questions
-      const formattedSubjective = subjectiveResults.map((q) => ({
-        id: q.id,
-        question_text: q.question_text,
-        subject: q.subject.toUpperCase(),
-        year: `YEAR: ${q.year}`,
-        question_type: `subjective`, // Use "subjective" directly
-      }));
+      db.query(diagramsQuery, [subject], (err, diagramsResults) => {
+        if (err) {
+          console.error("Error fetching diagrams:", err);
+          return res.status(500).json({ error: "Failed to fetch diagrams" });
+        }
 
-      // Format MCQs
-      const formattedMcqs = mcqResults.map((q) => ({
-        id: q.id,
-        question_text: q.question_text,
-        year: `YEAR: ${q.year || "N/A"}`,
-        type: q.type, // Should be 'objective' or 'subjective'
-        options: [
-          { option: "A", text: q.option_a || "N/A" },
-          { option: "B", text: q.option_b || "N/A" },
-          { option: "C", text: q.option_c || "N/A" },
-          { option: "D", text: q.option_d || "N/A" },
-        ],
-        correct_answer: q.correct_answer || "N/A",
-      }));
-      
+        // Format subjective questions
+        const formattedSubjective = subjectiveResults.map((q) => ({
+          id: q.id,
+          question_text: q.question_text,
+          subject: q.subject.toUpperCase(),
+          year: `YEAR: ${q.year}`,
+          question_type: `subjective`, // Use "subjective" directly
+        }));
 
-      res.json({ subjective: formattedSubjective, mcqs: formattedMcqs });
+        // Format MCQs
+        const formattedMcqs = mcqResults.map((q) => ({
+          id: q.id,
+          question_text: q.question_text,
+          year: `YEAR: ${q.year || "N/A"}`,
+          type: q.type, // Should be 'objective' or 'subjective'
+          options: [
+            { option: "A", text: q.option_a || "N/A" },
+            { option: "B", text: q.option_b || "N/A" },
+            { option: "C", text: q.option_c || "N/A" },
+            { option: "D", text: q.option_d || "N/A" },
+          ],
+          correct_answer: q.correct_answer || "N/A",
+        }));
+
+        // Format diagrams
+        const formattedDiagrams = diagramsResults.map((q) => ({
+          id: q.id,
+          question_text: q.question_text,
+          subject: q.subject.toUpperCase(),
+          year: `YEAR: ${q.year}`,
+          question_type: "diagram", // Use "type" as "question_type"
+          diagram_url: q.diagram_url || "N/A", // Add diagram URL if available
+        }));
+
+        res.json({
+          subjective: formattedSubjective,
+          mcqs: formattedMcqs,
+          diagrams: formattedDiagrams,
+        });
+      });
     });
   });
 });
 
-
-
-
-// Generate PDF Route with Puppeteer
 // Generate PDF Route with Puppeteer
 app.post("/generate-pdf", async (req, res) => {
   const { subject, questions, pdfName } = req.body;
 
   if (!subject || !questions || questions.length === 0 || !pdfName) {
-    return res.status(400).json({ success: false, error: "Missing required fields" });
+    return res
+      .status(400)
+      .json({ success: false, error: "Missing required fields" });
+  }
+
+  // Strip the prefixes (subjective-, objective-, diagram-) from the question IDs
+  const strippedQuestions = questions
+    .map((question) => {
+      const matches = question.match(/-(\d+)$/);
+      if (matches) {
+        return parseInt(matches[1]); // Extract the number from the ID (after the dash)
+      }
+      return null; // In case of unexpected format
+    })
+    .filter(Boolean); // Filter out any invalid IDs
+
+  if (strippedQuestions.length === 0) {
+    return res
+      .status(400)
+      .json({ success: false, error: "Invalid question IDs" });
   }
 
   const subjectiveQuery = `
-        SELECT question_text
-        FROM subjective_questions
-        WHERE id IN (?) AND subject = ?
-    `;
+    SELECT question_text
+    FROM subjective_questions
+    WHERE id IN (?) AND subject = ?
+  `;
   const mcqQuery = `
-        SELECT question_text, option_a, option_b, option_c, option_d
-        FROM mcq_questions
-        WHERE id IN (?) AND subject = ?
-    `;
+    SELECT question_text, option_a, option_b, option_c, option_d
+    FROM mcq_questions
+    WHERE id IN (?) AND subject = ?
+  `;
+  const diagramsQuery = `
+    SELECT question_text, diagram_url
+    FROM diagrams
+    WHERE id IN (?) AND subject = ?
+  `;
 
-  db.query(subjectiveQuery, [questions, subject], async (err, subjectiveResults) => {
-    if (err) return res.status(500).json({ success: false, error: "Failed to fetch subjective questions" });
+  db.query(
+    subjectiveQuery,
+    [strippedQuestions, subject],
+    async (err, subjectiveResults) => {
+      if (err)
+        return res
+          .status(500)
+          .json({
+            success: false,
+            error: "Failed to fetch subjective questions",
+          });
 
-    db.query(mcqQuery, [questions, subject], async (err, mcqResults) => {
-      if (err) return res.status(500).json({ success: false, error: "Failed to fetch MCQs" });
+      db.query(
+        mcqQuery,
+        [strippedQuestions, subject],
+        async (err, mcqResults) => {
+          if (err)
+            return res
+              .status(500)
+              .json({ success: false, error: "Failed to fetch MCQs" });
 
-      const sanitizedSubject = subject.replace(/[^a-zA-Z0-9-_ ]/g, "");
-      const sanitizedPdfName = pdfName.replace(/[^a-zA-Z0-9-_ ]/g, "");
-      const pdfFileName = `${sanitizedPdfName}-${sanitizedSubject}-${"CIEET"}.pdf`;
-      const pdfFilePath = path.join(papersDir, pdfFileName);
+          db.query(
+            diagramsQuery,
+            [strippedQuestions, subject],
+            async (err, diagramResults) => {
+              if (err)
+                return res
+                  .status(500)
+                  .json({
+                    success: false,
+                    error: "Failed to fetch diagram questions",
+                  });
 
-      // Generate HTML for the PDF
-      const htmlContent = `
-  <html>
-    <head>
-      <style>
-        body {
-          font-family: 'Times New Roman', Times, serif;
-          line-height: 1.8;
-          margin: 20px;
-          padding: 0;
-        }
-        h1 {
-          text-align: center;
-          font-size: 24px;
-          margin-bottom: 20px;
-        }
-        .header {
-          text-align: center;
-          margin-bottom: 30px;
-          font-size: 16px;
-          font-weight: bold;
-          color: #2c3e50;
-        }
-        .name {
-          display: inline-block;
-          width: 30%;
-          text-align: center;
-          font-size: 10px;
-          color: #34495e;
-        }
-        .question {
-          margin: 30px 0;
-          padding-left: 20px;
-          padding-top: 10px;
-          padding-bottom: 10px;
-          font-size: 16px;
-          page-break-inside: avoid;
-          border-bottom: 1px dashed #000;
-        }
-        h2 {
-          margin-left: 20px;
-          font-size: 18px;
-          font-weight: bold;
-          color: #2c3e50;
-        }
-        .answer-space {
-          margin-top: 10px;
-          border-top: 1px solid #000;
-          padding: 10px;
-          height: 100px;
-        }
-        .options {
-          margin-left: 40px;
-          margin-top: 10px;
-        }
-        .option {
-          display: inline-block;
-          width: 45%;
-          margin: 5px 0;
-          font-size: 16px;
-        }
-        .page-break {
-          page-break-before: always;
-        }
-        .footer {
-          position: absolute;
-          bottom: 20px;
-          width: 100%;
-          text-align: center;
-          font-size: 14px;
-          color: #7f8c8d;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="header">
-        <div class="name">Mohib Khan</div>
-        <div class="name">Hassan Shaheer</div>
-        <div class="name">Musadiq Balouch</div>
-      </div>
-      <h1>${subject.toUpperCase()} Exam Paper</h1>
-      <h2>Subjective Questions</h2>
-      ${subjectiveResults
-        .map((q, i) => `
-          <div class="question">
-            ${i + 1}. ${q.question_text}
-            <div class="answer-space">Answer:</div>
-          </div>`)
-        .join("")}
-      <h2>MCQ Questions</h2>
-      ${mcqResults
-        .map(
-          (q, i) => `
-            <div class="question">
-              ${i + 1 + subjectiveResults.length}. ${q.question_text}
-              <div class="options">
-                <div class="option">a) ${q.option_a}</div>
-                <div class="option">b) ${q.option_b}</div>
-                <div class="option">c) ${q.option_c}</div>
-                <div class="option">d) ${q.option_d}</div>
+              const sanitizedSubject = subject.replace(/[^a-zA-Z0-9-_ ]/g, "");
+              const sanitizedPdfName = pdfName.replace(/[^a-zA-Z0-9-_ ]/g, "");
+              const pdfFileName = `${sanitizedPdfName}-${sanitizedSubject}-CIEET.pdf`;
+              const pdfFilePath = path.join(papersDir, pdfFileName);
+
+              // Generate HTML for the PDF
+              const htmlContent = `
+          <html>
+            <head>
+              <style>
+                body {
+                  font-family: 'Times New Roman', Times, serif;
+                  line-height: 1.8;
+                  margin: 20px;
+                  padding: 0;
+                }
+                h1 {
+                  text-align: center;
+                  font-size: 24px;
+                  margin-bottom: 20px;
+                }
+                .header {
+                  text-align: center;
+                  margin-bottom: 30px;
+                  font-size: 16px;
+                  font-weight: bold;
+                  color: #2c3e50;
+                }
+                .name {
+                  display: inline-block;
+                  width: 30%;
+                  text-align: center;
+                  font-size: 10px;
+                  color: #34495e;
+                }
+                .question {
+                  margin: 30px 0;
+                  padding-left: 20px;
+                  padding-top: 10px;
+                  padding-bottom: 10px;
+                  font-size: 16px;
+                  page-break-inside: avoid;
+                  border-bottom: 1px dashed #000;
+                }
+                h2 {
+                  margin-left: 20px;
+                  font-size: 18px;
+                  font-weight: bold;
+                  color: #2c3e50;
+                }
+                .answer-space {
+                  margin-top: 10px;
+                  border-top: 1px solid #000;
+                  padding: 10px;
+                  height: 100px;
+                }
+                .options {
+                  margin-left: 40px;
+                  margin-top: 10px;
+                }
+                .option {
+                  display: inline-block;
+                  width: 45%;
+                  margin: 5px 0;
+                  font-size: 16px;
+                }
+                .question-diagram img {
+                  max-width: 100%;
+                  height: auto;
+                  margin-top: 10px;
+                }
+                .page-break {
+                  page-break-before: always;
+                }
+                .footer {
+                  position: absolute;
+                  bottom: 20px;
+                  width: 100%;
+                  text-align: center;
+                  font-size: 14px;
+                  color: #7f8c8d;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="header">
+                <div class="name">Mohib Khan</div>
+                <div class="name">Hassan Shaheer</div>
+                <div class="name">Musadiq Balouch</div>
               </div>
-            </div>`
-        )
-        .join("")}
-      <div class="footer">Generated by Exam Automation System</div>
-    </body>
-  </html>
-`;
+              <h1>${subject.toUpperCase()} Exam Paper</h1>
+              
+              <h2>Subjective Questions</h2>
+              ${subjectiveResults
+                .map(
+                  (q, i) => ` 
+                    <div class="question">
+                      ${i + 1}. ${q.question_text}
+                      <div class="answer-space">Answer:</div>
+                    </div>`
+                )
+                .join("")}
+              
+              <h2>MCQ Questions</h2>
+              ${mcqResults
+                .map(
+                  (q, i) => `
+                  <div class="question">
+                    ${i + 1 + subjectiveResults.length}. ${q.question_text}
+                    <div class="options">
+                      <div class="option">a) ${q.option_a}</div>
+                      <div class="option">b) ${q.option_b}</div>
+                      <div class="option">c) ${q.option_c}</div>
+                      <div class="option">d) ${q.option_d}</div>
+                    </div>
+                  </div>`
+                )
+                .join("")}
+           <h2>Diagram Questions</h2>
+${diagramResults
+  .map((q, i) => {
+    const imageSrc = `http://localhost:3000/Images/Diagrams/${q.diagram_url}.png`;
+    console.log("Final Image Source:", imageSrc);
 
-      try {
-        const browser = await puppeteer.launch();
-        const page = await browser.newPage();
+    return `
+      <div class="question">
+        ${i + 1 + subjectiveResults.length + mcqResults.length}. ${q.question_text}
+        <div class="question-diagram">
+          <img src="${imageSrc}" alt="Diagram Question" />
+        </div>
+      </div>`;
+  })
+  .join("")}
+ <div class="footer">Generated by Exam Automation System</div>
+            </body>
+          </html>
+        `;
 
-        await page.setContent(htmlContent);
-        await page.pdf({ path: pdfFilePath, format: "A4" });
+              try {
+                const browser = await puppeteer.launch();
+                const page = await browser.newPage();
 
-        await browser.close();
+                await page.setContent(htmlContent);
+                await page.pdf({ path: pdfFilePath, format: "A4" });
 
-        const insertQuery = "INSERT INTO generated_pdfs (filename, user_id, created_at) VALUES (?, ?, NOW())";
-        db.query(insertQuery, [pdfFileName, req.session.user.id], (err) => {
-        
-          if (err) return res.status(500).json({ success: false, error: "Failed to save PDF details" });
+                await browser.close();
 
-          res.json({ success: true, pdfFileName });
-        });
-      } catch (error) {
-        console.error("Error generating PDF with Puppeteer:", error);
-        res.status(500).json({ success: false, error: "Failed to generate PDF" });
-      }
-    });
-  });
+                const insertQuery =
+                  "INSERT INTO generated_pdfs (filename, user_id, created_at) VALUES (?, ?, NOW())";
+                db.query(
+                  insertQuery,
+                  [pdfFileName, req.session.user.id],
+                  (err) => {
+                    if (err)
+                      return res
+                        .status(500)
+                        .json({
+                          success: false,
+                          error: "Failed to save PDF details",
+                        });
+
+                    res.json({ success: true, pdfFileName });
+                  }
+                );
+              } catch (error) {
+                console.error("Error generating PDF with Puppeteer:", error);
+                res
+                  .status(500)
+                  .json({ success: false, error: "Failed to generate PDF" });
+              }
+            }
+          );
+        }
+      );
+    }
+  );
 });
 
 // Generated Papers List

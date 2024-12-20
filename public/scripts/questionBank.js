@@ -5,22 +5,38 @@ function toggleModalVisibility(modalId, isVisible) {
 
 // Initialize Event Listeners
 function initializeEventListeners() {
-  document.getElementById("pdfForm").addEventListener("submit", handleGeneratePDF);
-  document.getElementById("selectAllButton").addEventListener("click", selectAllQuestions);
-  document.getElementById("searchInput").addEventListener("keyup", filterQuestions);
-  document.getElementById("yearFilter").addEventListener("change", filterQuestions);
-  document.getElementById("typeFilter").addEventListener("change", filterQuestions);
-  document.getElementById("randomSelectButton").addEventListener("click", toggleRandomSelectionInput);
-  document.getElementById("random-question-count").addEventListener("input", validateRandomInput);
+  document
+    .getElementById("pdfForm")
+    .addEventListener("submit", handleGeneratePDF);
+  document
+    .getElementById("selectAllButton")
+    .addEventListener("click", selectAllQuestions);
+  document
+    .getElementById("searchInput")
+    .addEventListener("keyup", filterQuestions);
+  document
+    .getElementById("yearFilter")
+    .addEventListener("change", filterQuestions);
+  document
+    .getElementById("typeFilter")
+    .addEventListener("change", filterQuestions);
+  document
+    .getElementById("randomSelectButton")
+    .addEventListener("click", toggleRandomSelectionInput);
+  document
+    .getElementById("random-question-count")
+    .addEventListener("input", validateRandomInput);
 
   // Event listener for checkbox selection
-  document.querySelectorAll('.question-checkbox').forEach(checkbox => {
-    checkbox.addEventListener('change', filterQuestions); // Re-filter when a checkbox is clicked
+  document.querySelectorAll(".question-checkbox").forEach((checkbox) => {
+    checkbox.addEventListener("change", filterQuestions); // Re-filter when a checkbox is clicked
   });
 }
 
 function filterQuestions() {
-  const searchQuery = document.getElementById("searchInput").value.toLowerCase();
+  const searchQuery = document
+    .getElementById("searchInput")
+    .value.toLowerCase();
   const yearFilter = document.getElementById("yearFilter").value;
   const typeFilter = document.getElementById("typeFilter").value.toLowerCase(); // Ensure the type filter is lowercase
   const questions = document.querySelectorAll(".question-item");
@@ -35,7 +51,10 @@ function filterQuestions() {
       : "";
 
     const questionType = question.querySelector(".question-type")
-      ? question.querySelector(".question-type").textContent.trim().toLowerCase()
+      ? question
+          .querySelector(".question-type")
+          .textContent.trim()
+          .toLowerCase()
       : "";
 
     // Check if the question matches the search query
@@ -48,7 +67,8 @@ function filterQuestions() {
     const matchesType = typeFilter ? questionType === typeFilter : true;
 
     // Set the display style based on matching conditions
-    question.style.display = matchesSearch && matchesYear && matchesType ? "" : "none";
+    question.style.display =
+      matchesSearch && matchesYear && matchesType ? "" : "none";
   });
 }
 
@@ -57,32 +77,42 @@ function showQuestions(subject) {
   document.getElementById("questions-container").style.display = "block";
 
   // Remove active class from all buttons
-  document.querySelectorAll('.subject-selection button').forEach(btn => {
-    btn.classList.remove('active');
+  document.querySelectorAll(".subject-selection button").forEach((btn) => {
+    btn.classList.remove("active");
   });
 
   // Add active class to the clicked button
-  const clickedButton = document.querySelector(`button[data-subject="${subject}"]`);
-  clickedButton.classList.add('active');
+  const clickedButton = document.querySelector(
+    `button[data-subject="${subject}"]`
+  );
+  clickedButton.classList.add("active");
 
   fetch(`/api/questions/${subject}`)
-    .then((response) => response.json())
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.statusText}`);
+      }
+      return response.json();
+    })
     .then((data) => {
-      const { subjective, mcqs } = data;
       const questionList = document.getElementById("question-list");
-
       questionList.innerHTML = ""; // Clear previous questions
 
-      // Display subjective questions
+      // Safely extract and validate data
+      const subjective = Array.isArray(data.subjective) ? data.subjective : [];
+      const mcqs = Array.isArray(data.mcqs) ? data.mcqs : [];
+      const diagrams = Array.isArray(data.diagrams) ? data.diagrams : [];
+
+      // Display Subjective Questions
       subjective.forEach((q) => {
         const questionItem = document.createElement("div");
-        questionItem.classList.add("question-item");
-        questionItem.classList.add("subjective");
+        questionItem.classList.add("question-item", "subjective");
 
         questionItem.innerHTML = `
           <div class="check_container">
-            <input id="checkbox-${q.id}" class="question-checkbox hidden" type="checkbox" value="${q.id}" name="questions">
-            <label class="checkbox" for="checkbox-${q.id}"></label>
+           <input id="subjective-${q.id}" class="question-checkbox hidden" type="checkbox" value="subjective-${q.id}" name="questions">
+<label class="checkbox" for="subjective-${q.id}"></label>
+
           </div>
           <span class="question-text">${q.question_text}</span>
           <div class="question-details">
@@ -96,51 +126,76 @@ function showQuestions(subject) {
       // Display MCQs (Objective Questions)
       mcqs.forEach((q) => {
         const questionItem = document.createElement("div");
-        questionItem.classList.add("question-item");
-        questionItem.classList.add("objective");
+        questionItem.classList.add("question-item", "objective");
 
-        // Prepare options HTML
         const optionsHTML = q.options
-          .map((option) => `<div class="option">${option.option}: ${option.text}</div>`)
-          .join('');
+          .map(
+            (option) =>
+              `<div class="option">${option.option}: ${option.text}</div>`
+          )
+          .join("");
 
-        // Correct answer
         const correctAnswer = `<div class="correct-answer"><strong>Correct Answer:</strong> ${q.correct_answer}</div>`;
 
-        // Append the question details
         questionItem.innerHTML = `
           <div class="check_container">
-            <input id="checkbox-${q.id}" class="question-checkbox hidden" type="checkbox" value="${q.id}" name="questions">
-            <label class="checkbox" for="checkbox-${q.id}"></label>
+            <input id="objective-${q.id}" class="question-checkbox hidden" type="checkbox" value="objective-${q.id}" name="questions">
+<label class="checkbox" for="objective-${q.id}"></label>
+
           </div>
           <span class="question-text">${q.question_text}</span>
-          <div class="question-options">
-            ${optionsHTML}
-          </div>
+          <div class="question-options">${optionsHTML}</div>
           ${correctAnswer}
           <div class="question-details">
             <div class="question-year">${q.year}</div>
             <div class="question-type">${q.type}</div>
           </div>
         `;
-
         questionList.appendChild(questionItem);
       });
 
-      // Reinitialize event listeners for new checkboxes
-      document.querySelectorAll('.question-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', filterQuestions);
+      // Display Diagram Questions
+      diagrams.forEach((q) => {
+        const questionItem = document.createElement("div");
+        questionItem.classList.add("question-item", "diagram");
+
+        const diagramImage = q.diagram_url
+          ? `<div class="question-diagram">
+       <img src="/Images/Diagrams/${q.diagram_url}.png" alt="Diagram" loading="lazy" onerror="this.src='/Images/Diagrams/abc-image.png';">
+     </div>`
+          : `<div class="question-diagram">[Diagram not available]</div>`;
+
+        questionItem.innerHTML = `
+          <div class="check_container">
+            <input id="diagram-${q.id}" class="question-checkbox hidden" type="checkbox" value="diagram-${q.id}" name="questions">
+<label class="checkbox" for="diagram-${q.id}"></label>
+
+          </div>
+          <span class="question-text">${q.question_text}</span>
+          ${diagramImage}
+          <div class="question-details">
+            <div class="question-year">${q.year}</div>
+            <div class="question-type">${q.question_type}</div>
+          </div>
+        `;
+        questionList.appendChild(questionItem);
       });
 
-      // Apply the filters after fetching and displaying the questions
-      filterQuestions();
+      // Reinitialize event listeners for checkboxes
+      // Reinitialize event listeners for dynamically added checkboxes
+      document.querySelectorAll(".question-checkbox").forEach((checkbox) => {
+        checkbox.addEventListener("change", () => {
+          console.log(`Checkbox ${checkbox.id} selected: ${checkbox.checked}`);
+        });
+      });
+
+      filterQuestions(); // Apply filters
     })
     .catch((error) => {
       console.error("Error fetching questions:", error);
+      alert("Failed to fetch questions. Please try again later.");
     });
 }
-
-
 
 // Function to select all questions
 function selectAllQuestions() {
@@ -215,31 +270,38 @@ async function handleGeneratePDF(event) {
 }
 
 
+
+
+
 // Helper function to format file size from bytes to B, KB, MB, etc.
 function formatFileSize(bytes) {
   if (bytes < 1024) return `${bytes} B`;
-  else if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' KB';
-  else if (bytes < 1073741824) return (bytes / 1048576).toFixed(2) + ' MB';
-  else return (bytes / 1073741824).toFixed(2) + ' GB';
+  else if (bytes < 1048576) return (bytes / 1024).toFixed(2) + " KB";
+  else if (bytes < 1073741824) return (bytes / 1048576).toFixed(2) + " MB";
+  else return (bytes / 1073741824).toFixed(2) + " GB";
 }
 
 // Function to handle random selection
 async function selectRandomly() {
-  const subject = document.querySelector("button.active").getAttribute("data-subject");
-  const questionCount = parseInt(document.getElementById("random-question-count").value, 10);
+  const subject = document
+    .querySelector("button.active")
+    .getAttribute("data-subject");
+  const questionCount = parseInt(
+    document.getElementById("random-question-count").value,
+    10
+  );
 
   // Fetch questions for the selected subject
   const response = await fetch(`/api/questions/${subject}`);
   const data = await response.json();
 
   // Combine both subjective and MCQ questions
-  const allQuestions = [
-    ...data.subjective,
-    ...data.mcqs
-  ];
+  const allQuestions = [...data.subjective, ...data.mcqs];
 
   if (questionCount > allQuestions.length) {
-    alert("The number of questions exceeds the available questions. Try again.");
+    alert(
+      "The number of questions exceeds the available questions. Try again."
+    );
     return;
   }
 
@@ -252,16 +314,18 @@ async function selectRandomly() {
   });
 
   selectedQuestions.forEach((question) => {
-    const checkbox = document.querySelector(`input[value="${question.id}"]`);
+    const checkbox = document.querySelector(`input[value="${question.type}-${question.id}"]`);
     if (checkbox) {
       checkbox.checked = true;
     }
-  });
+  });  
 }
 
 // Function to shuffle an array (Fisher-Yates algorithm)
 function shuffle(array) {
-  let currentIndex = array.length, randomIndex, temporaryValue;
+  let currentIndex = array.length,
+    randomIndex,
+    temporaryValue;
 
   while (currentIndex !== 0) {
     randomIndex = Math.floor(Math.random() * currentIndex);
@@ -277,8 +341,11 @@ function shuffle(array) {
 
 // Function to toggle the random selection input field visibility
 function toggleRandomSelectionInput() {
-  const randomSelectionContainer = document.getElementById("random-selection-container");
-  randomSelectionContainer.style.display = randomSelectionContainer.style.display === "none" ? "block" : "none";
+  const randomSelectionContainer = document.getElementById(
+    "random-selection-container"
+  );
+  randomSelectionContainer.style.display =
+    randomSelectionContainer.style.display === "none" ? "block" : "none";
 }
 
 // Function to validate random question input
@@ -292,19 +359,21 @@ function validateRandomInput() {
 }
 
 // Add event listener to the PDF generation form
-document.getElementById("pdfForm").addEventListener("submit", handleGeneratePDF);
+document
+  .getElementById("pdfForm")
+  .addEventListener("submit", handleGeneratePDF);
 
 // Initialize event listeners after DOM content is loaded
 document.addEventListener("DOMContentLoaded", initializeEventListeners);
 
 // Ensure the DOM is fully loaded before attaching the event listener
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
   let viewPapersBtn = document.getElementById("viewBtn");
-  
+
   // Check if the button exists
-  if(viewPapersBtn) {
-    viewPapersBtn.addEventListener("click", function() {
-      window.location.href = "/generatedPapers";  // Redirect to the generated papers route
+  if (viewPapersBtn) {
+    viewPapersBtn.addEventListener("click", function () {
+      window.location.href = "/generatedPapers"; // Redirect to the generated papers route
     });
   }
 });
