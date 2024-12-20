@@ -23,9 +23,9 @@ function initializeEventListeners() {
   document
     .getElementById("randomSelectButton")
     .addEventListener("click", toggleRandomSelectionInput);
-  document
-    .getElementById("random-question-count")
-    .addEventListener("input", validateRandomInput);
+  // document
+  //   .getElementById("random-question-count")
+  //   .addEventListener("input", validateRandomInput);
 
   // Event listener for checkbox selection
   document.querySelectorAll(".question-checkbox").forEach((checkbox) => {
@@ -110,9 +110,8 @@ function showQuestions(subject) {
 
         questionItem.innerHTML = `
           <div class="check_container">
-           <input id="subjective-${q.id}" class="question-checkbox hidden" type="checkbox" value="subjective-${q.id}" name="questions">
-<label class="checkbox" for="subjective-${q.id}"></label>
-
+            <input id="subjective-${q.id}" class="question-checkbox hidden" type="checkbox" value="subjective-${q.id}" name="questions">
+            <label class="checkbox" for="subjective-${q.id}"></label>
           </div>
           <span class="question-text">${q.question_text}</span>
           <div class="question-details">
@@ -140,8 +139,7 @@ function showQuestions(subject) {
         questionItem.innerHTML = `
           <div class="check_container">
             <input id="objective-${q.id}" class="question-checkbox hidden" type="checkbox" value="objective-${q.id}" name="questions">
-<label class="checkbox" for="objective-${q.id}"></label>
-
+            <label class="checkbox" for="objective-${q.id}"></label>
           </div>
           <span class="question-text">${q.question_text}</span>
           <div class="question-options">${optionsHTML}</div>
@@ -153,8 +151,7 @@ function showQuestions(subject) {
         `;
         questionList.appendChild(questionItem);
       });
-
-      // Display Diagram Questions
+  
       diagrams.forEach((q) => {
         const questionItem = document.createElement("div");
         questionItem.classList.add("question-item", "diagram");
@@ -165,11 +162,11 @@ function showQuestions(subject) {
      </div>`
           : `<div class="question-diagram">[Diagram not available]</div>`;
 
+
         questionItem.innerHTML = `
           <div class="check_container">
             <input id="diagram-${q.id}" class="question-checkbox hidden" type="checkbox" value="diagram-${q.id}" name="questions">
-<label class="checkbox" for="diagram-${q.id}"></label>
-
+            <label class="checkbox" for="diagram-${q.id}"></label>
           </div>
           <span class="question-text">${q.question_text}</span>
           ${diagramImage}
@@ -181,7 +178,6 @@ function showQuestions(subject) {
         questionList.appendChild(questionItem);
       });
 
-      // Reinitialize event listeners for checkboxes
       // Reinitialize event listeners for dynamically added checkboxes
       document.querySelectorAll(".question-checkbox").forEach((checkbox) => {
         checkbox.addEventListener("change", () => {
@@ -190,12 +186,112 @@ function showQuestions(subject) {
       });
 
       filterQuestions(); // Apply filters
+
+      // Scroll to the questions container smoothly
+      document.getElementById("questions-container").scrollIntoView({
+        behavior: "smooth"
+      });
     })
     .catch((error) => {
       console.error("Error fetching questions:", error);
       alert("Failed to fetch questions. Please try again later.");
     });
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  // Elements
+  const addNewQuestionBtn = document.getElementById("addNewQuestionBtn");
+  const addQuestionContainer = document.getElementById("add-question-modal");  // Ensure this matches the modal ID in HTML
+  const overlay = document.getElementById("overlay");
+  const closeModalBtn = document.getElementById("closeModalBtn");
+
+  // Ensure all modal elements are present
+  if (addNewQuestionBtn && addQuestionContainer && overlay && closeModalBtn) {
+
+    // Show modal when 'Add New Question' button is clicked
+    addNewQuestionBtn.addEventListener("click", () => {
+      addQuestionContainer.classList.add("show");
+      overlay.classList.add("show");
+    });
+
+    // Close modal when overlay or close button is clicked
+    overlay.addEventListener("click", closeModal);
+    closeModalBtn.addEventListener("click", closeModal);
+
+    // Close modal function to remove 'show' class from modal and overlay
+    function closeModal() {
+      addQuestionContainer.classList.remove("show");
+      overlay.classList.remove("show");
+    }
+
+    // Handle form logic for adding questions
+    const addQuestionForm = document.getElementById("add-question-form");
+    const questionTypeSelect = document.getElementById("type");
+    const optionsContainer = document.getElementById("options-container");
+    const diagramContainer = document.getElementById("diagram-container");
+
+    // Show relevant input fields based on question type selected
+    questionTypeSelect.addEventListener("change", () => {
+      const questionType = questionTypeSelect.value;
+
+      // Toggle visibility of options and diagram containers based on question type
+      optionsContainer.style.display = questionType === "objective" ? "block" : "none";
+      diagramContainer.style.display = questionType === "diagram" ? "block" : "none";
+    });
+
+    // Handle form submission
+    addQuestionForm.addEventListener("submit", async (e) => {
+      e.preventDefault();  // Prevent the form from submitting normally
+
+      // Collect form data
+      const formData = new FormData(addQuestionForm);
+      const questionType = formData.get("type");
+
+      // Determine the API endpoint based on the question type
+      let endpoint = "";
+      if (questionType === "objective") {
+        endpoint = "/api/questions/mcq";
+      } else if (questionType === "diagram") {
+        endpoint = "/api/questions/diagrams";
+      } else if (questionType === "subjective") {
+        endpoint = "/api/questions/subjective";
+      } else {
+        alert("Invalid question type selected!");
+        return;  // Exit if invalid question type is selected
+      }
+
+      // Make the API request to add the question
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          body: formData,  // Send formData for file upload (if any)
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert("Question added successfully!");
+          addQuestionForm.reset();  // Reset the form
+          optionsContainer.style.display = "none";  // Hide the options container
+          diagramContainer.style.display = "none";  // Hide the diagram container
+          closeModal();  // Close the modal after successful submission
+        } else {
+          alert(`Error: ${result.error || result.message}`);  // Display error if API returns an error
+        }
+      } catch (error) {
+        console.error("Error adding question:", error);
+        alert("Failed to add question. Please try again later.");
+      }
+    });
+
+  } else {
+    console.error("One or more modal elements not found in the DOM");
+  }
+});
+
+
+
+
 
 // Function to select all questions
 function selectAllQuestions() {

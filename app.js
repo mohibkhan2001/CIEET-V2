@@ -3,6 +3,7 @@ const session = require("express-session"); // Add express-session
 const bcrypt = require("bcrypt");
 const { body, validationResult } = require("express-validator");
 const path = require("path");
+const multer = require('multer');
 const fs = require("fs");
 const puppeteer = require("puppeteer"); // Puppeteer for PDF generation
 const db = require("./models/database"); // MySQL database connection
@@ -15,7 +16,9 @@ app.use(express.static(path.join(__dirname, "public"))); // Static files in 'pub
 app.use(
   "/Images/Diagram",
   express.static(path.join(__dirname, "Images/Diagram"))
+  
 );
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -200,6 +203,8 @@ app.post("/delete-file", (req, res) => {
         .status(500)
         .json({ success: false, error: "Error deleting file" });
     }
+
+    
 
     // Remove from the database as well
     const deleteQuery = "DELETE FROM generated_pdfs WHERE filename = ?";
@@ -455,6 +460,103 @@ app.get("/api/questions/:subject", (req, res) => {
   });
 });
 
+
+// Ensure the Images/Diagrams directory inside public exists
+const diagramDir = path.join(__dirname, "public", "Images", "Diagrams");
+if (!fs.existsSync(diagramDir)) {
+  fs.mkdirSync(diagramDir, { recursive: true }); // Create directory if it doesn't exist
+}
+
+// Multer Storage Configuration
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, diagramDir); // Save to public/Images/Diagrams/
+  },
+  filename: (req, file, cb) => {
+    const extname = path.extname(file.originalname); // Get the file extension (e.g., .png)
+    const filenameWithoutExtension = path.basename(file.originalname, extname); // Get the filename without extension
+    cb(null, `${filenameWithoutExtension}${extname}`); // Save with the original name (no suffix)
+  },
+});
+
+// Multer Upload Middleware
+const upload = multer({ storage });
+
+// Route to add a new diagram question
+app.post("/api/questions/diagrams", upload.single("diagram_image"), (req, res) => {
+  const { question_text, subject, year } = req.body; // Extract form fields
+  const diagram_url = req.file ? path.basename(req.file.filename, path.extname(req.file.filename)) : null; // Save the filename without extension in the DB
+
+  if (!diagram_url) {
+    return res.status(400).json({ error: "Diagram image is required" });
+  }
+
+  // Insert into the database with the original filename (without suffix)
+  const insertQuery = `
+    INSERT INTO diagrams (question_text, subject, year, type, diagram_url)
+    VALUES (?, ?, ?, 'diagram', ?)
+  `;
+
+  db.query(insertQuery, [question_text, subject, year, diagram_url], (err, result) => {
+    if (err) {
+      console.error("Error adding diagram question:", err);
+      return res.status(500).json({ error: "Failed to add diagram question" });
+    }
+
+    res.status(201).json({
+      message: "Diagram question added successfully",
+      id: result.insertId,
+      diagram_url: `/Images/Diagrams/${diagram_url}${path.extname(req.file.filename)}`, // Return path to image without extension
+    });
+  });
+});
+
+
+
+// Route to add a new subjective question
+app.post("/api/questions/subjective", upload.none(), (req, res) => {
+  const { question_text, subject, year } = req.body;
+
+  const insertQuery = `
+        INSERT INTO subjective_questions (question_text, subject, year, question_type)
+        VALUES (?, ?, ?, 'subjective')`;
+
+  db.query(insertQuery, [question_text, subject, year], (err, result) => {
+    if (err) {
+      console.error("Error adding subjective question:", err);
+      return res.status(500).json({ error: "Failed to add subjective question" });
+    }
+    res.status(201).json({ message: "Subjective question added successfully", id: result.insertId });
+  });
+});
+
+// Route to add a new MCQ question
+app.post("/api/questions/mcq", upload.none(), (req, res) => {
+  console.log(req.body);  // Log the incoming request data to verify
+  const { question_text, subject, year, option_a, option_b, option_c, option_d, correct_answer, type } = req.body;
+
+  // Ensure all fields are being passed correctly
+  if (!question_text || !subject || !year || !option_a || !option_b || !option_c || !option_d || !correct_answer || !type) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  const insertQuery = `
+        INSERT INTO mcq_questions (question_text, subject, year, option_a, option_b, option_c, option_d, correct_answer, type)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+  db.query(insertQuery, [question_text, subject, year, option_a, option_b, option_c, option_d, correct_answer, type], (err, result) => {
+    if (err) {
+      console.error("Error adding MCQ question:", err);
+      return res.status(500).json({ error: "Failed to add MCQ question" });
+    }
+    res.status(201).json({ message: "MCQ question added successfully", id: result.insertId });
+  });
+});
+
+
+
+
+
 // Generate PDF Route with Puppeteer
 app.post("/generate-pdf", async (req, res) => {
   const { subject, questions, pdfName } = req.body;
@@ -537,137 +639,163 @@ app.post("/generate-pdf", async (req, res) => {
               const pdfFilePath = path.join(papersDir, pdfFileName);
 
               // Generate HTML for the PDF
+              const fs = require('fs');
+              const path = require('path');
+              
+              // Array of possible image extensions
+              const extensions = ['png', 'jpg', 'jpeg', 'gif'];
+              
+              // Generate HTML content dynamically
               const htmlContent = `
-          <html>
-            <head>
-              <style>
-                body {
-                  font-family: 'Times New Roman', Times, serif;
-                  line-height: 1.8;
-                  margin: 20px;
-                  padding: 0;
-                }
-                h1 {
-                  text-align: center;
-                  font-size: 24px;
-                  margin-bottom: 20px;
-                }
-                .header {
-                  text-align: center;
-                  margin-bottom: 30px;
-                  font-size: 16px;
-                  font-weight: bold;
-                  color: #2c3e50;
-                }
-                .name {
-                  display: inline-block;
-                  width: 30%;
-                  text-align: center;
-                  font-size: 10px;
-                  color: #34495e;
-                }
-                .question {
-                  margin: 30px 0;
-                  padding-left: 20px;
-                  padding-top: 10px;
-                  padding-bottom: 10px;
-                  font-size: 16px;
-                  page-break-inside: avoid;
-                  border-bottom: 1px dashed #000;
-                }
-                h2 {
-                  margin-left: 20px;
-                  font-size: 18px;
-                  font-weight: bold;
-                  color: #2c3e50;
-                }
-                .answer-space {
-                  margin-top: 10px;
-                  border-top: 1px solid #000;
-                  padding: 10px;
-                  height: 100px;
-                }
-                .options {
-                  margin-left: 40px;
-                  margin-top: 10px;
-                }
-                .option {
-                  display: inline-block;
-                  width: 45%;
-                  margin: 5px 0;
-                  font-size: 16px;
-                }
-                .question-diagram img {
-                  max-width: 100%;
-                  height: auto;
-                  margin-top: 10px;
-                }
-                .page-break {
-                  page-break-before: always;
-                }
-                .footer {
-                  position: absolute;
-                  bottom: 20px;
-                  width: 100%;
-                  text-align: center;
-                  font-size: 14px;
-                  color: #7f8c8d;
-                }
-              </style>
-            </head>
-            <body>
-              <div class="header">
-                <div class="name">Mohib Khan</div>
-                <div class="name">Hassan Shaheer</div>
-                <div class="name">Musadiq Balouch</div>
-              </div>
-              <h1>${subject.toUpperCase()} Exam Paper</h1>
-              
-              <h2>Subjective Questions</h2>
-              ${subjectiveResults
-                .map(
-                  (q, i) => ` 
-                    <div class="question">
-                      ${i + 1}. ${q.question_text}
-                      <div class="answer-space">Answer:</div>
-                    </div>`
-                )
-                .join("")}
-              
-              <h2>MCQ Questions</h2>
-              ${mcqResults
-                .map(
-                  (q, i) => `
-                  <div class="question">
-                    ${i + 1 + subjectiveResults.length}. ${q.question_text}
-                    <div class="options">
-                      <div class="option">a) ${q.option_a}</div>
-                      <div class="option">b) ${q.option_b}</div>
-                      <div class="option">c) ${q.option_c}</div>
-                      <div class="option">d) ${q.option_d}</div>
+                <html>
+                  <head>
+                    <style>
+                      body {
+                        font-family: 'Times New Roman', Times, serif;
+                        line-height: 1.8;
+                        margin: 20px;
+                        padding: 0;
+                      }
+                      h1 {
+                        text-align: center;
+                        font-size: 24px;
+                        margin-bottom: 20px;
+                      }
+                      .header {
+                        text-align: center;
+                        margin-bottom: 30px;
+                        font-size: 16px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                      }
+                      .name {
+                        display: inline-block;
+                        width: 30%;
+                        text-align: center;
+                        font-size: 10px;
+                        color: #34495e;
+                      }
+                      .question {
+                        margin: 30px 0;
+                        padding-left: 20px;
+                        padding-top: 10px;
+                        padding-bottom: 10px;
+                        font-size: 16px;
+                        page-break-inside: avoid;
+                        border-bottom: 1px dashed #000;
+                      }
+                      h2 {
+                        margin-left: 20px;
+                        font-size: 18px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                      }
+                      .answer-space {
+                        margin-top: 10px;
+                        border-top: 1px solid #000;
+                        padding: 10px;
+                        height: 100px;
+                      }
+                      .options {
+                        margin-left: 40px;
+                        margin-top: 10px;
+                      }
+                      .option {
+                        display: inline-block;
+                        width: 45%;
+                        margin: 5px 0;
+                        font-size: 16px;
+                      }
+                      .question-diagram img {
+                        max-width: 100%;
+                        height: auto;
+                        margin-top: 10px;
+                      }
+                      .page-break {
+                        page-break-before: always;
+                      }
+                      .footer {
+                        position: absolute;
+                        bottom: 20px;
+                        width: 100%;
+                        text-align: center;
+                        font-size: 14px;
+                        color: #7f8c8d;
+                      }
+                    </style>
+                  </head>
+                  <body>
+                    <div class="header">
+                      <div class="name">Mohib Khan</div>
+                      <div class="name">Hassan Shaheer</div>
+                      <div class="name">Musadiq Balouch</div>
                     </div>
-                  </div>`
-                )
-                .join("")}
-           <h2>Diagram Questions</h2>
-${diagramResults
-  .map((q, i) => {
-    const imageSrc = `http://localhost:3000/Images/Diagrams/${q.diagram_url}.png`;
-    console.log("Final Image Source:", imageSrc);
-
-    return `
-      <div class="question">
-        ${i + 1 + subjectiveResults.length + mcqResults.length}. ${q.question_text}
-        <div class="question-diagram">
-          <img src="${imageSrc}" alt="Diagram Question" />
-        </div>
-      </div>`;
-  })
-  .join("")}
- <div class="footer">Generated by Exam Automation System</div>
-            </body>
-          </html>
-        `;
+                    <h1>${subject.toUpperCase()} Exam Paper</h1>
+              
+                    <h2>Subjective Questions</h2>
+                    ${subjectiveResults
+                      .map(
+                        (q, i) => ` 
+                          <div class="question">
+                            ${i + 1}. ${q.question_text}
+                            <div class="answer-space">Answer:</div>
+                          </div>`
+                      )
+                      .join("")}
+              
+                    <h2>MCQ Questions</h2>
+                    ${mcqResults
+                      .map(
+                        (q, i) => `
+                        <div class="question">
+                          ${i + 1 + subjectiveResults.length}. ${q.question_text}
+                          <div class="options">
+                            <div class="option">a) ${q.option_a}</div>
+                            <div class="option">b) ${q.option_b}</div>
+                            <div class="option">c) ${q.option_c}</div>
+                            <div class="option">d) ${q.option_d}</div>
+                          </div>
+                        </div>`
+                      )
+                      .join("")}
+              
+                    <h2>Diagram Questions</h2>
+                    ${diagramResults
+                      .map((q, i) => {
+                        let imageSrc = ''; // Variable to hold the valid image source
+              
+                        // Loop through the extensions array to find the valid image
+                        for (let ext of extensions) {
+                          const filePath = path.join(__dirname, 'public/Images/Diagrams', `${q.diagram_url}.${ext}`);
+                          if (fs.existsSync(filePath)) {
+                            imageSrc = `/Images/Diagrams/${q.diagram_url}.${ext}`;
+                            break; // Exit loop once valid image is found
+                          }
+                        }
+              
+                        // If no image is found, use a fallback image
+                        if (!imageSrc) {
+                          imageSrc = '/Images/Diagrams/abc-image.png';
+                        }
+              
+                        console.log("Final Image Source:", imageSrc);
+              
+                        return `
+                          <div class="question">
+                            ${i + 1 + subjectiveResults.length + mcqResults.length}. ${q.question_text}
+                            <div class="question-diagram">
+                              <img src="${imageSrc}" alt="Diagram Question" />
+                            </div>
+                          </div>`;
+                      })
+                      .join("")}
+              
+                    <div class="footer">Generated by Exam Automation System</div>
+                  </body>
+                </html>
+              `;
+              
+              
 
               try {
                 const browser = await puppeteer.launch();

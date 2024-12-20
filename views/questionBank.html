@@ -68,6 +68,54 @@
         </button>
       </div>
 
+      <!-- Overlay Background (hidden initially) -->
+      <div id="overlay" class="overlay"></div>
+
+      <!-- Add New Question Section (Modal) -->
+      <div id="add-question-modal" class="modal">
+        <div class="modal-content">
+          <button class="close-btn" id="closeModalBtn">&times;</button>
+          <h2>Add New Question</h2>
+          <form id="add-question-form" enctype="multipart/form-data">
+            <label>Subject:</label>
+            <input type="text" name="subject" required />
+          
+            <label>Question Type:</label>
+            <select id="type" name="type" required>
+              <option value="subjective">Subjective</option>
+              <option value="objective">Objective (MCQ)</option>
+              <option value="diagram">Diagram</option>
+            </select>
+          
+            <label>Question Text:</label>
+            <textarea name="question_text" required></textarea>
+          
+            <div id="options-container" style="display: none;">
+              <label>Option A:</label>
+              <input type="text" name="option_a" />
+              <label>Option B:</label>
+              <input type="text" name="option_b" />
+              <label>Option C:</label>
+              <input type="text" name="option_c" />
+              <label>Option D:</label>
+              <input type="text" name="option_d" />
+              <label>Correct Answer:</label>
+              <input type="text" name="correct_answer" />
+            </div>
+          
+            <div id="diagram-container" style="display: none;">
+              <label>Diagram Image:</label>
+              <input type="file" name="diagram_image" accept="image/*" />
+            </div>
+          
+            <label>Year:</label>
+            <input type="number" name="year" required />
+          
+            <button type="submit">Add Question</button>
+          </form>
+        </div>
+      </div>
+
       <div id="questions-container" style="display: none">
         <h2>Questions</h2>
 
@@ -106,17 +154,8 @@
           <button id="randomSelectButton" onclick="selectRandomly()">
             Select Randomly
           </button>
-
-          <!-- Input field for selecting number of random questions -->
-          <div id="random-selection-container" style="display: none;">
-            <label for="random-question-count">&#9733; Number of questions:</label>
-            <input
-              type="number"
-              id="random-question-count"
-              min="1"
-              placeholder="No. of Questions"
-            />
-          </div>
+          <!-- Add New Question Button Inside Action Buttons -->
+          <button id="addNewQuestionBtn">Add New Question</button>
         </div>
 
         <form id="pdfForm">
