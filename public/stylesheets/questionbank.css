@@ -103,10 +103,13 @@ p {
     border: 1px solid #ddd;
     border-radius: 5px;
 }
+.filter-options label{
+  color: #002244;
+}
 
 /* Select All Button */
 #selectAllButton {
-    background-color: #007BFF;
+    background-color: #002244;
     color: white;
     padding: 12px 25px;
     margin-bottom: 20px;
@@ -519,7 +522,7 @@ td:first-child {
   }
 
   #addNewQuestionBtn{
-    background-color: #007BFF;
+    background-color: #002244;
     color: white;
     padding: 12px 25px;
     margin-bottom: 20px;

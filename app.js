@@ -755,6 +755,71 @@ app.post("/generate-pdf", async (req, res) => {
               const pdfFilePath = path.join(papersDir, pdfFileName);
 
               // Generate HTML content dynamically
+              const subjectiveSection =
+                subjectiveResults.length > 0
+                  ? `
+                    <h2>Subjective Questions</h2>
+                    ${subjectiveResults
+                      .map(
+                        (q, i) => ` 
+                          <div class="question">
+                            ${i + 1}. ${q.question_text}
+                            <div class="answer-space">Answer:</div>
+                          </div>`
+                      )
+                      .join("")}
+                  `
+                  : "";
+
+              const mcqSection =
+                mcqResults.length > 0
+                  ? `
+                    <h2>MCQ Questions</h2>
+                    ${mcqResults
+                      .map(
+                        (q, i) => `
+                        <div class="question">
+                          ${
+                            i +
+                            1 +
+                            subjectiveResults.length
+                          }. ${q.question_text}
+                          <div class="options">
+                            <div class="option">a) ${q.option_a}</div>
+                            <div class="option">b) ${q.option_b}</div>
+                            <div class="option">c) ${q.option_c}</div>
+                            <div class="option">d) ${q.option_d}</div>
+                          </div>
+                        </div>`
+                      )
+                      .join("")}
+                  `
+                  : "";
+
+              const diagramSection =
+                diagramResults.length > 0
+                  ? `
+                    <h2>Diagram Questions</h2>
+                    ${diagramResults
+                      .map((q, i) => {
+                        const imageSrc = `http://localhost:3000/Images/Diagrams/${q.diagram_url}`;
+                        return `
+                          <div class="question">
+                            ${
+                              i +
+                              1 +
+                              subjectiveResults.length +
+                              mcqResults.length
+                            }. ${q.question_text}
+                            <div class="question-diagram">
+                              <img src="${imageSrc}" alt="Diagram Question" />
+                            </div>
+                          </div>`;
+                      })
+                      .join("")}
+                  `
+                  : "";
+
               const htmlContent = `
                 <html>
                   <head>
@@ -816,9 +881,13 @@ app.post("/generate-pdf", async (req, res) => {
                         font-size: 16px;
                       }
                       .question-diagram img {
-                        max-width: 100%;
+                        max-width: 80%;
+                        max-height: 300px;
                         height: auto;
                         margin-top: 10px;
+                        display: block;
+                        margin-left: auto;
+                        margin-right: auto;
                       }
                       .page-break {
                         page-break-before: always;
@@ -840,54 +909,10 @@ app.post("/generate-pdf", async (req, res) => {
                       <div class="name">Musadiq Balouch</div>
                     </div>
                     <h1>${subject.toUpperCase()} Exam Paper</h1>
-              
-                    <h2>Subjective Questions</h2>
-                    ${subjectiveResults
-                      .map(
-                        (q, i) => ` 
-                          <div class="question">
-                            ${i + 1}. ${q.question_text}
-                            <div class="answer-space">Answer:</div>
-                          </div>`
-                      )
-                      .join("")}
-              
-                    <h2>MCQ Questions</h2>
-                    ${mcqResults
-                      .map(
-                        (q, i) => `
-                        <div class="question">
-                          ${i + 1 + subjectiveResults.length}. ${
-                          q.question_text
-                        }
-                          <div class="options">
-                            <div class="option">a) ${q.option_a}</div>
-                            <div class="option">b) ${q.option_b}</div>
-                            <div class="option">c) ${q.option_c}</div>
-                            <div class="option">d) ${q.option_d}</div>
-                          </div>
-                        </div>`
-                      )
-                      .join("")}
-              
-                   <h2>Diagram Questions</h2>
-${diagramResults
-  .map((q, i) => {
-    const imageSrc = `http://localhost:3000/Images/Diagrams/${q.diagram_url}`;   
-    console.log("Final Image Source:", imageSrc);
-
-    return `
-      <div class="question">
-        ${i + 1 + subjectiveResults.length + mcqResults.length}. ${
-      q.question_text
-    }
-        <div class="question-diagram">
-          <img src="${imageSrc}" alt="Diagram Question" />
-        </div>
-      </div>`;
-  })
-  .join("")}
-                    <div class="footer">Generated by Exam Automation System</div>
+                    ${subjectiveSection}
+                    ${mcqSection}
+                    ${diagramSection}
+                    <div class="footer"><strong>CIE²T</strong></div>
                   </body>
                 </html>
               `;
@@ -929,6 +954,7 @@ ${diagramResults
     }
   );
 });
+
 
 // Generated Papers List
 app.get("/api/generated-papers", (req, res) => {
