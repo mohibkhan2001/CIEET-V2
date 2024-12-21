@@ -18,8 +18,70 @@ app.use(
   express.static(path.join(__dirname, "Images/Diagram"))
 );
 
+
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+
+const resetUsersAutoIncrementIfEmpty = () => {
+  const checkTableQuery = "SELECT COUNT(*) AS count FROM users";
+
+  db.query(checkTableQuery, (err, result) => {
+    if (err) {
+      console.error("Error checking users table:", err);
+      return;
+    }
+
+    const count = result[0].count;
+    if (count === 0) {
+      const resetQuery = "ALTER TABLE users AUTO_INCREMENT = 1";
+      db.query(resetQuery, (err) => {
+        if (err) {
+          console.error("Error resetting AUTO_INCREMENT for users table:", err);
+        } else {
+          console.log("AUTO_INCREMENT reset to 1 for users table as it is empty.");
+        }
+      });
+    } else {
+      console.log(`Users table is not empty. Current row count: ${count}`);
+    }
+  });
+};
+
+// Call the function when needed (e.g., during server startup or after a delete operation)
+resetUsersAutoIncrementIfEmpty();
+
+
+// Function to check and reset AUTO_INCREMENT
+const resetAutoIncrementIfEmpty = () => {
+  const checkTableQuery = "SELECT COUNT(*) AS count FROM generated_pdfs";
+
+  db.query(checkTableQuery, (err, result) => {
+    if (err) {
+      console.error("Error checking table:", err);
+      return;
+    }
+
+    const count = result[0].count;
+    if (count === 0) {
+      const resetQuery = "ALTER TABLE generated_pdfs AUTO_INCREMENT = 1";
+      db.query(resetQuery, (err) => {
+        if (err) {
+          console.error("Error resetting AUTO_INCREMENT:", err);
+        } else {
+          console.log("AUTO_INCREMENT reset to 1 as the table is empty.");
+        }
+      });
+    } else {
+      console.log(`generated_pdfs Table is not empty. Current row count: ${count}`);
+    }
+  });
+};
+
+// Call the function when needed (e.g., during server startup or after a delete operation)
+resetAutoIncrementIfEmpty();
+
 
 // Session Configuration
 app.use(
@@ -94,6 +156,21 @@ app.post(
     });
   }
 );
+
+app.delete("/api/users", (req, res) => {
+  const deleteQuery = "DELETE FROM users";
+
+  db.query(deleteQuery, (err) => {
+    if (err) {
+      return res.status(500).json({ error: "Failed to delete users" });
+    }
+
+    resetUsersAutoIncrementIfEmpty();
+
+    res.status(200).json({ message: "All users deleted and AUTO_INCREMENT reset" });
+  });
+});
+
 
 // --------- LOGIN ROUTE -----------
 app.post("/", async (req, res) => {

@@ -78,7 +78,14 @@
           <h2>Add New Question</h2>
           <form id="add-question-form" enctype="multipart/form-data">
             <label>Subject:</label>
-            <input type="text" name="subject" required />
+            <select name="subject" required>
+              <option value="computer-science">Computer Science</option>
+              <option value="mathematics">Mathematics</option>
+              <option value="physics">Physics</option>
+              <option value="chemistry">Chemistry</option>
+              <!-- Add more subjects as needed -->
+            </select>
+            
           
             <label>Question Type:</label>
             <select id="type" name="type" required>

@@ -52,8 +52,8 @@ p {
 }
 
 .subject-selection button {
-    padding: 3px 25px;
-    background-color: #007BFF;
+    padding: 13px 15px;
+    background-color: #002244;
     color: white;
     border: none;
     border-radius: 8px;
@@ -531,46 +531,51 @@ td:first-child {
   }
 /* General Modal Container */
 .modal {
-  display: none; /* Hidden by default */
+  display: none;
   position: fixed;
-  z-index: 1000; /* Ensure modal is on top */
+  z-index: 1000;
   left: 50%;
   top: 50%;
-  transform: translate(-50%, -50%); /* Center modal in the screen */
-  width: 100%; /* 90% width of screen */
-  height: auto; /* Auto height */
-  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black background */
+  transform: translate(-50%, -50%);
+  width: 50%; /* Set a smaller width */
+  max-width: 500px; /* Max width for larger screens */
+  background-color: rgba(0, 0, 0, 0.5);
   justify-content: center;
   align-items: center;
   padding: 20px;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 /* Modal Content Styling */
 .modal-content {
   background-color: #fff;
-  padding: 20px;
+  padding: 25px;
   border-radius: 10px;
-  width: 100%;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-  position: relative;
+  width: 100%;
+  max-height: 70vh; /* Limiting height */
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px; /* Adding space between elements */
 }
 
 /* Header of Modal */
 .modal-content h2 {
-  margin-bottom: 20px;
+  margin-bottom: 15px;
   text-align: center;
-  font-size: 24px;
+  font-size: 22px;
   color: #333;
 }
 
 /* Labels inside the Modal */
 .modal-content label {
   display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
+  font-weight: 600;
   font-size: 14px;
   color: #555;
+  margin-bottom: 5px;
 }
 
 /* Input fields, textareas, and select inside Modal */
@@ -579,68 +584,75 @@ td:first-child {
 .modal-content select {
   width: 100%;
   margin-bottom: 15px;
-  padding: 10px;
-  box-sizing: border-box;
-  border-radius: 5px; /* Rounded corners */
-  border: 1px solid #ccc; /* Light border */
+  padding: 12px;
   font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+  outline: none;
+}
+
+/* Reduce the size of textareas */
+.modal-content textarea {
+  min-height: 100px;
+  resize: vertical; /* Allow vertical resizing */
 }
 
 /* Button inside Modal */
 .modal-content button {
-  width: 100%;
   padding: 12px;
-  background-color: #28a745; /* Green background */
+  background-color: #28a745;
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
   cursor: pointer;
   font-size: 16px;
 }
 
-
-#closeModalBtn{
-  width: 5vw;
-  font-size: 20px;
+/* Button on hover */
+.modal-content button:hover {
+  background-color: #218838;
 }
+
 /* Close Button */
 .close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
   color: #aaa;
-  font-size: 20px; /* Smaller size for the close button */
+  font-size: 20px;
   font-weight: bold;
   cursor: pointer;
-  background: none; /* No background */
-  border: none; /* No border */
-  
-  border-radius: 50%; /* Circular close button */
+  background: none;
+  border: none;
+  border-radius: 50%;
 }
 
 .close-btn:hover,
 .close-btn:focus {
   color: black;
-  text-decoration: none;
-  cursor: pointer;
 }
 
 /* Overlay Background (for when modal is shown) */
 .overlay {
-  display: none; /* Hidden by default */
+  display: none;
   position: fixed;
-  z-index: 999; /* Behind the modal */
+  z-index: 999;
   left: 0;
   top: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent overlay */
+  background-color: rgba(0, 0, 0, 0.5);
 }
 
 /* Show Modal when Active */
 .show {
-  display: block; /* Makes modal visible */
+  display: block;
 }
 
+/* Active button styling */
 button.active {
-  background-color: #28a745; /* Active button color */
+  background-color: #28a745;
   color: white;
 }
 
@@ -649,6 +661,15 @@ button.active {
 .modal-content textarea,
 .modal-content select,
 .modal-content button {
-  margin-top: 10px;
-  margin-bottom: 15px;
+  margin-top: 8px;
+  margin-bottom: 12px; /* Reduced bottom margin */
+}
+
+.question-diagram img {
+  max-width: 100%; /* Ensure the image fits within the container */
+  max-height: 200px; /* Limit the image height */
+  width: auto; /* Maintain aspect ratio */
+  height: auto; /* Maintain aspect ratio */
+  display: block; /* Ensure proper alignment within the container */
+  margin: 15px auto; /* Center the image */
 }
