@@ -158,7 +158,7 @@ function showQuestions(subject) {
 
         const diagramImage = q.diagram_url
           ? `<div class="question-diagram">
-       <img src="/Images/Diagrams/${q.diagram_url}.png" alt="Diagram" loading="lazy" onerror="this.src='/Images/Diagrams/abc-image.png';">
+       <img src="/Images/Diagrams/${q.diagram_url}" alt="Diagram" loading="lazy" onerror="this.src='/Images/Diagrams/abc-image.png';">
      </div>`
           : `<div class="question-diagram">[Diagram not available]</div>`;
 

@@ -3,7 +3,7 @@ const session = require("express-session"); // Add express-session
 const bcrypt = require("bcrypt");
 const { body, validationResult } = require("express-validator");
 const path = require("path");
-const multer = require('multer');
+const multer = require("multer");
 const fs = require("fs");
 const puppeteer = require("puppeteer"); // Puppeteer for PDF generation
 const db = require("./models/database"); // MySQL database connection
@@ -16,7 +16,6 @@ app.use(express.static(path.join(__dirname, "public"))); // Static files in 'pub
 app.use(
   "/Images/Diagram",
   express.static(path.join(__dirname, "Images/Diagram"))
-  
 );
 
 app.use(express.json());
@@ -203,8 +202,6 @@ app.post("/delete-file", (req, res) => {
         .status(500)
         .json({ success: false, error: "Error deleting file" });
     }
-
-    
 
     // Remove from the database as well
     const deleteQuery = "DELETE FROM generated_pdfs WHERE filename = ?";
@@ -459,8 +456,6 @@ app.get("/api/questions/:subject", (req, res) => {
     });
   });
 });
-
-
 // Ensure the Images/Diagrams directory inside public exists
 const diagramDir = path.join(__dirname, "public", "Images", "Diagrams");
 if (!fs.existsSync(diagramDir)) {
@@ -475,7 +470,7 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => {
     const extname = path.extname(file.originalname); // Get the file extension (e.g., .png)
     const filenameWithoutExtension = path.basename(file.originalname, extname); // Get the filename without extension
-    cb(null, `${filenameWithoutExtension}${extname}`); // Save with the original name (no suffix)
+    cb(null, `${filenameWithoutExtension}${extname}`); // Save with the original name and extension
   },
 });
 
@@ -483,35 +478,45 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Route to add a new diagram question
-app.post("/api/questions/diagrams", upload.single("diagram_image"), (req, res) => {
-  const { question_text, subject, year } = req.body; // Extract form fields
-  const diagram_url = req.file ? path.basename(req.file.filename, path.extname(req.file.filename)) : null; // Save the filename without extension in the DB
+app.post(
+  "/api/questions/diagrams",
+  upload.single("diagram_image"),
+  (req, res) => {
+    const { question_text, subject, year } = req.body; // Extract form fields
+    const diagram_url = req.file
+      ? path.basename(req.file.filename) // Save the full filename with extension in the DB
+      : null;
 
-  if (!diagram_url) {
-    return res.status(400).json({ error: "Diagram image is required" });
-  }
+    if (!diagram_url) {
+      return res.status(400).json({ error: "Diagram image is required" });
+    }
 
-  // Insert into the database with the original filename (without suffix)
-  const insertQuery = `
+    // Insert into the database with the full filename (including extension)
+    const insertQuery = `
     INSERT INTO diagrams (question_text, subject, year, type, diagram_url)
     VALUES (?, ?, ?, 'diagram', ?)
   `;
 
-  db.query(insertQuery, [question_text, subject, year, diagram_url], (err, result) => {
-    if (err) {
-      console.error("Error adding diagram question:", err);
-      return res.status(500).json({ error: "Failed to add diagram question" });
-    }
+    db.query(
+      insertQuery,
+      [question_text, subject, year, diagram_url],
+      (err, result) => {
+        if (err) {
+          console.error("Error adding diagram question:", err);
+          return res
+            .status(500)
+            .json({ error: "Failed to add diagram question" });
+        }
 
-    res.status(201).json({
-      message: "Diagram question added successfully",
-      id: result.insertId,
-      diagram_url: `/Images/Diagrams/${diagram_url}${path.extname(req.file.filename)}`, // Return path to image without extension
-    });
-  });
-});
-
-
+        res.status(201).json({
+          message: "Diagram question added successfully",
+          id: result.insertId,
+          diagram_url: `/Images/Diagrams/${diagram_url}`, // Return the full path to the image with extension
+        });
+      }
+    );
+  }
+);
 
 // Route to add a new subjective question
 app.post("/api/questions/subjective", upload.none(), (req, res) => {
@@ -524,19 +529,44 @@ app.post("/api/questions/subjective", upload.none(), (req, res) => {
   db.query(insertQuery, [question_text, subject, year], (err, result) => {
     if (err) {
       console.error("Error adding subjective question:", err);
-      return res.status(500).json({ error: "Failed to add subjective question" });
+      return res
+        .status(500)
+        .json({ error: "Failed to add subjective question" });
     }
-    res.status(201).json({ message: "Subjective question added successfully", id: result.insertId });
+    res.status(201).json({
+      message: "Subjective question added successfully",
+      id: result.insertId,
+    });
   });
 });
 
 // Route to add a new MCQ question
 app.post("/api/questions/mcq", upload.none(), (req, res) => {
-  console.log(req.body);  // Log the incoming request data to verify
-  const { question_text, subject, year, option_a, option_b, option_c, option_d, correct_answer, type } = req.body;
+  console.log(req.body); // Log the incoming request data to verify
+  const {
+    question_text,
+    subject,
+    year,
+    option_a,
+    option_b,
+    option_c,
+    option_d,
+    correct_answer,
+    type,
+  } = req.body;
 
   // Ensure all fields are being passed correctly
-  if (!question_text || !subject || !year || !option_a || !option_b || !option_c || !option_d || !correct_answer || !type) {
+  if (
+    !question_text ||
+    !subject ||
+    !year ||
+    !option_a ||
+    !option_b ||
+    !option_c ||
+    !option_d ||
+    !correct_answer ||
+    !type
+  ) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
@@ -544,18 +574,31 @@ app.post("/api/questions/mcq", upload.none(), (req, res) => {
         INSERT INTO mcq_questions (question_text, subject, year, option_a, option_b, option_c, option_d, correct_answer, type)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-  db.query(insertQuery, [question_text, subject, year, option_a, option_b, option_c, option_d, correct_answer, type], (err, result) => {
-    if (err) {
-      console.error("Error adding MCQ question:", err);
-      return res.status(500).json({ error: "Failed to add MCQ question" });
+  db.query(
+    insertQuery,
+    [
+      question_text,
+      subject,
+      year,
+      option_a,
+      option_b,
+      option_c,
+      option_d,
+      correct_answer,
+      type,
+    ],
+    (err, result) => {
+      if (err) {
+        console.error("Error adding MCQ question:", err);
+        return res.status(500).json({ error: "Failed to add MCQ question" });
+      }
+      res.status(201).json({
+        message: "MCQ question added successfully",
+        id: result.insertId,
+      });
     }
-    res.status(201).json({ message: "MCQ question added successfully", id: result.insertId });
-  });
+  );
 });
-
-
-
-
 
 // Generate PDF Route with Puppeteer
 app.post("/generate-pdf", async (req, res) => {
@@ -605,12 +648,10 @@ app.post("/generate-pdf", async (req, res) => {
     [strippedQuestions, subject],
     async (err, subjectiveResults) => {
       if (err)
-        return res
-          .status(500)
-          .json({
-            success: false,
-            error: "Failed to fetch subjective questions",
-          });
+        return res.status(500).json({
+          success: false,
+          error: "Failed to fetch subjective questions",
+        });
 
       db.query(
         mcqQuery,
@@ -626,25 +667,16 @@ app.post("/generate-pdf", async (req, res) => {
             [strippedQuestions, subject],
             async (err, diagramResults) => {
               if (err)
-                return res
-                  .status(500)
-                  .json({
-                    success: false,
-                    error: "Failed to fetch diagram questions",
-                  });
+                return res.status(500).json({
+                  success: false,
+                  error: "Failed to fetch diagram questions",
+                });
 
               const sanitizedSubject = subject.replace(/[^a-zA-Z0-9-_ ]/g, "");
               const sanitizedPdfName = pdfName.replace(/[^a-zA-Z0-9-_ ]/g, "");
               const pdfFileName = `${sanitizedPdfName}-${sanitizedSubject}-CIEET.pdf`;
               const pdfFilePath = path.join(papersDir, pdfFileName);
 
-              // Generate HTML for the PDF
-              const fs = require('fs');
-              const path = require('path');
-              
-              // Array of possible image extensions
-              const extensions = ['png', 'jpg', 'jpeg', 'gif'];
-              
               // Generate HTML content dynamically
               const htmlContent = `
                 <html>
@@ -748,7 +780,9 @@ app.post("/generate-pdf", async (req, res) => {
                       .map(
                         (q, i) => `
                         <div class="question">
-                          ${i + 1 + subjectiveResults.length}. ${q.question_text}
+                          ${i + 1 + subjectiveResults.length}. ${
+                          q.question_text
+                        }
                           <div class="options">
                             <div class="option">a) ${q.option_a}</div>
                             <div class="option">b) ${q.option_b}</div>
@@ -759,43 +793,27 @@ app.post("/generate-pdf", async (req, res) => {
                       )
                       .join("")}
               
-                    <h2>Diagram Questions</h2>
-                    ${diagramResults
-                      .map((q, i) => {
-                        let imageSrc = ''; // Variable to hold the valid image source
-              
-                        // Loop through the extensions array to find the valid image
-                        for (let ext of extensions) {
-                          const filePath = path.join(__dirname, 'public/Images/Diagrams', `${q.diagram_url}.${ext}`);
-                          if (fs.existsSync(filePath)) {
-                            imageSrc = `/Images/Diagrams/${q.diagram_url}.${ext}`;
-                            break; // Exit loop once valid image is found
-                          }
-                        }
-              
-                        // If no image is found, use a fallback image
-                        if (!imageSrc) {
-                          imageSrc = '/Images/Diagrams/abc-image.png';
-                        }
-              
-                        console.log("Final Image Source:", imageSrc);
-              
-                        return `
-                          <div class="question">
-                            ${i + 1 + subjectiveResults.length + mcqResults.length}. ${q.question_text}
-                            <div class="question-diagram">
-                              <img src="${imageSrc}" alt="Diagram Question" />
-                            </div>
-                          </div>`;
-                      })
-                      .join("")}
-              
+                   <h2>Diagram Questions</h2>
+${diagramResults
+  .map((q, i) => {
+    const imageSrc = `http://localhost:3000/Images/Diagrams/${q.diagram_url}`;   
+    console.log("Final Image Source:", imageSrc);
+
+    return `
+      <div class="question">
+        ${i + 1 + subjectiveResults.length + mcqResults.length}. ${
+      q.question_text
+    }
+        <div class="question-diagram">
+          <img src="${imageSrc}" alt="Diagram Question" />
+        </div>
+      </div>`;
+  })
+  .join("")}
                     <div class="footer">Generated by Exam Automation System</div>
                   </body>
                 </html>
               `;
-              
-              
 
               try {
                 const browser = await puppeteer.launch();
@@ -813,12 +831,10 @@ app.post("/generate-pdf", async (req, res) => {
                   [pdfFileName, req.session.user.id],
                   (err) => {
                     if (err)
-                      return res
-                        .status(500)
-                        .json({
-                          success: false,
-                          error: "Failed to save PDF details",
-                        });
+                      return res.status(500).json({
+                        success: false,
+                        error: "Failed to save PDF details",
+                      });
 
                     res.json({ success: true, pdfFileName });
                   }
