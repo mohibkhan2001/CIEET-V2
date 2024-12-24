@@ -522,7 +522,7 @@ app.get("/api/questions/:subject", (req, res) => {
                 id: q.id,
                 question_text: q.question_text,
                 year: `YEAR: ${q.year || "N/A"}`,
-                type: q.type,
+                question_type: "objective",
                 options: [
                   { option: "A", text: q.option_a || "N/A" },
                   { option: "B", text: q.option_b || "N/A" },

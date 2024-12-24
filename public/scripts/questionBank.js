@@ -173,11 +173,15 @@ async function showQuestions(subject, page = 1) {
 
     // Update pagination controls
     updatePaginationControls(totalPages, page);
+
+    // Scroll to the question container after updating questions
+    document.getElementById("questions-container").scrollIntoView({ behavior: "smooth" });
   } catch (error) {
     console.error("Error fetching questions:", error);
     alert("Failed to fetch questions. Please try again later.");
   }
 }
+
 
 function updatePaginationControls(totalPages, currentPage) {
   const paginationControls = document.getElementById("pagination-controls");
