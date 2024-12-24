@@ -81,7 +81,7 @@
         }
 
         try {
-          const response = await fetch("/", {
+          const response = await fetch("/login", {  // Assuming '/login' is your backend login endpoint
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -96,9 +96,9 @@
             errorMessagesDiv.style.display = "block";
             errorList.innerHTML = result.errors.map((err) => `<li>${err}</li>`).join("");
           } else {
-            // Success: Redirect to the homepage
+            // Success: Redirect based on the server's role-based response
             alert(result.success);
-            window.location.href = "/index"; // Redirect to /homepage
+            window.location.href = result.redirectUrl;  // Redirect based on role
           }
         } catch (err) {
           console.error("Error during login request:", err);

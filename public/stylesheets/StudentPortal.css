@@ -1,0 +1,146 @@
+  .logo span {
+    /* font-family: heading; */
+    font-size: 24px;
+    word-spacing: 2px;
+  }
+  .logo span a {
+    text-decoration: none;
+    color: whitesmoke;
+    /* font-family: heading; */
+    /* word-spacing: 5px; */
+  }
+  
+  nav {
+    background-color: #ffffff;
+    box-shadow: inset -5px -1px 0px rgba(255, 255, 255, 0.45),
+      inset 5px 5px 6px rgba(94, 104, 121, 0.136);
+    padding: 10px 20px;
+    border-radius: 22px;
+  }
+  
+  nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    gap: 20px;
+  }
+  
+  nav ul li {
+    display: inline;
+    transition: transform 0.2s ease-in-out;
+  }
+  
+  nav ul li a {
+    color: #003366;
+    text-decoration: none;
+    font-size: 0.85rem;
+    padding-left: 10px;
+    font-weight: 500;
+  }
+  /* Hero Section */
+  .hero_std {
+    /* margin: 50px 0; */
+    height: 100vh;
+    margin: 50px 0;
+    text-align: center;
+    padding: 50px 20px;
+    background-color: #003366;
+    color: white;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+  }
+  
+  .hero_std h1 {
+    font-size: 36px;
+    font-weight: bold;
+  }
+  
+  .hero_std p {
+    font-size: 18px;
+    margin: 20px 0;
+  }
+  
+  .explore-btn {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #f39c12;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .explore-btn:hover {
+    background-color: #e67e22;
+  }
+  
+  /* Section Styling */
+  .section {
+    padding: 40px 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .column {
+    margin-bottom: 20px;
+  }
+  
+  .card {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
+  }
+  
+  .card h3 {
+    font-size: 20px;
+    margin-bottom: 10px;
+  }
+  
+  .card a {
+    text-decoration: none;
+    color: #f39c12;
+  }
+  
+  /* Footer Styling */
+  footer {
+    background-color: #2c3e50;
+    color: white;
+    padding: 30px 20px;
+  }
+  
+  footer .footer-content {
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  footer .footer-section {
+    width: 23%;
+  }
+  
+  footer .footer-section h3 {
+    font-size: 20px;
+  }
+  
+  footer .social-icons a {
+    margin: 10px;
+    color: white;
+    font-size: 20px;
+    transition: color 0.3s;
+  }
+  
+  footer .social-icons a:hover {
+    color: #f39c12;
+  }
+  
+  footer .footer-bottom {
+    text-align: center;
+    padding-top: 20px;
+  }
+  

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CIE²T - Student Portal</title>
+    <link rel="stylesheet" href="stylesheets/style.css" />
+    <link rel="stylesheet" href="stylesheets/StudentPortal.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
+      integrity="sha512-5Hs3dF2AEPkpNAR7UiOHba+lRSJNeM2ECkwxUIxC1Q/FLycGTbNapWXB4tP889k5T5Ju8fs4b1P5z/iB4nMfSQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Parkinsans:wght@300..800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body>
+    <header>
+      <div class="logo">
+        <span><a href="/StudentPortal">CIE²T</a></span>
+      </div>
+      <nav>
+        <ul>
+          <li><a href="/exam">Exam</a></li>
+          <li><a href="/result">Result</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </nav>
+
+      <!-- User Info Display -->
+      <div class="auth-buttons" id="auth-buttons">
+        <span id="username" class="username"></span>
+        <i class="fa-solid fa-arrow-right-from-bracket logout-icon" id="logout-btn" title="Logout"></i>
+      </div>
+    </header>
+
+    <!-- Hero Section -->
+    <div class="hero_std">
+      <h1 data-aos="slide-left">
+        Welcome to the Student Portal
+      </h1>
+      <p data-aos="slide-left">
+        Access your exam details, results, and contact support with ease.
+      </p>
+      <a href="/exam" class="explore-btn" data-aos="fade-up">
+        View Your Exams
+      </a>
+    </div>
+
+    <!-- Exam Section -->
+    <div class="section" id="exam">
+      <div class="column" data-aos="fade-in">
+        <h2>Exam</h2>
+        <p>View upcoming exams, schedules, and exam-related information.</p>
+        <div class="card">
+          <h3>Upcoming Exams</h3>
+          <p>Check the dates and details of your upcoming exams.</p>
+          <a href="/exam">View Exams</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result Section -->
+    <div class="section" id="result">
+      <div class="column" data-aos="fade-in">
+        <h2>Result</h2>
+        <p>Check your exam results and download your transcripts.</p>
+        <div class="card">
+          <h3>Your Results</h3>
+          <p>View your results for the latest exams.</p>
+          <a href="/result">View Results</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact Section -->
+    <div class="section" id="contact">
+      <div class="column" data-aos="fade-in">
+        <h2>Contact</h2>
+        <p>If you have any questions or issues, please reach out to us.</p>
+        <div class="card">
+          <h3>Support</h3>
+          <p>Contact the support team for assistance with exams or results.</p>
+          <a href="mailto:support@cie2t.com">Email Support</a>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <div class="footer-content">
+        <div class="footer-section">
+          <h3>Contact Us</h3>
+          <p>Email: support@cie2t.com</p>
+          <p>Phone: +123 456 7890</p>
+        </div>
+        <div class="footer-section">
+          <h3>Follow Us</h3>
+          <div class="social-icons">
+            <a href="#"><i class="fa-brands fa-linkedin"></i></a>
+            <a href="#"><i class="fa-brands fa-instagram"></i></a>
+            <a href="#"><i class="fa-brands fa-facebook"></i></a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2024 CIE²T. All rights reserved.</p>
+      </div>
+    </footer>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+    <script>
+      // Simulated user data (replace with actual user data from backend)
+      const authContainer = document.getElementById("auth-buttons");
+
+      // Fetch user info from backend API after page loads
+      document.addEventListener("DOMContentLoaded", () => {
+        fetch("/api/user-info") // Endpoint to fetch the user's session info
+          .then((response) => {
+            if (!response.ok) {
+              console.error("User not logged in");
+              return;
+            }
+            return response.json();
+          })
+          .then((data) => {
+            const user = data.user;
+            const usernameSpan = document.getElementById("username");
+
+            if (user && usernameSpan) {
+              // Display user's first and last name
+              usernameSpan.textContent = `${user.firstname} ${user.lastname}`;
+
+              // Role-based redirection
+              if (user.role === "Teacher") {
+                // Redirect to Teacher's Dashboard if the user is a Teacher
+                window.location.href = "/index"; 
+              } else if (user.role === "Student") {
+                // Stay on StudentPortal if the user is a Student
+               
+              }
+            }
+          })
+          .catch((err) => {
+            console.error("Failed to fetch user info:", err);
+          });
+
+        // Handle the logout button click
+        const logoutButton = document.getElementById("logout-btn");
+        if (logoutButton) {
+          logoutButton.addEventListener("click", () => {
+            fetch("/logout", {
+              method: "POST",
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.success) {
+                  // Redirect to the homepage after successful logout
+                  window.location.href = "/";
+                } else {
+                  console.error("Failed to log out");
+                }
+              })
+              .catch((err) => {
+                console.error("Error logging out:", err);
+              });
+          });
+        }
+      });
+
+      // Initialize animations
+      AOS.init();
+    </script>
+  </body>
+</html>

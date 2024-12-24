@@ -17,6 +17,28 @@ app.use(
   "/Images/Diagram",
   express.static(path.join(__dirname, "Images/Diagram"))
 );
+// Middleware to check user role
+// Middleware to check if the user's role matches the required role
+function checkRole(requiredRole) {
+  return (req, res, next) => {
+    const userRole = req.session.user.role;
+    if (userRole !== requiredRole) {
+      return res.redirect('/StudentPortal'); // Redirect to StudentPortal if not authorized
+    }
+    next(); // Proceed if the role matches
+  };
+}
+
+
+// Middleware to prevent Teachers from accessing the StudentPortal
+function preventTeacherAccess(req, res, next) {
+  const userRole = req.session.user.role;
+  if (userRole === 'Teacher') {
+    return res.redirect('/index'); // Redirect Teacher to the index page (or other page)
+  }
+  next(); // Allow Student to access the StudentPortal
+}
+
 
 
 
@@ -119,11 +141,6 @@ app.post(
     body("confirmPassword")
       .custom((value, { req }) => value === req.body.password)
       .withMessage("Passwords must match"),
-    body("role")
-      .notEmpty()
-      .withMessage("Role is required")  // Validate that role is selected
-      .isIn(["Teacher", "Student"])
-      .withMessage("Role must be either Teacher or Student"),  // Ensure valid role
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -133,7 +150,7 @@ app.post(
         .json({ errors: errors.array().map((error) => error.msg) });
     }
 
-    const { firstname, lastname, email, password, role } = req.body;
+    const { firstname, lastname, email, password } = req.body;
 
     const checkEmailQuery = "SELECT * FROM users WHERE email = ?";
     db.query(checkEmailQuery, [email], async (err, result) => {
@@ -145,10 +162,10 @@ app.post(
       try {
         const hashedPassword = await bcrypt.hash(password, 10);
         const insertUserQuery =
-          "INSERT INTO users (firstname, lastname, email, password, role) VALUES (?, ?, ?, ?, ?)";
+          "INSERT INTO users (firstname, lastname, email, password) VALUES (?, ?, ?, ?)";
         db.query(
           insertUserQuery,
-          [firstname, lastname, email, hashedPassword, role],
+          [firstname, lastname, email, hashedPassword],
           (err) => {
             if (err)
               return res.status(500).json({ errors: ["Error saving user"] });
@@ -161,7 +178,6 @@ app.post(
     });
   }
 );
-
 
 app.delete("/api/users", (req, res) => {
   const deleteQuery = "DELETE FROM users";
@@ -179,42 +195,52 @@ app.delete("/api/users", (req, res) => {
 
 
 // --------- LOGIN ROUTE -----------
-app.post("/", async (req, res) => {
+// Login Route (POST /login)
+// Login Route (POST /login)
+app.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return res
-      .status(400)
-      .json({ errors: ["Email and password are required"] });
+    return res.status(400).json({ errors: ['Email and password are required'] });
   }
 
-  const query = "SELECT * FROM users WHERE email = ?";
+  const query = 'SELECT * FROM users WHERE email = ?';
   db.query(query, [email], async (err, results) => {
     if (err) {
-      return res.status(500).json({ errors: ["Database error"] });
+      console.error('Database error:', err);
+      return res.status(500).json({ errors: ['Database error'] });
     }
     if (results.length === 0) {
-      return res.status(401).json({ errors: ["Invalid email or password"] });
+      return res.status(401).json({ errors: ['Invalid email or password'] });
     }
 
     const user = results[0];
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-      return res.status(401).json({ errors: ["Invalid email or password"] });
+      return res.status(401).json({ errors: ['Invalid email or password'] });
     }
 
     // Store user details in session
     req.session.user = {
-      id: user.user_id, // Ensure this matches the actual column name in your 'users' table
+      id: user.user_id,
       firstname: user.firstname,
       lastname: user.lastname,
       email: user.email,
+      role: user.role,  // Store role in the session
     };
 
-    res.json({ success: "Login successful" });
+    // Redirect based on role
+    if (user.role === 'Teacher') {
+      return res.json({ success: 'Login successful', redirectUrl: '/index' });
+    } else if (user.role === 'Student') {
+      return res.json({ success: 'Login successful', redirectUrl: '/StudentPortal' });
+    } else {
+      return res.status(401).json({ errors: ['Invalid role'] });
+    }
   });
 });
+
 
 app.get("/api/user-info", (req, res) => {
   if (req.session.user) {
@@ -323,26 +349,33 @@ app.get("/", redirectIfLoggedIn, (req, res) => {
   res.sendFile(path.join(__dirname, "views", "login.html"));
 });
 
-// Protected Routes (Require Login)
-app.get("/index", isLoggedIn, (req, res) => {
-  res.sendFile(path.join(__dirname, "views", "index.html"));
+
+// Route for Student Portal (Prevent Teacher from Accessing)
+app.get('/StudentPortal', isLoggedIn, preventTeacherAccess, (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'StudentPortal.html')); // Serve StudentPortal page
 });
 
-app.get("/Exam_Automation", isLoggedIn, (req, res) => {
-  res.sendFile(path.join(__dirname, "views", "Exam_Automation.html"));
+// Protected Routes for Teacher (Require Login and Role)
+app.get('/index', isLoggedIn, checkRole('Teacher'), (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'index.html')); // Serve index page for Teachers
 });
 
-app.get("/reporting", isLoggedIn, (req, res) => {
-  res.sendFile(path.join(__dirname, "views", "reporting.html"));
+app.get('/generatedPapers', isLoggedIn, checkRole('Teacher'), (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'generatedPapers.html')); // Serve generated papers page for Teachers
 });
 
-app.get("/questionBank", isLoggedIn, (req, res) => {
-  res.sendFile(path.join(__dirname, "views", "questionBank.html"));
+app.get('/questionBank', isLoggedIn, checkRole('Teacher'), (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'questionBank.html')); // Serve question bank page for Teachers
 });
 
-app.get("/generatedPapers", isLoggedIn, (req, res) => {
-  res.sendFile(path.join(__dirname, "views", "generatedPapers.html"));
+app.get('/Exam_Automation', isLoggedIn, checkRole('Teacher'), (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'Exam_Automation.html')); // Serve exam automation page for Teachers
 });
+
+app.get('/reporting', isLoggedIn, checkRole('Teacher'), (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'reporting.html')); // Serve reporting page for Teachers
+});
+
 // Route to fetch the generated papers (API)
 app.get("/api/generated-papers", (req, res) => {
   // Ensure the user is logged in
