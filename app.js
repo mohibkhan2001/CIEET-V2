@@ -119,6 +119,11 @@ app.post(
     body("confirmPassword")
       .custom((value, { req }) => value === req.body.password)
       .withMessage("Passwords must match"),
+    body("role")
+      .notEmpty()
+      .withMessage("Role is required")  // Validate that role is selected
+      .isIn(["Teacher", "Student"])
+      .withMessage("Role must be either Teacher or Student"),  // Ensure valid role
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -128,7 +133,7 @@ app.post(
         .json({ errors: errors.array().map((error) => error.msg) });
     }
 
-    const { firstname, lastname, email, password } = req.body;
+    const { firstname, lastname, email, password, role } = req.body;
 
     const checkEmailQuery = "SELECT * FROM users WHERE email = ?";
     db.query(checkEmailQuery, [email], async (err, result) => {
@@ -140,10 +145,10 @@ app.post(
       try {
         const hashedPassword = await bcrypt.hash(password, 10);
         const insertUserQuery =
-          "INSERT INTO users (firstname, lastname, email, password) VALUES (?, ?, ?, ?)";
+          "INSERT INTO users (firstname, lastname, email, password, role) VALUES (?, ?, ?, ?, ?)";
         db.query(
           insertUserQuery,
-          [firstname, lastname, email, hashedPassword],
+          [firstname, lastname, email, hashedPassword, role],
           (err) => {
             if (err)
               return res.status(500).json({ errors: ["Error saving user"] });
@@ -156,6 +161,7 @@ app.post(
     });
   }
 );
+
 
 app.delete("/api/users", (req, res) => {
   const deleteQuery = "DELETE FROM users";

@@ -61,6 +61,18 @@
             <input class="input" type="password" name="confirmPassword" placeholder="" required>
             <span>Confirm password</span>
           </label>
+
+          <!-- Role Selection: Teacher or Student -->
+          <div class="role-selection">
+              <label>
+                  <input type="radio" name="role" value="Teacher" required>
+                  <span>Teacher</span>
+              </label>
+              <label>
+                  <input type="radio" name="role" value="Student" required>
+                  <span>Student</span>
+              </label>
+          </div>
       
           <button class="submit">Submit</button>
           <p class="signin">Already have an account? <a href="/">Signin</a></p>
@@ -134,6 +146,11 @@
           if (!emailRegex.test(data.email)) {
               errors.push("Email should not start with a number.");
           }
+
+          // Role Validation (either Teacher or Student must be selected)
+          if (!data.role) {
+              errors.push("Please select a role.");
+          }
   
           // If there are any validation errors, display them
           if (errors.length > 0) {
@@ -194,7 +211,5 @@
               });
       });
   </script>
-  
-      
 </body>
 </html>
