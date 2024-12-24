@@ -6,23 +6,12 @@
     <title>CIEET Login</title>
     <link rel="stylesheet" href="stylesheets/style.css" />
     <link rel="stylesheet" href="stylesheets/login.css" />
-
   </head>
   <body>
     <header>
       <div class="logo">
         <span><a href="/index">CIE²T</a></span>
       </div>
-      <!-- <nav>
-        <ul>
-          <li><a href="/questionBank">Question Databank</a></li>
-          <li><a href="/reporting">Assessment Reporting</a></li>
-          <li><a href="/Exam_Automation">Exam Automation</a></li>
-          <li><a href="/generatedPapers">Generated Papers</a></li>
-          <li><a href="#about">About</a></li>
-          <li><a href="#contact">Contact</a></li>
-        </ul>
-      </nav> -->
       <div class="auth-buttons" id="auth-buttons">
         <!-- User info will dynamically replace this area -->
       </div>
@@ -44,7 +33,7 @@
         </label>
 
         <label>
-          <input class="input" type="password" name="password"required />
+          <input class="input" type="password" name="password" required />
           <span>Password</span>
         </label>
         <button type="submit" class="submit">Submit</button>
@@ -56,43 +45,67 @@
       <p>&copy; 2024 CIE²T. All rights reserved.</p>
     </footer>
 
-  <script>
-    document.getElementById("loginForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
+    <script>
+      document.getElementById("loginForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-  // Gather form data
-  const formData = new FormData(e.target);
-  const data = Object.fromEntries(formData.entries());
+        // Gather form data
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
 
-  try {
-    const response = await fetch("/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
+        // Clear previous error messages
+        const errorMessagesDiv = document.getElementById("errorMessages");
+        const errorList = document.getElementById("errorList");
+        errorMessagesDiv.style.display = "none";
+        errorList.innerHTML = "";
 
-    const result = await response.json();
+        // Frontend validation
+        const errors = [];
 
-    if (!response.ok) {
-      // Display errors
-      const errorMessagesDiv = document.getElementById("errorMessages");
-      const errorList = document.getElementById("errorList");
-      errorMessagesDiv.style.display = "block";
-      errorList.innerHTML = result.errors.map((err) => `<li>${err}</li>`).join("");
-    } else {
-      // Success: Redirect to the homepage
-      alert(result.success);
-      window.location.href = "/index"; // Redirect to /homepage
-    }
-  } catch (err) {
-    console.error("Error during login request:", err);
-  }
-});
+        // Email validation (basic format check)
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(data.email)) {
+          errors.push("Please enter a valid email address.");
+        }
 
+        // Password validation (example: at least 6 characters)
+        if (data.password.length < 6) {
+          errors.push("Password must be at least 6 characters long.");
+        }
 
+        // If validation fails, show errors and stop form submission
+        if (errors.length > 0) {
+          errorMessagesDiv.style.display = "block";
+          errorList.innerHTML = errors.map((msg) => `<li>${msg}</li>`).join("");
+          return; // Stop form submission
+        }
 
-  </script>
+        try {
+          const response = await fetch("/", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data),
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            // Display errors returned by the server
+            errorMessagesDiv.style.display = "block";
+            errorList.innerHTML = result.errors.map((err) => `<li>${err}</li>`).join("");
+          } else {
+            // Success: Redirect to the homepage
+            alert(result.success);
+            window.location.href = "/index"; // Redirect to /homepage
+          }
+        } catch (err) {
+          console.error("Error during login request:", err);
+          errorMessagesDiv.style.display = "block";
+          errorList.innerHTML = "<li>An unexpected error occurred. Please try again later.</li>";
+        }
+      });
+    </script>
   </body>
 </html>

@@ -148,7 +148,7 @@
       </div>
 
       <!-- Add New Question Modal (Hidden by default) -->
-      <div id="add-question-modal" class="modal" style="display: none;">
+      <div id="add-question-modal" class="modal">
         <div class="modal-content">
           <button class="close-btn" id="closeModalBtn" onclick="closeAddQuestionModal()">&times;</button>
           <h2>Add New Question</h2>
@@ -156,9 +156,10 @@
             <label>Subject:</label>
             <select name="subject" required>
               <option value="computer-science">Computer Science</option>
-              <option value="mathematics">Mathematics</option>
+              <option value="math">Mathematics</option>
               <option value="physics">Physics</option>
               <option value="chemistry">Chemistry</option>
+              <option value="biology">Biology</option>
               <!-- Add more subjects as needed -->
             </select>
 
@@ -198,9 +199,13 @@
         </div>
       </div>
 
+      <!-- Overlay to dim the background -->
+      <div id="overlay" class="overlay" onclick="closeAddQuestionModal()"></div>
+
     </main>
 
     <!-- Script for Question Bank -->
     <script src="scripts/questionBank.js"></script>
+    
   </body>
 </html>

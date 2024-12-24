@@ -151,8 +151,14 @@ async function showQuestions(subject, page = 1) {
         const optionsHTML = q.options
           ? q.options.map((option) => `<div class="option">${option.option}: ${option.text}</div>`).join("")
           : "";
+        
         const diagramHTML = q.diagram_url
           ? `<div class="question-diagram"><img src="/Images/Diagrams/${q.diagram_url}" alt="Diagram" loading="lazy" onerror="this.src='/Images/Diagrams/abc-image.png';"></div>`
+          : "";
+
+        // For objective questions, add the correct answer if available
+        const correctAnswerHTML = q.correct_answer
+          ? `<div class="correct-answer"><strong>Correct Answer: </strong>${q.correct_answer}</div>`
           : "";
 
         questionItem.innerHTML = `
@@ -163,6 +169,7 @@ async function showQuestions(subject, page = 1) {
           <span class="question-text">${q.question_text}</span>
           ${optionsHTML}
           ${diagramHTML}
+          ${correctAnswerHTML}  <!-- Display the correct answer here -->
           <div class="question-details">
             <div class="question-year">${q.year || "N/A"}</div>
             <div class="question-type">${q.question_type || "Unknown"}</div>
@@ -181,6 +188,7 @@ async function showQuestions(subject, page = 1) {
     alert("Failed to fetch questions. Please try again later.");
   }
 }
+
 
 
 function updatePaginationControls(totalPages, currentPage) {
@@ -216,12 +224,10 @@ function updatePaginationControls(totalPages, currentPage) {
 // Initialize
 showQuestions("math", 1);
 
-
-
 document.addEventListener("DOMContentLoaded", () => {
   // Elements
   const addNewQuestionBtn = document.getElementById("addNewQuestionBtn");
-  const addQuestionContainer = document.getElementById("add-question-modal");  // Ensure this matches the modal ID in HTML
+  const addQuestionContainer = document.getElementById("add-question-modal");
   const overlay = document.getElementById("overlay");
   const closeModalBtn = document.getElementById("closeModalBtn");
 
@@ -230,8 +236,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Show modal when 'Add New Question' button is clicked
     addNewQuestionBtn.addEventListener("click", () => {
-      addQuestionContainer.classList.add("show");
-      overlay.classList.add("show");
+      openAddQuestionModal(); // Show the modal
     });
 
     // Close modal when overlay or close button is clicked
@@ -309,7 +314,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+// Function to show modal
+function openAddQuestionModal() {
+  const addQuestionContainer = document.getElementById("add-question-modal");
+  const overlay = document.getElementById("overlay");
 
+  if (addQuestionContainer && overlay) {
+    addQuestionContainer.classList.add("show");
+    overlay.classList.add("show");
+  }
+}
 
 
 

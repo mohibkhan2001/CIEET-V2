@@ -105,71 +105,96 @@
     </footer>
 
     <script>
-        document.querySelector(".form").addEventListener("submit", async (e) => {
+      document.querySelector(".form").addEventListener("submit", async (e) => {
           e.preventDefault();
           const errorMessagesDiv = document.getElementById("errorMessages");
           const errorList = document.getElementById("errorList");
-      
+  
           // Clear any previous error messages
           errorMessagesDiv.style.display = "none";
           errorList.innerHTML = "";
-      
+  
           const formData = new FormData(e.target);
           const data = Object.fromEntries(formData.entries());
-      
-          try {
-            const response = await fetch("/signup", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify(data),
-            });
-      
-            const result = await response.json();
-            if (!response.ok) {
-              // Display error messages
-              errorMessagesDiv.style.display = "block";
-              errorList.innerHTML = result.errors.map((msg) => `<li>${msg}</li>`).join("");
-            } else {
-              alert(result.success); // Display popup for success
-              window.location.href = "/"; // Redirect to home
-            }
-          } catch (err) {
-            console.error("Error submitting form", err);
-            errorMessagesDiv.style.display = "block";
-            errorList.innerHTML = `<li>An unexpected error occurred</li>`;
+  
+          // Validation logic
+          const errors = [];
+  
+          // First and Last Name Validation (no special characters)
+          const nameRegex = /^[A-Za-z\s]+$/; // Only letters and spaces allowed
+          if (!nameRegex.test(data.firstname)) {
+              errors.push("First name can only contain letters and spaces.");
           }
-        });
-
-        // Simulated user data (replace with actual user data from backend)
-const authContainer = document.getElementById("auth-buttons");
-
-// Fetch user info from backend API after page loads
-document.addEventListener("DOMContentLoaded", () => {
-  fetch("/api/user-info") // Fetch user session info from backend
-    .then((response) => {
-      if (!response.ok) {
-        console.error("User not logged in");
-        return;
-      }
-      return response.json();
-    })
-    .then((data) => {
-      const user = data.user;
-      const usernameSpan = document.getElementById("username");
-
-      if (user && usernameSpan) {
-        // Display user's first and last name
-        usernameSpan.textContent = `Welcome, ${user.firstname} ${user.lastname}`;
-      }
-    })
-    .catch((err) => {
-      console.error("Failed to fetch user info:", err);
-    });
-});
-
-      </script>
+          if (!nameRegex.test(data.lastname)) {
+              errors.push("Last name can only contain letters and spaces.");
+          }
+  
+          // Email Validation (should not start with a number)
+          const emailRegex = /^[a-zA-Z][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+          if (!emailRegex.test(data.email)) {
+              errors.push("Email should not start with a number.");
+          }
+  
+          // If there are any validation errors, display them
+          if (errors.length > 0) {
+              errorMessagesDiv.style.display = "block";
+              errorList.innerHTML = errors.map((msg) => `<li>${msg}</li>`).join("");
+              return;
+          }
+  
+          try {
+              const response = await fetch("/signup", {
+                  method: "POST",
+                  headers: {
+                      "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify(data),
+              });
+  
+              const result = await response.json();
+              if (!response.ok) {
+                  // Display error messages
+                  errorMessagesDiv.style.display = "block";
+                  errorList.innerHTML = result.errors.map((msg) => `<li>${msg}</li>`).join("");
+              } else {
+                  alert(result.success); // Display popup for success
+                  window.location.href = "/"; // Redirect to home
+              }
+          } catch (err) {
+              console.error("Error submitting form", err);
+              errorMessagesDiv.style.display = "block";
+              errorList.innerHTML = `<li>An unexpected error occurred</li>`;
+          }
+      });
+  
+      // Simulated user data (replace with actual user data from backend)
+      const authContainer = document.getElementById("auth-buttons");
+  
+      // Fetch user info from backend API after page loads
+      document.addEventListener("DOMContentLoaded", () => {
+          fetch("/api/user-info") // Fetch user session info from backend
+              .then((response) => {
+                  if (!response.ok) {
+                      console.error("User not logged in");
+                      return;
+                  }
+                  return response.json();
+              })
+              .then((data) => {
+                  const user = data.user;
+                  const usernameSpan = document.getElementById("username");
+  
+                  if (user && usernameSpan) {
+                      // Display user's first and last name
+                      usernameSpan.textContent = `Welcome, ${user.firstname} ${user.lastname}`;
+                  }
+              })
+              .catch((err) => {
+                  console.error("Failed to fetch user info:", err);
+              });
+      });
+  </script>
+  
       
 </body>
 </html>
