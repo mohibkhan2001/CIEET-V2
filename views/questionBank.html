@@ -68,61 +68,7 @@
         </button>
       </div>
 
-      <!-- Overlay Background (hidden initially) -->
-      <div id="overlay" class="overlay"></div>
-
-      <!-- Add New Question Section (Modal) -->
-      <div id="add-question-modal" class="modal">
-        <div class="modal-content">
-          <button class="close-btn" id="closeModalBtn">&times;</button>
-          <h2>Add New Question</h2>
-          <form id="add-question-form" enctype="multipart/form-data">
-            <label>Subject:</label>
-            <select name="subject" required>
-              <option value="computer-science">Computer Science</option>
-              <option value="mathematics">Mathematics</option>
-              <option value="physics">Physics</option>
-              <option value="chemistry">Chemistry</option>
-              <!-- Add more subjects as needed -->
-            </select>
-            
-          
-            <label>Question Type:</label>
-            <select id="type" name="type" required>
-              <option value="subjective">Subjective</option>
-              <option value="objective">Objective (MCQ)</option>
-              <option value="diagram">Diagram</option>
-            </select>
-          
-            <label>Question Text:</label>
-            <textarea name="question_text" required></textarea>
-          
-            <div id="options-container" style="display: none;">
-              <label>Option A:</label>
-              <input type="text" name="option_a" />
-              <label>Option B:</label>
-              <input type="text" name="option_b" />
-              <label>Option C:</label>
-              <input type="text" name="option_c" />
-              <label>Option D:</label>
-              <input type="text" name="option_d" />
-              <label>Correct Answer:</label>
-              <input type="text" name="correct_answer" />
-            </div>
-          
-            <div id="diagram-container" style="display: none;">
-              <label>Diagram Image:</label>
-              <input type="file" name="diagram_image" accept="image/*" />
-            </div>
-          
-            <label>Year:</label>
-            <input type="number" name="year" required />
-          
-            <button type="submit">Add Question</button>
-          </form>
-        </div>
-      </div>
-
+      <!-- Questions Container -->
       <div id="questions-container" style="display: none">
         <h2>Questions</h2>
 
@@ -135,7 +81,7 @@
             onkeyup="filterQuestions()"
           />
           <div class="filter-options">
-            <label for="yearFilter" id="">Year:</label>
+            <label for="yearFilter">Year:</label>
             <select id="yearFilter" onchange="filterQuestions()">
               <option value="">All Years</option>
               <option value="2023">2023</option>
@@ -162,14 +108,15 @@
             Select Randomly
           </button>
           <!-- Add New Question Button Inside Action Buttons -->
-          <button id="addNewQuestionBtn">Add New Question</button>
+          <button id="addNewQuestionBtn" onclick="openAddQuestionModal()">Add New Question</button>
         </div>
 
         <form id="pdfForm">
           <div id="question-list" class="question-list">
             <!-- Questions will be dynamically inserted here -->
           </div>
-        
+
+          <!-- Loader Spinner (hidden initially) -->
           <div id="loader-container" style="display: none;">
             <div class="spinner">
               <span></span>
@@ -182,13 +129,70 @@
               <span></span>
             </div>
           </div>
-        
+
+          <!-- Pagination Controls -->
+          <div id="pagination-controls" class="pagination-controls">
+            <!-- Pagination buttons will be inserted here -->
+          </div>
+
           <input type="text" id="pdfName" name="pdfName" placeholder="Enter PDF name" required />
           <button type="submit" id="generate-pdf-button">Generate PDF</button>
         </form>
 
-        <button onclick="ViewPaperBtn()" id="viewBtn">View papers</button>
+        <button onclick="viewGeneratedPapers()" id="viewBtn">View Papers</button>
       </div>
+
+      <!-- Add New Question Modal (Hidden by default) -->
+      <div id="add-question-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+          <button class="close-btn" id="closeModalBtn" onclick="closeAddQuestionModal()">&times;</button>
+          <h2>Add New Question</h2>
+          <form id="add-question-form" enctype="multipart/form-data" onsubmit="addNewQuestion(event)">
+            <label>Subject:</label>
+            <select name="subject" required>
+              <option value="computer-science">Computer Science</option>
+              <option value="mathematics">Mathematics</option>
+              <option value="physics">Physics</option>
+              <option value="chemistry">Chemistry</option>
+              <!-- Add more subjects as needed -->
+            </select>
+
+            <label>Question Type:</label>
+            <select id="type" name="type" required>
+              <option value="subjective">Subjective</option>
+              <option value="objective">Objective (MCQ)</option>
+              <option value="diagram">Diagram</option>
+            </select>
+
+            <label>Question Text:</label>
+            <textarea name="question_text" required></textarea>
+
+            <div id="options-container" style="display: none;">
+              <label>Option A:</label>
+              <input type="text" name="option_a" />
+              <label>Option B:</label>
+              <input type="text" name="option_b" />
+              <label>Option C:</label>
+              <input type="text" name="option_c" />
+              <label>Option D:</label>
+              <input type="text" name="option_d" />
+              <label>Correct Answer:</label>
+              <input type="text" name="correct_answer" />
+            </div>
+
+            <div id="diagram-container" style="display: none;">
+              <label>Diagram Image:</label>
+              <input type="file" name="diagram_image" accept="image/*" />
+            </div>
+
+            <label>Year:</label>
+            <input type="number" name="year" required />
+
+            <button type="submit">Add Question</button>
+          </form>
+        </div>
+      </div>
+
     </main>
 
     <!-- Script for Question Bank -->

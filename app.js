@@ -453,86 +453,129 @@ app.get("/signup", (req, res) => {
   res.sendFile(path.join(__dirname, "views", "signup.html"));
 });
 
-// API Route to Fetch Both Subjective and MCQ Questions for a Specific Subject
+// API Route to Fetch Subjective, Diagram and MCQ Questions for a Specific Subject with Pagination
 app.get("/api/questions/:subject", (req, res) => {
   const { subject } = req.params;
+  const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
+  const limit = 10; // Set number of questions per page
+  const offset = (page - 1) * limit; // Calculate offset based on the page number
 
+  // Queries for fetching questions
   const subjectiveQuery = `
-        SELECT id, question_text, subject, year, question_type
-        FROM subjective_questions
-        WHERE subject = ?`;
+    SELECT id, question_text, subject, year, question_type
+    FROM subjective_questions
+    WHERE subject = ?
+    LIMIT ? OFFSET ?`;
 
   const mcqQuery = `
-        SELECT id, question_text, option_a, option_b, option_c, option_d, correct_answer, year, type
-        FROM mcq_questions
-        WHERE subject = ?`;
+    SELECT id, question_text, option_a, option_b, option_c, option_d, correct_answer, year, type
+    FROM mcq_questions
+    WHERE subject = ?
+    LIMIT ? OFFSET ?`;
 
   const diagramsQuery = `
-        SELECT id, question_text, subject, year, type AS question_type, diagram_url
-        FROM diagrams
-        WHERE subject = ?`;
+    SELECT id, question_text, subject, year, type AS question_type, diagram_url
+    FROM diagrams
+    WHERE subject = ?
+    LIMIT ? OFFSET ?`;
 
-  db.query(subjectiveQuery, [subject], (err, subjectiveResults) => {
-    if (err) {
-      return res
-        .status(500)
-        .json({ error: "Failed to fetch subjective questions" });
-    }
+  // Fetch subjective questions
+  db.query(subjectiveQuery, [subject, limit, offset], (err, subjectiveResults) => {
+    if (err) return res.status(500).json({ error: "Failed to fetch subjective questions" });
 
-    db.query(mcqQuery, [subject], (err, mcqResults) => {
-      if (err) {
-        return res.status(500).json({ error: "Failed to fetch MCQs" });
-      }
+    // Fetch MCQ questions
+    db.query(mcqQuery, [subject, limit, offset], (err, mcqResults) => {
+      if (err) return res.status(500).json({ error: "Failed to fetch MCQs" });
 
-      db.query(diagramsQuery, [subject], (err, diagramsResults) => {
-        if (err) {
-          console.error("Error fetching diagrams:", err);
-          return res.status(500).json({ error: "Failed to fetch diagrams" });
-        }
+      // Fetch diagram questions
+      db.query(diagramsQuery, [subject, limit, offset], (err, diagramsResults) => {
+        if (err) return res.status(500).json({ error: "Failed to fetch diagrams" });
 
-        // Format subjective questions
-        const formattedSubjective = subjectiveResults.map((q) => ({
-          id: q.id,
-          question_text: q.question_text,
-          subject: q.subject.toUpperCase(),
-          year: `YEAR: ${q.year}`,
-          question_type: `subjective`, // Use "subjective" directly
-        }));
+        // Count questions per category for pagination
+        const countSubjectiveQuery = `SELECT COUNT(*) as total FROM subjective_questions WHERE subject = ?`;
+        const countMcqQuery = `SELECT COUNT(*) as total FROM mcq_questions WHERE subject = ?`;
+        const countDiagramsQuery = `SELECT COUNT(*) as total FROM diagrams WHERE subject = ?`;
 
-        // Format MCQs
-        const formattedMcqs = mcqResults.map((q) => ({
-          id: q.id,
-          question_text: q.question_text,
-          year: `YEAR: ${q.year || "N/A"}`,
-          type: q.type, // Should be 'objective' or 'subjective'
-          options: [
-            { option: "A", text: q.option_a || "N/A" },
-            { option: "B", text: q.option_b || "N/A" },
-            { option: "C", text: q.option_c || "N/A" },
-            { option: "D", text: q.option_d || "N/A" },
-          ],
-          correct_answer: q.correct_answer || "N/A",
-        }));
+        // Counting subjective questions
+        db.query(countSubjectiveQuery, [subject], (err, countSubjective) => {
+          if (err) return res.status(500).json({ error: "Failed to count subjective questions" });
 
-        // Format diagrams
-        const formattedDiagrams = diagramsResults.map((q) => ({
-          id: q.id,
-          question_text: q.question_text,
-          subject: q.subject.toUpperCase(),
-          year: `YEAR: ${q.year}`,
-          question_type: "diagram", // Use "type" as "question_type"
-          diagram_url: q.diagram_url || "N/A", // Add diagram URL if available
-        }));
+          // Counting MCQ questions
+          db.query(countMcqQuery, [subject], (err, countMcq) => {
+            if (err) return res.status(500).json({ error: "Failed to count MCQs" });
 
-        res.json({
-          subjective: formattedSubjective,
-          mcqs: formattedMcqs,
-          diagrams: formattedDiagrams,
+            // Counting diagram questions
+            db.query(countDiagramsQuery, [subject], (err, countDiagrams) => {
+              if (err) return res.status(500).json({ error: "Failed to count diagrams" });
+
+              // Format subjective questions
+              const formattedSubjective = subjectiveResults.map((q) => ({
+                id: q.id,
+                question_text: q.question_text,
+                subject: q.subject.toUpperCase(),
+                year: `YEAR: ${q.year}`,
+                question_type: "subjective", // Hardcoded as "subjective"
+              }));
+
+              // Format MCQs
+              const formattedMcqs = mcqResults.map((q) => ({
+                id: q.id,
+                question_text: q.question_text,
+                year: `YEAR: ${q.year || "N/A"}`,
+                type: q.type,
+                options: [
+                  { option: "A", text: q.option_a || "N/A" },
+                  { option: "B", text: q.option_b || "N/A" },
+                  { option: "C", text: q.option_c || "N/A" },
+                  { option: "D", text: q.option_d || "N/A" },
+                ],
+                correct_answer: q.correct_answer || "N/A",
+              }));
+
+              // Format diagrams
+              const formattedDiagrams = diagramsResults.map((q) => ({
+                id: q.id,
+                question_text: q.question_text,
+                subject: q.subject.toUpperCase(),
+                year: `YEAR: ${q.year}`,
+                question_type: "diagram", // Hardcoded as "diagram"
+                diagram_url: q.diagram_url || "N/A", // Add diagram URL if available
+              }));
+
+              // Send the formatted data along with pagination info
+              res.json({
+                subjective: formattedSubjective,
+                mcqs: formattedMcqs,
+                diagrams: formattedDiagrams,
+                totalQuestions: countSubjective[0].total + countMcq[0].total + countDiagrams[0].total, // Combine totals
+                pagination: {
+                  subjective: {
+                    total: countSubjective[0].total,
+                    pages: Math.ceil(countSubjective[0].total / limit),
+                    currentPage: page,
+                  },
+                  mcqs: {
+                    total: countMcq[0].total,
+                    pages: Math.ceil(countMcq[0].total / limit),
+                    currentPage: page,
+                  },
+                  diagrams: {
+                    total: countDiagrams[0].total,
+                    pages: Math.ceil(countDiagrams[0].total / limit),
+                    currentPage: page,
+                  },
+                },
+              });
+              
+            });
+          });
         });
       });
     });
   });
 });
+
+
 // Ensure the Images/Diagrams directory inside public exists
 const diagramDir = path.join(__dirname, "public", "Images", "Diagrams");
 if (!fs.existsSync(diagramDir)) {

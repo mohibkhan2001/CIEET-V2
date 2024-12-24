@@ -676,3 +676,34 @@ button.active {
   display: block; /* Ensure proper alignment within the container */
   margin: 15px auto; /* Center the image */
 }
+#pagination-controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+#pagination-controls button {
+  background-color: #007bff; /* Primary blue color */
+  color: #fff; /* White text */
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+#pagination-controls button:disabled {
+  background-color: #ccc; /* Light gray for disabled buttons */
+  cursor: not-allowed;
+}
+
+#pagination-controls button:hover:not(:disabled) {
+  background-color: #0056b3; /* Darker blue for hover state */
+}
+
+#pagination-controls button.active {
+  background-color: #28a745; /* Green for active page */
+  font-weight: bold;
+}

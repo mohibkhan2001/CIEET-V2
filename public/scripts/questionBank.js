@@ -72,131 +72,147 @@ function filterQuestions() {
   });
 }
 
-// Fetch and display questions when a subject is selected
-function showQuestions(subject) {
-  document.getElementById("questions-container").style.display = "block";
+const questionsPerPage = 10; // Number of questions to display per page
+let currentPage = 1;
+let currentSubject = "";
 
-  // Remove active class from all buttons
+async function fetchAllQuestions(subject) {
+  let subjectiveQuestions = [];
+  let currentPage = 1;
+
+  // Fetch all pages of subjective questions
+  while (true) {
+    const response = await fetch(`/api/questions/${subject}?type=subjective&page=${currentPage}`);
+    if (!response.ok) {
+      console.error(`Error fetching subjective questions: ${response.statusText}`);
+      break;
+    }
+    const data = await response.json();
+    if (!data.subjective || data.subjective.length === 0) break; // No more data to fetch
+    subjectiveQuestions = [...subjectiveQuestions, ...data.subjective];
+    if (currentPage >= data.pagination.subjective.pages) break; // Reached last page
+    currentPage++;
+  }
+
+  // Fetch the first page of mcqs and diagrams
+  const response = await fetch(`/api/questions/${subject}`);
+  if (!response.ok) {
+    console.error(`Error fetching questions: ${response.statusText}`);
+    return { subjective: subjectiveQuestions, mcqs: [], diagrams: [], totalQuestions: 0 };
+  }
+
+  const data = await response.json();
+  return {
+    subjective: subjectiveQuestions,
+    mcqs: data.mcqs || [],
+    diagrams: data.diagrams || [],
+    totalQuestions: data.totalQuestions,
+  };
+}
+
+async function showQuestions(subject, page = 1) {
+  document.getElementById("questions-container").style.display = "block";
+  currentSubject = subject;
+  currentPage = page;
+
   document.querySelectorAll(".subject-selection button").forEach((btn) => {
     btn.classList.remove("active");
   });
 
-  // Add active class to the clicked button
-  const clickedButton = document.querySelector(
-    `button[data-subject="${subject}"]`
-  );
+  const clickedButton = document.querySelector(`button[data-subject="${subject}"]`);
   clickedButton.classList.add("active");
 
-  fetch(`/api/questions/${subject}`)
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`Server error: ${response.statusText}`);
-      }
-      return response.json();
-    })
-    .then((data) => {
-      const questionList = document.getElementById("question-list");
-      questionList.innerHTML = ""; // Clear previous questions
+  try {
+    const data = await fetchAllQuestions(subject);
 
-      // Safely extract and validate data
-      const subjective = Array.isArray(data.subjective) ? data.subjective : [];
-      const mcqs = Array.isArray(data.mcqs) ? data.mcqs : [];
-      const diagrams = Array.isArray(data.diagrams) ? data.diagrams : [];
+    const questionList = document.getElementById("question-list");
+    questionList.innerHTML = ""; // Clear previous questions
 
-      // Display Subjective Questions
-      subjective.forEach((q) => {
+    // Combine all questions
+    const combinedQuestions = [
+      ...(data.subjective || []),
+      ...(data.mcqs || []),
+      ...(data.diagrams || []),
+    ];
+
+    // Calculate total pages based on totalQuestions
+    const totalPages = Math.ceil(data.totalQuestions / questionsPerPage);
+
+    // Slice questions for the current page
+    const startIndex = (page - 1) * questionsPerPage;
+    const paginatedQuestions = combinedQuestions.slice(startIndex, startIndex + questionsPerPage);
+
+    if (paginatedQuestions.length === 0) {
+      questionList.innerHTML = "<p>No questions available for this page.</p>";
+    } else {
+      paginatedQuestions.forEach((q) => {
         const questionItem = document.createElement("div");
-        questionItem.classList.add("question-item", "subjective");
-
-        questionItem.innerHTML = `
-          <div class="check_container">
-            <input id="subjective-${q.id}" class="question-checkbox hidden" type="checkbox" value="subjective-${q.id}" name="questions">
-            <label class="checkbox" for="subjective-${q.id}"></label>
-          </div>
-          <span class="question-text">${q.question_text}</span>
-          <div class="question-details">
-            <div class="question-year">${q.year}</div>
-            <div class="question-type">${q.question_type}</div>
-          </div>
-        `;
-        questionList.appendChild(questionItem);
-      });
-
-      // Display MCQs (Objective Questions)
-      mcqs.forEach((q) => {
-        const questionItem = document.createElement("div");
-        questionItem.classList.add("question-item", "objective");
-
+        questionItem.classList.add("question-item", q.type || "unknown"); // Type-based styling
         const optionsHTML = q.options
-          .map(
-            (option) =>
-              `<div class="option">${option.option}: ${option.text}</div>`
-          )
-          .join("");
-
-        const correctAnswer = `<div class="correct-answer"><strong>Correct Answer:</strong> ${q.correct_answer}</div>`;
+          ? q.options.map((option) => `<div class="option">${option.option}: ${option.text}</div>`).join("")
+          : "";
+        const diagramHTML = q.diagram_url
+          ? `<div class="question-diagram"><img src="/Images/Diagrams/${q.diagram_url}" alt="Diagram" loading="lazy" onerror="this.src='/Images/Diagrams/abc-image.png';"></div>`
+          : "";
 
         questionItem.innerHTML = `
           <div class="check_container">
-            <input id="objective-${q.id}" class="question-checkbox hidden" type="checkbox" value="objective-${q.id}" name="questions">
-            <label class="checkbox" for="objective-${q.id}"></label>
+            <input id="${q.type}-${q.id}" class="question-checkbox hidden" type="checkbox" value="${q.type}-${q.id}" name="questions">
+            <label class="checkbox" for="${q.type}-${q.id}"></label>
           </div>
           <span class="question-text">${q.question_text}</span>
-          <div class="question-options">${optionsHTML}</div>
-          ${correctAnswer}
+          ${optionsHTML}
+          ${diagramHTML}
           <div class="question-details">
-            <div class="question-year">${q.year}</div>
-            <div class="question-type">${q.type}</div>
-          </div>
-        `;
+            <div class="question-year">${q.year || "N/A"}</div>
+            <div class="question-type">${q.question_type || "Unknown"}</div>
+          </div>`;
         questionList.appendChild(questionItem);
       });
-  
-      diagrams.forEach((q) => {
-        const questionItem = document.createElement("div");
-        questionItem.classList.add("question-item", "diagram");
+    }
 
-        const diagramImage = q.diagram_url
-          ? `<div class="question-diagram">
-       <img src="/Images/Diagrams/${q.diagram_url}" alt="Diagram" loading="lazy" onerror="this.src='/Images/Diagrams/abc-image.png';">
-     </div>`
-          : `<div class="question-diagram">[Diagram not available]</div>`;
-
-
-        questionItem.innerHTML = `
-          <div class="check_container">
-            <input id="diagram-${q.id}" class="question-checkbox hidden" type="checkbox" value="diagram-${q.id}" name="questions">
-            <label class="checkbox" for="diagram-${q.id}"></label>
-          </div>
-          <span class="question-text">${q.question_text}</span>
-          ${diagramImage}
-          <div class="question-details">
-            <div class="question-year">${q.year}</div>
-            <div class="question-type">${q.question_type}</div>
-          </div>
-        `;
-        questionList.appendChild(questionItem);
-      });
-
-      // Reinitialize event listeners for dynamically added checkboxes
-      document.querySelectorAll(".question-checkbox").forEach((checkbox) => {
-        checkbox.addEventListener("change", () => {
-          console.log(`Checkbox ${checkbox.id} selected: ${checkbox.checked}`);
-        });
-      });
-
-      filterQuestions(); // Apply filters
-
-      // Scroll to the questions container smoothly
-      document.getElementById("questions-container").scrollIntoView({
-        behavior: "smooth"
-      });
-    })
-    .catch((error) => {
-      console.error("Error fetching questions:", error);
-      alert("Failed to fetch questions. Please try again later.");
-    });
+    // Update pagination controls
+    updatePaginationControls(totalPages, page);
+  } catch (error) {
+    console.error("Error fetching questions:", error);
+    alert("Failed to fetch questions. Please try again later.");
+  }
 }
+
+function updatePaginationControls(totalPages, currentPage) {
+  const paginationControls = document.getElementById("pagination-controls");
+  paginationControls.innerHTML = "";
+
+  if (currentPage > 1) {
+    const prevButton = document.createElement("button");
+    prevButton.textContent = "Previous";
+    prevButton.onclick = () => showQuestions(currentSubject, currentPage - 1);
+    paginationControls.appendChild(prevButton);
+  }
+
+  for (let i = 1; i <= totalPages; i++) {
+    const pageButton = document.createElement("button");
+    pageButton.textContent = i;
+    if (i === currentPage) {
+      pageButton.disabled = true;
+    } else {
+      pageButton.onclick = () => showQuestions(currentSubject, i);
+    }
+    paginationControls.appendChild(pageButton);
+  }
+
+  if (currentPage < totalPages) {
+    const nextButton = document.createElement("button");
+    nextButton.textContent = "Next";
+    nextButton.onclick = () => showQuestions(currentSubject, currentPage + 1);
+    paginationControls.appendChild(nextButton);
+  }
+}
+
+// Initialize
+showQuestions("math", 1);
+
+
 
 document.addEventListener("DOMContentLoaded", () => {
   // Elements
