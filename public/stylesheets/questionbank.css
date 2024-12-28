@@ -707,3 +707,9 @@ button.active {
   background-color: #28a745; /* Green for active page */
   font-weight: bold;
 }
+.question-diagram img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
