@@ -1,358 +1,440 @@
 // Utility Functions
 function toggleModalVisibility(modalId, isVisible) {
-  $("#" + modalId).css("display", isVisible ? "flex" : "none");
+  document.getElementById(modalId).style.display = isVisible ? "flex" : "none";
 }
 
-// State Variables
-let allQuestions = []; // Store all questions fetched for the current subject
-let filteredQuestions = []; // Filtered questions after applying search, type, and year filters
-const questionsPerPage = 10;
+// Initialize Event Listeners
+function initializeEventListeners() {
+  document
+    .getElementById("pdfForm")
+    .addEventListener("submit", handleGeneratePDF);
+  document
+    .getElementById("selectAllButton")
+    .addEventListener("click", selectAllQuestions);
+  document
+    .getElementById("searchInput")
+    .addEventListener("keyup", filterQuestions);
+  document
+    .getElementById("yearFilter")
+    .addEventListener("change", filterQuestions);
+  document
+    .getElementById("typeFilter")
+    .addEventListener("change", filterQuestions);
+  document
+    .getElementById("randomSelectButton")
+    .addEventListener("click", toggleRandomSelectionInput);
+  // document
+  //   .getElementById("random-question-count")
+  //   .addEventListener("input", validateRandomInput);
+
+  // Event listener for checkbox selection
+  document.querySelectorAll(".question-checkbox").forEach((checkbox) => {
+    checkbox.addEventListener("change", filterQuestions); // Re-filter when a checkbox is clicked
+  });
+}
+// Initialize pagination-related variables
+const questionsPerPage = 5; // Number of questions per page
 let currentPage = 1;
+let totalPages = 1;
+let currentSubject = "";
+let allQuestions = []; // Store all fetched questions
 
- // Initialize Event Listeners
-  function initializeEventListeners() {
-    $("#pdfForm").submit(handleGeneratePDF);
-    $("#selectAllButton").click(selectAllQuestions);
-    $("#searchInput").keyup(filterQuestions);
-    $("#yearFilter").change(filterQuestions);
-    $("#typeFilter").change(filterQuestions);
-    $("#selectAllButton").click(selectAllQuestions);
+// Pagination logic using jQuery
+function setupPagination(totalQuestions) {
+  totalPages = Math.ceil(totalQuestions / questionsPerPage);
 
-    // Event listener for checkbox selection
-    $(".question-checkbox").on("change", filterQuestions); // Re-filter when a checkbox is clicked
+  // Clear previous pagination
+  $("#pagination").empty();
+
+  // Add "Previous" button
+  const prevPageLink = $("<li>")
+    .addClass("page-item")
+    .append(
+      $("<a>")
+        .addClass("page-link")
+        .attr("href", "#")
+        .text("Previous")
+        .click(() => changePage(currentPage - 1))
+    );
+  $("#pagination").append(prevPageLink);
+
+  // Generate pagination links
+  for (let i = 1; i <= totalPages; i++) {
+    const pageLink = $("<li>")
+      .addClass("page-item")
+      .append(
+        $("<a>")
+          .addClass("page-link")
+          .attr("href", "#")
+          .text(i)
+          .click(() => changePage(i))
+      );
+    $("#pagination").append(pageLink);
   }
 
+  // Add "Next" button
+  const nextPageLink = $("<li>")
+    .addClass("page-item")
+    .append(
+      $("<a>")
+        .addClass("page-link")
+        .attr("href", "#")
+        .text("Next")
+        .click(() => changePage(currentPage + 1))
+    );
+  $("#pagination").append(nextPageLink);
+
+  // Disable "Previous" if on the first page, and "Next" if on the last page
+  if (currentPage === 1) {
+    prevPageLink.addClass("disabled");
+  } else if (currentPage === totalPages) {
+    nextPageLink.addClass("disabled");
+  }
+}
+
+// Change page function
+function changePage(page) {
+  if (page < 1 || page > totalPages) return; // Prevent invalid page
+  currentPage = page;
+  displayQuestions();
+  updatePaginationStyles();
+}
+
+// Update pagination styles to highlight the current page
+function updatePaginationStyles() {
+  $(".page-item").removeClass("active");
+  $(".page-item").eq(currentPage).addClass("active");
+}
+
+// Display questions based on the current page
+function displayQuestions() {
+  const questionList = $("#question-list");
+  questionList.empty(); // Clear previous questions
+
+  const startIndex = (currentPage - 1) * questionsPerPage;
+  const endIndex = startIndex + questionsPerPage;
+
+  const questionsToDisplay = allQuestions.slice(startIndex, endIndex);
+
+  questionsToDisplay.forEach((q) => {
+    const questionItem = $("<div>")
+      .addClass("question-item")
+      .addClass(q.type || "unknown");
+
+    const optionsHTML = q.options
+      ? q.options
+          .map(
+            (option) =>
+              `<div class="option">${option.option}: ${option.text}</div>`
+          )
+          .join("")
+      : "";
+
+    const diagramHTML = q.diagram_url
+      ? `<div class="question-diagram"><img src="/Images/Diagrams/${q.diagram_url}" alt="Diagram" loading="lazy" onerror="this.src='/Images/Diagrams/abc-image.png';"></div>`
+      : "";
+
+    const correctAnswerHTML = q.correct_answer
+      ? `<div class="correct-answer"><strong>Correct Answer: </strong>${q.correct_answer}</div>`
+      : "";
+
+    questionItem.html(`
+      <div class="check_container">
+        <input id="${q.type}-${
+      q.id
+    }" class="question-checkbox hidden" type="checkbox" value="${q.type}-${
+      q.id
+    }" name="questions">
+        <label class="checkbox" for="${q.type}-${q.id}"></label>
+      </div>
+      <span class="question-text">${q.question_text}</span>
+      ${optionsHTML}
+      ${diagramHTML}
+      ${correctAnswerHTML}
+      <div class="question-details">
+        <div class="question-year">${q.year || "N/A"}</div>
+        <div class="question-type">${q.question_type || "Unknown"}</div>
+      </div>
+    `);
+
+    // Restore checkbox states from localStorage
+    if (localStorage.getItem(q.type + "-" + q.id) === "checked") {
+      questionItem.find('input[type="checkbox"]').prop("checked", true);
+    }
+
+    questionList.append(questionItem);
+  });
+
+  setupPagination(allQuestions.length);
+}
+
+// Save checkbox state to localStorage
+$(document).on("change", 'input[name="questions"]', function () {
+  const questionId = $(this).val();
+  if (this.checked) {
+    localStorage.setItem(questionId, "checked");
+  } else {
+    localStorage.removeItem(questionId);
+  }
+});
+
+// Filter questions after page change and ensure they work with pagination
+function filterQuestions() {
+  const searchQuery = $("#searchInput").val().toLowerCase();
+  const yearFilter = $("#yearFilter").val();
+  const typeFilter = $("#typeFilter").val().toLowerCase();
+
+  const filteredQuestions = allQuestions.filter((q) => {
+    const questionText = q.question_text.toLowerCase();
+    const questionYear = q.year || "";
+    const questionType = q.question_type.toLowerCase();
+
+    return (
+      questionText.includes(searchQuery) &&
+      (yearFilter ? questionYear.includes(yearFilter) : true) &&
+      (typeFilter ? questionType === typeFilter : true)
+    );
+  });
+
+  allQuestions = filteredQuestions;
+  currentPage = 1; // Reset to the first page
+  displayQuestions();
+}
+
+// Select all questions function and save to localStorage
+function selectAllQuestions() {
+  const checkboxes = $('input[name="questions"]');
+  checkboxes.prop("checked", true);
+  checkboxes.each(function () {
+    const questionId = $(this).val();
+    localStorage.setItem(questionId, "checked");
+  });
+}
+
+// Fetch all questions function (make sure it's accessible)
+async function fetchAllQuestions(subject) {
+  let subjectiveQuestions = [];
+  let currentPage = 1;
+
+  // Fetch all pages of subjective questions
+  while (true) {
+    const response = await fetch(
+      `/api/questions/${subject}?type=subjective&page=${currentPage}`
+    );
+    if (!response.ok) {
+      console.error(
+        `Error fetching subjective questions: ${response.statusText}`
+      );
+      break;
+    }
+    const data = await response.json();
+    if (!data.subjective || data.subjective.length === 0) break; // No more data to fetch
+    subjectiveQuestions = [...subjectiveQuestions, ...data.subjective];
+    if (currentPage >= data.pagination.subjective.pages) break; // Reached last page
+    currentPage++;
+  }
+
+  // Fetch the first page of mcqs and diagrams
+  const response = await fetch(`/api/questions/${subject}`);
+  if (!response.ok) {
+    console.error(`Error fetching questions: ${response.statusText}`);
+    return {
+      subjective: subjectiveQuestions,
+      mcqs: [],
+      diagrams: [],
+      totalQuestions: 0,
+    };
+  }
+
+  const data = await response.json();
+  return {
+    subjective: subjectiveQuestions,
+    mcqs: data.mcqs || [],
+    diagrams: data.diagrams || [],
+    totalQuestions: data.totalQuestions,
+  };
+}
+
+// Show questions based on the subject
+async function showQuestions(subject) {
+  document.getElementById("questions-container").style.display = "block";
+  currentSubject = subject;
+
+  document.querySelectorAll(".subject-selection button").forEach((btn) => {
+    btn.classList.remove("active");
+  });
+
+  const clickedButton = document.querySelector(
+    `button[data-subject="${subject}"]`
+  );
+  clickedButton.classList.add("active");
+
+  try {
+    const data = await fetchAllQuestions(subject);
+
+    allQuestions = [
+      ...(data.subjective || []),
+      ...(data.mcqs || []),
+      ...(data.diagrams || []),
+    ];
+
+    displayQuestions();
+  } catch (error) {
+    console.error("Error fetching questions:", error);
+    alert("Failed to fetch questions. Please try again later.");
+  }
+}
+
+// Initialize the page with questions
+showQuestions("math");
+
+$(document).ready(function () {
+  // Initialize event listeners
+  initializeEventListeners();
+
+  // Initialize event listener for pagination
+  $("#pagination").on("click", "a.page-link", function () {
+    const page = parseInt($(this).text(), 10);
+    changePage(page);
+  });
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  // Elements
+  const addNewQuestionBtn = document.getElementById("addNewQuestionBtn");
+  const addQuestionContainer = document.getElementById("add-question-modal");
+  const overlay = document.getElementById("overlay");
+  const closeModalBtn = document.getElementById("closeModalBtn");
+
+  // Ensure all modal elements are present
+  if (addNewQuestionBtn && addQuestionContainer && overlay && closeModalBtn) {
+    // Show modal when 'Add New Question' button is clicked
+    addNewQuestionBtn.addEventListener("click", () => {
+      openAddQuestionModal(); // Show the modal
+    });
+
+    // Close modal when overlay or close button is clicked
+    overlay.addEventListener("click", closeModal);
+    closeModalBtn.addEventListener("click", closeModal);
+
+    // Close modal function to remove 'show' class from modal and overlay
+    function closeModal() {
+      addQuestionContainer.classList.remove("show");
+      overlay.classList.remove("show");
+    }
+
+    // Handle form logic for adding questions
+    const addQuestionForm = document.getElementById("add-question-form");
+    const questionTypeSelect = document.getElementById("type");
+    const optionsContainer = document.getElementById("options-container");
+    const diagramContainer = document.getElementById("diagram-container");
+
+    // Show relevant input fields based on question type selected
+    questionTypeSelect.addEventListener("change", () => {
+      const questionType = questionTypeSelect.value;
+
+      // Toggle visibility of options and diagram containers based on question type
+      optionsContainer.style.display =
+        questionType === "objective" ? "block" : "none";
+      diagramContainer.style.display =
+        questionType === "diagram" ? "block" : "none";
+    });
+
+    // Handle form submission
+    addQuestionForm.addEventListener("submit", async (e) => {
+      e.preventDefault(); // Prevent the form from submitting normally
+
+      // Collect form data
+      const formData = new FormData(addQuestionForm);
+      const questionType = formData.get("type");
+
+      // Determine the API endpoint based on the question type
+      let endpoint = "";
+      if (questionType === "objective") {
+        endpoint = "/api/questions/mcq";
+      } else if (questionType === "diagram") {
+        endpoint = "/api/questions/diagrams";
+      } else if (questionType === "subjective") {
+        endpoint = "/api/questions/subjective";
+      } else {
+        alert("Invalid question type selected!");
+        return; // Exit if invalid question type is selected
+      }
+
+      // Make the API request to add the question
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          body: formData, // Send formData for file upload (if any)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          alert("Question added successfully!");
+          addQuestionForm.reset(); // Reset the form
+          optionsContainer.style.display = "none"; // Hide the options container
+          diagramContainer.style.display = "none"; // Hide the diagram container
+          closeModal(); // Close the modal after successful submission
+        } else {
+          alert(`Error: ${result.error || result.message}`); // Display error if API returns an error
+        }
+      } catch (error) {
+        console.error("Error adding question:", error);
+        alert("Failed to add question. Please try again later.");
+      }
+    });
+  } else {
+    console.error("One or more modal elements not found in the DOM");
+  }
+});
+
+// Function to show modal
+function openAddQuestionModal() {
+  const addQuestionContainer = document.getElementById("add-question-modal");
+  const overlay = document.getElementById("overlay");
+
+  if (addQuestionContainer && overlay) {
+    addQuestionContainer.classList.add("show");
+    overlay.classList.add("show");
+  }
+}
 
 // Function to select all questions
 function selectAllQuestions() {
   const checkboxes = document.querySelectorAll('input[name="questions"]');
   checkboxes.forEach((checkbox) => (checkbox.checked = true));
 }
-function filterQuestions() {
-  const searchQuery = document
-    .getElementById("searchInput")
-    .value.toLowerCase();
-  const yearFilter = document.getElementById("yearFilter").value;
-  const typeFilter = document.getElementById("typeFilter").value.toLowerCase(); // Ensure the type filter is lowercase
 
-  // Filter questions based on search, year, and type
-  filteredQuestions = allQuestions.filter((q) => {
-    const questionText = q.question_text?.toLowerCase() || "";
-    const questionYear = q.year || "";
-    const questionType = q.question_type?.toLowerCase() || "";
+// Select the loader container
+const loaderContainer = document.getElementById("loader-container");
 
-    const matchesSearch = questionText.includes(searchQuery);
-    const matchesYear = yearFilter ? questionYear.includes(yearFilter) : true;
-    const matchesType = typeFilter ? questionType === typeFilter : true;
-
-    return matchesSearch && matchesYear && matchesType;
-  });
-
-  // Reset to the first page after applying the filters
-  currentPage = 1;
-  renderQuestions();
+// Function to show the loader
+function showLoader() {
+  loaderContainer.style.display = "flex";
 }
 
-// Save Selected Questions in localStorage
-function saveSelectedQuestions() {
-  localStorage.setItem(
-    "selectedQuestions",
-    JSON.stringify([...getSelectedQuestions()])
-  );
+// Function to hide the loader
+function hideLoader() {
+  loaderContainer.style.display = "none";
 }
 
-// Get Selected Questions from localStorage
-function getSelectedQuestions() {
-  return new Set(JSON.parse(localStorage.getItem("selectedQuestions") || "[]"));
-}
-
-// Add Question to Selected Questions
-function addSelectedQuestion(questionId) {
-  const selected = getSelectedQuestions();
-  selected.add(questionId);
-  localStorage.setItem("selectedQuestions", JSON.stringify([...selected]));
-  console.log("Selected Questions:", [...selected]);
-}
-
-// Remove Question from Selected Questions
-function removeSelectedQuestion(questionId) {
-  const selected = getSelectedQuestions();
-  selected.delete(questionId);
-  localStorage.setItem("selectedQuestions", JSON.stringify([...selected]));
-  console.log("Selected Questions:", [...selected]);
-}
-// Fetch Questions
-async function fetchQuestions(subject) {
-  try {
-    const response = await fetch(`/api/questions/${subject}`);
-    if (!response.ok) {
-      console.error(`Error fetching questions: ${response.statusText}`);
-      return [];
-    }
-
-    const data = await response.json();
-    console.log('Fetched Data:', data); // Log to see the structure of data
-    return [
-      ...(data.subjective || []),
-      ...(data.mcqs || []),
-      ...(data.diagrams || []),
-    ];
-  } catch (error) {
-    console.error("Error fetching questions:", error);
-    return [];
-  }
-}
-
-
-// Show Questions with Pagination
-async function showQuestions(subject, page = 1) {
-  $("#questions-container").show();
-  $(".subject-selection button").removeClass("active");
-  $(`button[data-subject="${subject}"]`).addClass("active");
-
-  try {
-    allQuestions = await fetchQuestions(subject);
-    currentPage = page;
-    filteredQuestions = allQuestions; // Initially no filters, so show all questions
-    renderQuestions();
-  } catch (error) {
-    console.error("Error displaying questions:", error);
-    alert("Failed to fetch questions. Please try again later.");
-  }
-}
-
-function renderQuestions() {
-  const searchQuery = $("#searchInput").val().toLowerCase();
-  const yearFilter = $("#yearFilter").val();
-  const typeFilter = $("#typeFilter").val().toLowerCase();
-
-  // Filter questions based on search, year, and type
-  const filteredQuestions = allQuestions.filter((q) => {
-    const questionText = q.question_text?.toLowerCase() || "";
-    const questionYear = q.year || "";
-    const questionType = q.question_type?.toLowerCase() || "";
-
-    const matchesSearch = questionText.includes(searchQuery);
-    const matchesYear = yearFilter ? questionYear.includes(yearFilter) : true;
-    const matchesType = typeFilter ? questionType === typeFilter : true;
-
-    return matchesSearch && matchesYear && matchesType;
-  });
-
-  const totalPages = Math.ceil(filteredQuestions.length / questionsPerPage);
-  const startIndex = (currentPage - 1) * questionsPerPage;
-  const paginatedQuestions = filteredQuestions.slice(startIndex, startIndex + questionsPerPage);
-
-  const $questionList = $("#question-list");
-  $questionList.empty();
-
-  const selectedQuestions = getSelectedQuestions();
-
-  if (paginatedQuestions.length === 0) {
-    $questionList.append("<p>No questions available for this page.</p>");
-  } else {
-    paginatedQuestions.forEach((q) => {
-      const questionId = `${q.question_type}-${q.id}`;
-      const isChecked = selectedQuestions.has(questionId);
-
-      let optionsHTML = "";
-      let diagramHTML = "";
-      let correctAnswerHTML = "";
-
-      // Handling objective questions (MCQs)
-      if (q.question_type === "objective" && Array.isArray(q.options) && q.options.length > 0) {
-        optionsHTML = `
-          <div class="options">
-            ${q.options.map(option => `
-              <div class="option">
-                <input type="radio" name="question-${q.id}" value="${option}" ${q.correct_answer === option ? "checked" : ""} disabled>
-                <label>${option}</label>
-              </div>
-            `).join("")}
-          </div>
-        `;
-        correctAnswerHTML = q.correct_answer 
-          ? `<div class="correct-answer"><strong>Correct Answer: </strong>${q.correct_answer}</div>` 
-          : "<p>No correct answer available.</p>";
-      } else {
-        optionsHTML = "<p>No options available for this question.</p>";
-      }
-
-      // Handling diagram questions
-      if (q.question_type === "diagram" && q.diagram_url) {
-        diagramHTML = `
-          <div class="question-diagram">
-            <img src="/Images/Diagrams/${q.diagram_url}" alt="Diagram for question ${q.id}" loading="lazy" onerror="this.src='/Images/Diagrams/abc-image.png';">
-          </div>
-        `;
-      } else {
-        diagramHTML = "<p>No diagram available for this question.</p>";
-      }
-
-      // Build the question HTML
-      const questionHTML = `
-        <div class="question-item ${q.type || "unknown"}">
-          <div class="check_container">
-            <input id="${questionId}" class="question-checkbox" type="checkbox" value="${questionId}" ${isChecked ? "checked" : ""}>
-            <label class="checkbox" for="${questionId}"></label>
-          </div>
-          <span class="question-text">${q.question_text}</span>
-          ${optionsHTML}
-          ${diagramHTML}
-          ${correctAnswerHTML}
-          <div class="question-details">
-            <div class="question-year">${q.year || "N/A"}</div>
-            <div class="question-type">${q.question_type || "Unknown"}</div>
-          </div>
-        </div>
-      `;
-
-      // Append question to the list
-      $questionList.append(questionHTML);
-
-      // Add checkbox listeners (using jQuery for checkbox state changes)
-      $(`#${questionId}`).on("change", function () {
-        const questionId = $(this).val();
-        if ($(this).is(":checked")) {
-          addSelectedQuestion(questionId);
-        } else {
-          removeSelectedQuestion(questionId);
-        }
-      });
-    });
-
-    // Ensure pagination controls are updated
-    renderPaginationControls(filteredQuestions.length, currentPage);
-  }
-}
-
-
-// Ensure pagination controls are updated
-function renderPaginationControls(totalItems, currentPage) {
-  const totalPages = Math.ceil(totalItems / questionsPerPage);
-  const $paginationControls = $("#pagination-controls");
-  $paginationControls.empty();
-
-  // Create page buttons
-  for (let i = 1; i <= totalPages; i++) {
-    const pageButton = $("<button>").text(i).addClass("page-button").on("click", () => {
-      currentPage = i;
-      renderQuestions();
-    });
-    if (i === currentPage) {
-      pageButton.addClass("active");
-    }
-    $paginationControls.append(pageButton);
-  }
-}
-
-
-// Update Pagination Controls
-function renderPaginationControls(totalQuestions, currentPage) {
-  const totalPages = Math.ceil(totalQuestions / questionsPerPage);
-  const $paginationControls = $("#pagination-controls");
-  $paginationControls.empty();
-
-  for (let i = 1; i <= totalPages; i++) {
-    const pageButton = $(`<button>${i}</button>`);
-    pageButton.addClass("page-button").toggleClass("active", i === currentPage);
-    pageButton.on("click", () => {
-      currentPage = i;
-      renderQuestions();
-    });
-    $paginationControls.append(pageButton);
-  }
-}
-
-// Update the filtered questions and render the page when a filter changes
-$("#searchInput, #yearFilter, #typeFilter").on("input change", function () {
-  renderQuestions();
-});
-
-// Initialize pagination and render on page load
-$(document).ready(function () {
-  showQuestions("subject1", 1); // Example subject and page
-});
-
-
-
-
-// Render Questions with Pagination
-function renderQuestions() {
-  const startIndex = (currentPage - 1) * questionsPerPage;
-  const endIndex = startIndex + questionsPerPage;
-  const questionsToDisplay = filteredQuestions.slice(startIndex, endIndex);
-
-  const $questionList = $("#question-list");
-  $questionList.empty();
-
-  const selectedQuestions = getSelectedQuestions();
-
-  questionsToDisplay.forEach((q) => {
-    const questionId = `${q.question_type}-${q.id}`;
-    const isChecked = selectedQuestions.has(questionId);
-
-    const questionHTML = `
-      <div class="question-item ${q.type || "unknown"}">
-        <div class="check_container">
-          <input id="${questionId}" class="question-checkbox" type="checkbox" value="${questionId}" ${
-      isChecked ? "checked" : ""
-    }>
-          <label class="checkbox" for="${questionId}"></label>
-        </div>
-        <span class="question-text">${q.question_text}</span>
-        <div class="question-details">
-          <div class="question-year">${q.year || "N/A"}</div>
-          <div class="question-type">${q.question_type || "Unknown"}</div>
-        </div>
-      </div>`;
-    $questionList.append(questionHTML);
-  });
-
-  // Add Checkbox Listeners
-  $(".question-checkbox").on("change", function () {
-    const questionId = $(this).val();
-    if ($(this).is(":checked")) {
-      addSelectedQuestion(questionId);
-    } else {
-      removeSelectedQuestion(questionId);
-    }
-  });
-
-  // Render Pagination Controls
-  renderPaginationControls(filteredQuestions.length);
-}
-
-// Render Pagination Controls using jQuery
-function renderPaginationControls(totalQuestions) {
-  const totalPages = Math.ceil(totalQuestions / questionsPerPage);
-  const $paginationControls = $("#pagination-controls");
-  $paginationControls.empty();
-
-  for (let i = 1; i <= totalPages; i++) {
-    const pageButton = $(`<button>${i}</button>`);
-    pageButton.addClass("page-button").toggleClass("active", i === currentPage);
-    pageButton.on("click", () => {
-      currentPage = i;
-      renderQuestions();
-    });
-    $paginationControls.append(pageButton);
-  }
-}
-
-// Handle PDF Generation
+// Handle form submission to generate PDF
 async function handleGeneratePDF(event) {
-  event.preventDefault();
+  event.preventDefault(); // Prevent default form submission
 
-  const selectedButton = $(".subject-selection button.active");
-  if (!selectedButton.length) {
+  const selectedButton = document.querySelector("button.active");
+  if (!selectedButton) {
     alert("Please select a subject.");
     return;
   }
 
-  const subject = selectedButton.data("subject");
-  const pdfName = $("#pdfName").val().trim();
-  const selectedQuestions = Array.from(getSelectedQuestions());
+  const subject = selectedButton.getAttribute("data-subject");
+  const selectedQuestions = Array.from(
+    document.querySelectorAll('input[name="questions"]:checked')
+  ).map((el) => el.value); // Get the selected question IDs
+
+  const pdfName = document.getElementById("pdfName").value.trim();
 
   if (selectedQuestions.length === 0) {
     alert("Please select at least one question.");
@@ -363,7 +445,8 @@ async function handleGeneratePDF(event) {
     return;
   }
 
-  // showLoader();
+  // Show the loader while generating PDF
+  showLoader();
 
   try {
     const response = await fetch("/generate-pdf", {
@@ -375,9 +458,8 @@ async function handleGeneratePDF(event) {
     const data = await response.json();
 
     if (data.success) {
+      const fileSize = formatFileSize(data.size); // Format the size
       alert(`PDF Generated Successfully: ${data.pdfFileName}`);
-      localStorage.removeItem("selectedQuestions"); // Clear selected questions
-      renderQuestions(); // Update checkboxes
     } else {
       alert(`Error: ${data.error}`);
     }
@@ -385,15 +467,97 @@ async function handleGeneratePDF(event) {
     console.error("Error generating PDF:", error);
     alert("Failed to generate PDF. Please try again.");
   } finally {
-    // hideLoader();
+    // Hide the loader after processing
+    hideLoader();
   }
 }
 
-// Initialize
-$(document).ready(() => {
-  initializeEventListeners();
-  showQuestions("math");
-});
+// Helper function to format file size from bytes to B, KB, MB, etc.
+function formatFileSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  else if (bytes < 1048576) return (bytes / 1024).toFixed(2) + " KB";
+  else if (bytes < 1073741824) return (bytes / 1048576).toFixed(2) + " MB";
+  else return (bytes / 1073741824).toFixed(2) + " GB";
+}
+
+// Function to handle random selection
+async function selectRandomly() {
+  const subject = document
+    .querySelector("button.active")
+    .getAttribute("data-subject");
+  const questionCount = parseInt(
+    document.getElementById("random-question-count").value,
+    10
+  );
+
+  // Fetch questions for the selected subject
+  const response = await fetch(`/api/questions/${subject}`);
+  const data = await response.json();
+
+  // Combine both subjective and MCQ questions
+  const allQuestions = [...data.subjective, ...data.mcqs];
+
+  if (questionCount > allQuestions.length) {
+    alert(
+      "The number of questions exceeds the available questions. Try again."
+    );
+    return;
+  }
+
+  // Shuffle the questions and select the specified number
+  const selectedQuestions = shuffle(allQuestions).slice(0, questionCount);
+
+  // Select the checkboxes for the randomly chosen questions
+  document.querySelectorAll('input[name="questions"]').forEach((checkbox) => {
+    checkbox.checked = false;
+  });
+
+  selectedQuestions.forEach((question) => {
+    const checkbox = document.querySelector(
+      `input[value="${question.type}-${question.id}"]`
+    );
+    if (checkbox) {
+      checkbox.checked = true;
+    }
+  });
+}
+
+// Function to shuffle an array (Fisher-Yates algorithm)
+function shuffle(array) {
+  let currentIndex = array.length,
+    randomIndex,
+    temporaryValue;
+
+  while (currentIndex !== 0) {
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    temporaryValue = array[currentIndex];
+    array[currentIndex] = array[randomIndex];
+    array[randomIndex] = temporaryValue;
+  }
+
+  return array;
+}
+
+// Function to toggle the random selection input field visibility
+function toggleRandomSelectionInput() {
+  const randomSelectionContainer = document.getElementById(
+    "random-selection-container"
+  );
+  randomSelectionContainer.style.display =
+    randomSelectionContainer.style.display === "none" ? "block" : "none";
+}
+
+// Function to validate random question input
+function validateRandomInput() {
+  const inputField = document.getElementById("random-question-count");
+  if (inputField.value <= 0) {
+    inputField.setCustomValidity("Please enter a valid number.");
+  } else {
+    inputField.setCustomValidity("");
+  }
+}
 
 // Add event listener to the PDF generation form
 document
