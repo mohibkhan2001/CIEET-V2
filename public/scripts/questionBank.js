@@ -170,28 +170,34 @@ function displayQuestions() {
 
 // Save checkbox state to localStorage
 $(document).on("change", 'input[name="questions"]', function () {
-  const questionId = $(this).val();
+  const questionId = $(this).val(); // Question ID
+  const questionType = $(this).data("type"); // Question type (e.g., subjective, objective, diagram)
+
+  // Create a unique identifier combining type and ID
+  const uniqueKey = `${questionType}-${questionId}`;
+
   if (this.checked) {
-    localStorage.setItem(questionId, "checked");
+    localStorage.setItem(uniqueKey, "checked");
+    updateSelectedQuestions(uniqueKey, true);
   } else {
-    localStorage.removeItem(questionId);
+    localStorage.removeItem(uniqueKey);
+    updateSelectedQuestions(uniqueKey, false);
   }
 });
 
-// Global array to store selected question IDs across pages
-let selectedQuestions = [];
-
+// Global array to store selected question unique keys across pages
+let selectedQuestions = JSON.parse(localStorage.getItem('selectedQuestions')) || [];
 
 // Function to update selected questions and sync with localStorage
-function updateSelectedQuestions(questionId, isChecked) {
+function updateSelectedQuestions(uniqueKey, isChecked) {
   if (isChecked) {
     // Add to selected questions if checked
-    if (!selectedQuestions.includes(questionId)) {
-      selectedQuestions.push(questionId);
+    if (!selectedQuestions.includes(uniqueKey)) {
+      selectedQuestions.push(uniqueKey);
     }
   } else {
     // Remove from selected questions if unchecked
-    const index = selectedQuestions.indexOf(questionId);
+    const index = selectedQuestions.indexOf(uniqueKey);
     if (index > -1) {
       selectedQuestions.splice(index, 1);
     }
@@ -200,6 +206,22 @@ function updateSelectedQuestions(questionId, isChecked) {
   // Save the updated selected questions to localStorage
   localStorage.setItem('selectedQuestions', JSON.stringify(selectedQuestions));
 }
+
+// On page load, restore checkbox states
+$(document).ready(function () {
+  $('input[name="questions"]').each(function () {
+    const questionId = $(this).val();
+    const questionType = $(this).data("type");
+    const uniqueKey = `${questionType}-${questionId}`;
+
+    if (localStorage.getItem(uniqueKey) === "checked") {
+      $(this).prop("checked", true);
+      if (!selectedQuestions.includes(uniqueKey)) {
+        selectedQuestions.push(uniqueKey);
+      }
+    }
+  });
+});
 
 // Event listener for checkbox change
 $(document).on('change', 'input[name="questions"]', function () {
@@ -545,6 +567,8 @@ async function handleGeneratePDF(event) {
     hideLoader();
   }
 }
+
+
 
 // Function to reset selected questions and clear localStorage
 // Function to reset selected questions and clear localStorage

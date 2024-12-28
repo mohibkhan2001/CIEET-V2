@@ -769,273 +769,227 @@ app.post("/generate-pdf", async (req, res) => {
       .json({ success: false, error: "Missing required fields" });
   }
 
-  // Strip the prefixes (subjective-, objective-, diagram-) from the question IDs
-  const strippedQuestions = questions
-    .map((question) => {
-      const matches = question.match(/-(\d+)$/);
-      if (matches) {
-        return parseInt(matches[1]); // Extract the number from the ID (after the dash)
-      }
-      return null; // In case of unexpected format
-    })
-    .filter(Boolean); // Filter out any invalid IDs
+  // Separate questions by type and ID
+  const subjectiveQuestions = [];
+  const mcqQuestions = [];
+  const diagramQuestions = [];
 
-  if (strippedQuestions.length === 0) {
+  questions.forEach((question) => {
+    const [type, id] = question.split("-"); // Split type and ID
+    const parsedId = parseInt(id);
+
+    if (!parsedId) return; // Skip invalid IDs
+
+    if (type === "subjective") subjectiveQuestions.push(parsedId);
+    if (type === "objective") mcqQuestions.push(parsedId);
+    if (type === "diagram") diagramQuestions.push(parsedId);
+  });
+
+  if (
+    subjectiveQuestions.length === 0 &&
+    mcqQuestions.length === 0 &&
+    diagramQuestions.length === 0
+  ) {
     return res
       .status(400)
-      .json({ success: false, error: "Invalid question IDs" });
+      .json({ success: false, error: "Invalid or missing question IDs" });
   }
 
-  const subjectiveQuery = `
-    SELECT question_text
-    FROM subjective_questions
-    WHERE id IN (?) AND subject = ?
-  `;
-  const mcqQuery = `
-    SELECT question_text, option_a, option_b, option_c, option_d
-    FROM mcq_questions
-    WHERE id IN (?) AND subject = ?
-  `;
-  const diagramsQuery = `
-    SELECT question_text, diagram_url
-    FROM diagrams
-    WHERE id IN (?) AND subject = ?
-  `;
+  try {
+    // Queries to fetch questions
+    const subjectiveQuery = `SELECT question_text FROM subjective_questions WHERE id IN (?) AND subject = ?`;
+    const mcqQuery = `SELECT question_text, option_a, option_b, option_c, option_d FROM mcq_questions WHERE id IN (?) AND subject = ?`;
+    const diagramsQuery = `SELECT question_text, diagram_url FROM diagrams WHERE id IN (?) AND subject = ?`;
 
-  db.query(
-    subjectiveQuery,
-    [strippedQuestions, subject],
-    async (err, subjectiveResults) => {
-      if (err)
-        return res.status(500).json({
-          success: false,
-          error: "Failed to fetch subjective questions",
-        });
+    // Fetch data for each type
+    const subjectiveResults = subjectiveQuestions.length
+      ? await new Promise((resolve, reject) => {
+          db.query(subjectiveQuery, [subjectiveQuestions, subject], (err, results) => {
+            if (err) reject(err);
+            else resolve(results);
+          });
+        })
+      : [];
 
-      db.query(
-        mcqQuery,
-        [strippedQuestions, subject],
-        async (err, mcqResults) => {
-          if (err)
-            return res
-              .status(500)
-              .json({ success: false, error: "Failed to fetch MCQs" });
+    const mcqResults = mcqQuestions.length
+      ? await new Promise((resolve, reject) => {
+          db.query(mcqQuery, [mcqQuestions, subject], (err, results) => {
+            if (err) reject(err);
+            else resolve(results);
+          });
+        })
+      : [];
 
-          db.query(
-            diagramsQuery,
-            [strippedQuestions, subject],
-            async (err, diagramResults) => {
-              if (err)
-                return res.status(500).json({
-                  success: false,
-                  error: "Failed to fetch diagram questions",
-                });
+    const diagramResults = diagramQuestions.length
+      ? await new Promise((resolve, reject) => {
+          db.query(diagramsQuery, [diagramQuestions, subject], (err, results) => {
+            if (err) reject(err);
+            else resolve(results);
+          });
+        })
+      : [];
 
-              const sanitizedSubject = subject.replace(/[^a-zA-Z0-9-_ ]/g, "");
-              const sanitizedPdfName = pdfName.replace(/[^a-zA-Z0-9-_ ]/g, "");
-              const pdfFileName = `${sanitizedPdfName}-${sanitizedSubject}-CIEET.pdf`;
-              const pdfFilePath = path.join(papersDir, pdfFileName);
+    // Sanitize file name and subject for the PDF
+    const sanitizedSubject = subject.replace(/[^a-zA-Z0-9-_ ]/g, "");
+    const sanitizedPdfName = pdfName.replace(/[^a-zA-Z0-9-_ ]/g, "");
+    const pdfFileName = `${sanitizedPdfName}-${sanitizedSubject}-CIEET.pdf`;
+    const pdfFilePath = path.join(papersDir, pdfFileName);
 
-              // Generate HTML content dynamically
-              const subjectiveSection =
-                subjectiveResults.length > 0
-                  ? `
-                    <h2>Subjective Questions</h2>
-                    ${subjectiveResults
-                      .map(
-                        (q, i) => ` 
-                          <div class="question">
-                            ${i + 1}. ${q.question_text}
-                            <div class="answer-space">Answer:</div>
-                          </div>`
-                      )
-                      .join("")}
-                  `
-                  : "";
+    // Generate HTML content
+    const subjectiveSection = subjectiveResults
+      .map((q, i) => `<div class="question">${i + 1}. ${q.question_text}<div class="answer-space">Answer:</div></div>`)
+      .join("");
 
-              const mcqSection =
-                mcqResults.length > 0
-                  ? `
-                    <h2>MCQ Questions</h2>
-                    ${mcqResults
-                      .map(
-                        (q, i) => `
-                        <div class="question">
-                          ${
-                            i +
-                            1 +
-                            subjectiveResults.length
-                          }. ${q.question_text}
-                          <div class="options">
-                            <div class="option">a) ${q.option_a}</div>
-                            <div class="option">b) ${q.option_b}</div>
-                            <div class="option">c) ${q.option_c}</div>
-                            <div class="option">d) ${q.option_d}</div>
-                          </div>
-                        </div>`
-                      )
-                      .join("")}
-                  `
-                  : "";
+    const mcqSection = mcqResults
+      .map(
+        (q, i) => `
+          <div class="question">
+            ${i + 1 + subjectiveResults.length}. ${q.question_text}
+            <div class="options">
+              <div class="option">a) ${q.option_a}</div>
+              <div class="option">b) ${q.option_b}</div>
+              <div class="option">c) ${q.option_c}</div>
+              <div class="option">d) ${q.option_d}</div>
+            </div>
+          </div>
+        `
+      )
+      .join("");
 
-              const diagramSection =
-                diagramResults.length > 0
-                  ? `
-                    <h2>Diagram Questions</h2>
-                    ${diagramResults
-                      .map((q, i) => {
-                        const imageSrc = `http://localhost:3000/Images/Diagrams/${q.diagram_url}`;
-                        return `
-                          <div class="question">
-                            ${
-                              i +
-                              1 +
-                              subjectiveResults.length +
-                              mcqResults.length
-                            }. ${q.question_text}
-                            <div class="question-diagram">
-                              <img src="${imageSrc}" alt="Diagram Question" />
-                            </div>
-                          </div>`;
-                      })
-                      .join("")}
-                  `
-                  : "";
+    const diagramSection = diagramResults
+      .map(
+        (q, i) => `
+          <div class="question">
+            ${i + 1 + subjectiveResults.length + mcqResults.length}. ${q.question_text}
+            <div class="question-diagram">
+              <img src="http://localhost:3000/Images/Diagrams/${q.diagram_url}" alt="Diagram Question" />
+            </div>
+          </div>
+        `
+      )
+      .join("");
 
-              const htmlContent = `
-                <html>
-                  <head>
-                    <style>
-                      body {
-                        font-family: 'Times New Roman', Times, serif;
-                        line-height: 1.8;
-                        margin: 20px;
-                        padding: 0;
-                      }
-                      h1 {
-                        text-align: center;
-                        font-size: 24px;
-                        margin-bottom: 20px;
-                      }
-                      .header {
-                        text-align: center;
-                        margin-bottom: 30px;
-                        font-size: 16px;
-                        font-weight: bold;
-                        color: #2c3e50;
-                      }
-                      .name {
-                        display: inline-block;
-                        width: 30%;
-                        text-align: center;
-                        font-size: 10px;
-                        color: #34495e;
-                      }
-                      .question {
-                        margin: 30px 0;
-                        padding-left: 20px;
-                        padding-top: 10px;
-                        padding-bottom: 10px;
-                        font-size: 16px;
-                        page-break-inside: avoid;
-                        border-bottom: 1px dashed #000;
-                      }
-                      h2 {
-                        margin-left: 20px;
-                        font-size: 18px;
-                        font-weight: bold;
-                        color: #2c3e50;
-                      }
-                      .answer-space {
-                        margin-top: 10px;
-                        border-top: 1px solid #000;
-                        padding: 10px;
-                        height: 100px;
-                      }
-                      .options {
-                        margin-left: 40px;
-                        margin-top: 10px;
-                      }
-                      .option {
-                        display: inline-block;
-                        width: 45%;
-                        margin: 5px 0;
-                        font-size: 16px;
-                      }
-                      .question-diagram img {
-                        max-width: 80%;
-                        max-height: 300px;
-                        height: auto;
-                        margin-top: 10px;
-                        display: block;
-                        margin-left: auto;
-                        margin-right: auto;
-                      }
-                      .page-break {
-                        page-break-before: always;
-                      }
-                      .footer {
-                        position: absolute;
-                        bottom: 20px;
-                        width: 100%;
-                        text-align: center;
-                        font-size: 14px;
-                        color: #7f8c8d;
-                      }
-                    </style>
-                  </head>
-                  <body>
-                    <div class="header">
-                      <div class="name">Mohib Khan</div>
-                      <div class="name">Hassan Shaheer</div>
-                      <div class="name">Musadiq Balouch</div>
-                    </div>
-                    <h1>${subject.toUpperCase()} Exam Paper</h1>
-                    ${subjectiveSection}
-                    ${mcqSection}
-                    ${diagramSection}
-                    <div class="footer"><strong>CIE²T</strong></div>
-                  </body>
-                </html>
-              `;
-
-              try {
-                const browser = await puppeteer.launch();
-                const page = await browser.newPage();
-
-                await page.setContent(htmlContent);
-                await page.pdf({ path: pdfFilePath, format: "A4" });
-
-                await browser.close();
-
-                const insertQuery =
-                  "INSERT INTO generated_pdfs (filename, user_id, created_at) VALUES (?, ?, NOW())";
-                db.query(
-                  insertQuery,
-                  [pdfFileName, req.session.user.id],
-                  (err) => {
-                    if (err)
-                      return res.status(500).json({
-                        success: false,
-                        error: "Failed to save PDF details",
-                      });
-
-                    res.json({ success: true, pdfFileName });
-                  }
-                );
-              } catch (error) {
-                console.error("Error generating PDF with Puppeteer:", error);
-                res
-                  .status(500)
-                  .json({ success: false, error: "Failed to generate PDF" });
-              }
+    const htmlContent = `
+      <html>
+        <head>
+          <style>
+            body {
+              font-family: 'Times New Roman', Times, serif;
+              line-height: 1.8;
+              margin: 20px;
+              padding: 0;
             }
-          );
-        }
-      );
-    }
-  );
+            h1 {
+              text-align: center;
+              font-size: 24px;
+              margin-bottom: 20px;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+              font-size: 16px;
+              font-weight: bold;
+              color: #2c3e50;
+            }
+            .name {
+              display: inline-block;
+              width: 30%;
+              text-align: center;
+              font-size: 10px;
+              color: #34495e;
+            }
+            .question {
+              margin: 30px 0;
+              padding-left: 20px;
+              padding-top: 10px;
+              padding-bottom: 10px;
+              font-size: 16px;
+              page-break-inside: avoid;
+              border-bottom: 1px dashed #000;
+            }
+            h2 {
+              margin-left: 20px;
+              font-size: 18px;
+              font-weight: bold;
+              color: #2c3e50;
+            }
+            .answer-space {
+              margin-top: 10px;
+              border-top: 1px solid #000;
+              padding: 10px;
+              height: 100px;
+            }
+            .options {
+              margin-left: 40px;
+              margin-top: 10px;
+            }
+            .option {
+              display: inline-block;
+              width: 45%;
+              margin: 5px 0;
+              font-size: 16px;
+            }
+            .question-diagram img {
+              max-width: 80%;
+              max-height: 300px;
+              height: auto;
+              margin-top: 10px;
+              display: block;
+              margin-left: auto;
+              margin-right: auto;
+            }
+            .page-break {
+              page-break-before: always;
+            }
+            .footer {
+              position: absolute;
+              bottom: 20px;
+              width: 100%;
+              text-align: center;
+              font-size: 14px;
+              color: #7f8c8d;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="name">Mohib Khan</div>
+            <div class="name">Hassan Shaheer</div>
+            <div class="name">Musadiq Balouch</div>
+          </div>
+          <h1>${sanitizedSubject.toUpperCase()} Exam Paper</h1>
+          ${subjectiveSection}
+          ${mcqSection}
+          ${diagramSection}
+          <div class="footer"><strong>CIE²T</strong></div>
+        </body>
+      </html>
+    `;
+
+    // Generate PDF using Puppeteer
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.setContent(htmlContent);
+    await page.pdf({ path: pdfFilePath, format: "A4" });
+    await browser.close();
+
+    // Save PDF details in the database
+    const insertQuery = `INSERT INTO generated_pdfs (filename, user_id, created_at) VALUES (?, ?, NOW())`;
+    await new Promise((resolve, reject) => {
+      db.query(insertQuery, [pdfFileName, req.session.user.id], (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    res.json({ success: true, pdfFileName });
+  } catch (error) {
+    console.error("Error generating PDF:", error);
+    res.status(500).json({ success: false, error: "Failed to generate PDF" });
+  }
 });
+
+
 
 
 // Generated Papers List

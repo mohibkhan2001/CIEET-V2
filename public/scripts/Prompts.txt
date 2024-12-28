@@ -1,0 +1,10 @@
+i want you to help me on my project as you know it i want to make an adminpage where the following actions are handled by admin of my webapp:
+User Management
+Create/Manage User Accounts: Add, edit, or deactivate user accounts.
+Role Assignment: Assign different roles (admin, teacher, student) with specific permissions.
+Password Resets: Reset or manage users' passwords.
+User Access Control: Control access levels and permissions for different users.
+View User Activity: Monitor user actions, logins, and behaviors on the app.
+2. Content Management
+Create/Edit/Delete Content: Manage articles, posts, or other user-generated content.
+ i want you to make it for me
