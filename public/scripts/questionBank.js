@@ -82,9 +82,13 @@ async function fetchAllQuestions(subject) {
 
   // Fetch all pages of subjective questions
   while (true) {
-    const response = await fetch(`/api/questions/${subject}?type=subjective&page=${currentPage}`);
+    const response = await fetch(
+      `/api/questions/${subject}?type=subjective&page=${currentPage}`
+    );
     if (!response.ok) {
-      console.error(`Error fetching subjective questions: ${response.statusText}`);
+      console.error(
+        `Error fetching subjective questions: ${response.statusText}`
+      );
       break;
     }
     const data = await response.json();
@@ -98,7 +102,12 @@ async function fetchAllQuestions(subject) {
   const response = await fetch(`/api/questions/${subject}`);
   if (!response.ok) {
     console.error(`Error fetching questions: ${response.statusText}`);
-    return { subjective: subjectiveQuestions, mcqs: [], diagrams: [], totalQuestions: 0 };
+    return {
+      subjective: subjectiveQuestions,
+      mcqs: [],
+      diagrams: [],
+      totalQuestions: 0,
+    };
   }
 
   const data = await response.json();
@@ -110,16 +119,17 @@ async function fetchAllQuestions(subject) {
   };
 }
 
-async function showQuestions(subject, page = 1) {
+async function showQuestions(subject) {
   document.getElementById("questions-container").style.display = "block";
   currentSubject = subject;
-  currentPage = page;
 
   document.querySelectorAll(".subject-selection button").forEach((btn) => {
     btn.classList.remove("active");
   });
 
-  const clickedButton = document.querySelector(`button[data-subject="${subject}"]`);
+  const clickedButton = document.querySelector(
+    `button[data-subject="${subject}"]`
+  );
   clickedButton.classList.add("active");
 
   try {
@@ -135,23 +145,22 @@ async function showQuestions(subject, page = 1) {
       ...(data.diagrams || []),
     ];
 
-    // Calculate total pages based on totalQuestions
-    const totalPages = Math.ceil(data.totalQuestions / questionsPerPage);
-
-    // Slice questions for the current page
-    const startIndex = (page - 1) * questionsPerPage;
-    const paginatedQuestions = combinedQuestions.slice(startIndex, startIndex + questionsPerPage);
-
-    if (paginatedQuestions.length === 0) {
-      questionList.innerHTML = "<p>No questions available for this page.</p>";
+    // Display all questions without pagination
+    if (combinedQuestions.length === 0) {
+      questionList.innerHTML = "<p>No questions available.</p>";
     } else {
-      paginatedQuestions.forEach((q) => {
+      combinedQuestions.forEach((q) => {
         const questionItem = document.createElement("div");
         questionItem.classList.add("question-item", q.type || "unknown"); // Type-based styling
         const optionsHTML = q.options
-          ? q.options.map((option) => `<div class="option">${option.option}: ${option.text}</div>`).join("")
+          ? q.options
+              .map(
+                (option) =>
+                  `<div class="option">${option.option}: ${option.text}</div>`
+              )
+              .join("")
           : "";
-        
+
         const diagramHTML = q.diagram_url
           ? `<div class="question-diagram"><img src="/Images/Diagrams/${q.diagram_url}" alt="Diagram" loading="lazy" onerror="this.src='/Images/Diagrams/abc-image.png';"></div>`
           : "";
@@ -163,7 +172,11 @@ async function showQuestions(subject, page = 1) {
 
         questionItem.innerHTML = `
           <div class="check_container">
-            <input id="${q.type}-${q.id}" class="question-checkbox hidden" type="checkbox" value="${q.type}-${q.id}" name="questions">
+            <input id="${q.type}-${
+          q.id
+        }" class="question-checkbox hidden" type="checkbox" value="${q.type}-${
+          q.id
+        }" name="questions">
             <label class="checkbox" for="${q.type}-${q.id}"></label>
           </div>
           <span class="question-text">${q.question_text}</span>
@@ -177,52 +190,14 @@ async function showQuestions(subject, page = 1) {
         questionList.appendChild(questionItem);
       });
     }
-
-    // Update pagination controls
-    updatePaginationControls(totalPages, page);
-
-    // Scroll to the question container after updating questions
-    document.getElementById("questions-container").scrollIntoView({ behavior: "smooth" });
   } catch (error) {
     console.error("Error fetching questions:", error);
     alert("Failed to fetch questions. Please try again later.");
   }
 }
 
-
-
-function updatePaginationControls(totalPages, currentPage) {
-  const paginationControls = document.getElementById("pagination-controls");
-  paginationControls.innerHTML = "";
-
-  if (currentPage > 1) {
-    const prevButton = document.createElement("button");
-    prevButton.textContent = "Previous";
-    prevButton.onclick = () => showQuestions(currentSubject, currentPage - 1);
-    paginationControls.appendChild(prevButton);
-  }
-
-  for (let i = 1; i <= totalPages; i++) {
-    const pageButton = document.createElement("button");
-    pageButton.textContent = i;
-    if (i === currentPage) {
-      pageButton.disabled = true;
-    } else {
-      pageButton.onclick = () => showQuestions(currentSubject, i);
-    }
-    paginationControls.appendChild(pageButton);
-  }
-
-  if (currentPage < totalPages) {
-    const nextButton = document.createElement("button");
-    nextButton.textContent = "Next";
-    nextButton.onclick = () => showQuestions(currentSubject, currentPage + 1);
-    paginationControls.appendChild(nextButton);
-  }
-}
-
 // Initialize
-showQuestions("math", 1);
+showQuestions("math");
 
 document.addEventListener("DOMContentLoaded", () => {
   // Elements
@@ -233,7 +208,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Ensure all modal elements are present
   if (addNewQuestionBtn && addQuestionContainer && overlay && closeModalBtn) {
-
     // Show modal when 'Add New Question' button is clicked
     addNewQuestionBtn.addEventListener("click", () => {
       openAddQuestionModal(); // Show the modal
@@ -260,13 +234,15 @@ document.addEventListener("DOMContentLoaded", () => {
       const questionType = questionTypeSelect.value;
 
       // Toggle visibility of options and diagram containers based on question type
-      optionsContainer.style.display = questionType === "objective" ? "block" : "none";
-      diagramContainer.style.display = questionType === "diagram" ? "block" : "none";
+      optionsContainer.style.display =
+        questionType === "objective" ? "block" : "none";
+      diagramContainer.style.display =
+        questionType === "diagram" ? "block" : "none";
     });
 
     // Handle form submission
     addQuestionForm.addEventListener("submit", async (e) => {
-      e.preventDefault();  // Prevent the form from submitting normally
+      e.preventDefault(); // Prevent the form from submitting normally
 
       // Collect form data
       const formData = new FormData(addQuestionForm);
@@ -282,33 +258,32 @@ document.addEventListener("DOMContentLoaded", () => {
         endpoint = "/api/questions/subjective";
       } else {
         alert("Invalid question type selected!");
-        return;  // Exit if invalid question type is selected
+        return; // Exit if invalid question type is selected
       }
 
       // Make the API request to add the question
       try {
         const response = await fetch(endpoint, {
           method: "POST",
-          body: formData,  // Send formData for file upload (if any)
+          body: formData, // Send formData for file upload (if any)
         });
 
         const result = await response.json();
-        
+
         if (response.ok) {
           alert("Question added successfully!");
-          addQuestionForm.reset();  // Reset the form
-          optionsContainer.style.display = "none";  // Hide the options container
-          diagramContainer.style.display = "none";  // Hide the diagram container
-          closeModal();  // Close the modal after successful submission
+          addQuestionForm.reset(); // Reset the form
+          optionsContainer.style.display = "none"; // Hide the options container
+          diagramContainer.style.display = "none"; // Hide the diagram container
+          closeModal(); // Close the modal after successful submission
         } else {
-          alert(`Error: ${result.error || result.message}`);  // Display error if API returns an error
+          alert(`Error: ${result.error || result.message}`); // Display error if API returns an error
         }
       } catch (error) {
         console.error("Error adding question:", error);
         alert("Failed to add question. Please try again later.");
       }
     });
-
   } else {
     console.error("One or more modal elements not found in the DOM");
   }
@@ -324,8 +299,6 @@ function openAddQuestionModal() {
     overlay.classList.add("show");
   }
 }
-
-
 
 // Function to select all questions
 function selectAllQuestions() {
@@ -359,7 +332,7 @@ async function handleGeneratePDF(event) {
   const subject = selectedButton.getAttribute("data-subject");
   const selectedQuestions = Array.from(
     document.querySelectorAll('input[name="questions"]:checked')
-  ).map((el) => el.value);  // Get the selected question IDs
+  ).map((el) => el.value); // Get the selected question IDs
 
   const pdfName = document.getElementById("pdfName").value.trim();
 
@@ -398,10 +371,6 @@ async function handleGeneratePDF(event) {
     hideLoader();
   }
 }
-
-
-
-
 
 // Helper function to format file size from bytes to B, KB, MB, etc.
 function formatFileSize(bytes) {
@@ -444,11 +413,13 @@ async function selectRandomly() {
   });
 
   selectedQuestions.forEach((question) => {
-    const checkbox = document.querySelector(`input[value="${question.type}-${question.id}"]`);
+    const checkbox = document.querySelector(
+      `input[value="${question.type}-${question.id}"]`
+    );
     if (checkbox) {
       checkbox.checked = true;
     }
-  });  
+  });
 }
 
 // Function to shuffle an array (Fisher-Yates algorithm)
