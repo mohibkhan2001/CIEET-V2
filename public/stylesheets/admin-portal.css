@@ -1,0 +1,292 @@
+/* General Styling for Tables */
+.dashboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 30px;
+    font-family: 'Arial', sans-serif;
+}
+
+.dashboard-table th, .dashboard-table td {
+    padding: 14px;
+    text-align: left;
+    border: 1px solid #ddd;
+    font-size: 14px;
+}
+
+.dashboard-table th {
+    background-color: #003366;
+    color: white;
+    font-weight: bold;
+}
+
+.dashboard-table td {
+    background-color: #ffffff;
+    color: #555;
+}
+
+.dashboard-table tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.dashboard-table tbody tr:hover {
+    background-color: #f1f1f1;
+    cursor: pointer;
+}
+
+/* Action Buttons */
+.actions-btns {
+    display: flex;
+    gap: 12px;
+}
+
+.btn {
+    padding: 8px 14px;
+    font-size: 15px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.approve-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+}
+
+.approve-btn:hover {
+    background-color: #218838;
+    transform: translateY(-2px);
+}
+
+.deny-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+}
+
+.deny-btn:hover {
+    background-color: #c82333;
+    transform: translateY(-2px);
+}
+
+/* Section Header */
+.section-header {
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    color: #003366;
+    font-weight: bold;
+    border-bottom: 2px solid #003366;
+    padding-bottom: 5px;
+}
+
+/* Card Layout */
+.card {
+    padding: 25px;
+    margin-bottom: 30px;
+    background-color: #ffffff;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    background-color: #f9f9f9;
+}
+
+.card:last-child {
+    margin-bottom: 0;
+}
+
+/* Pending Approvals Section */
+#pending-approvals .approval-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    padding: 12px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+#pending-approvals .approval-item span {
+    font-size: 16px;
+    color: #333;
+}
+
+#pending-approvals .approval-item .btn {
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 4px;
+    margin-left: 8px;
+}
+
+#pending-approvals .approve-btn {
+    background-color: #28a745;
+    color: white;
+}
+
+#pending-approvals .deny-btn {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* Manage Users Table */
+#manage-users .dashboard-table th, 
+#manage-users .dashboard-table td {
+    padding: 10px 15px;
+}
+
+#manage-users .dashboard-table td button {
+    padding: 6px 12px;
+    font-size: 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#manage-users .dashboard-table td button.delete-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+}
+
+#manage-users .dashboard-table td button.delete-btn:hover {
+    background-color: #c82333;
+}
+
+/* Manage Exams Section */
+#manage-exams p {
+    font-size: 16px;
+    color: #555;
+    margin-top: 20px;
+}
+/* Styling for the Pending Approvals Table */
+.dashboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    font-family: 'Arial', sans-serif;
+  }
+  
+  .dashboard-table th, .dashboard-table td {
+    padding: 12px;
+    text-align: left;
+    border: 1px solid #ddd;
+  }
+  
+  .dashboard-table th {
+    background-color: #f4f4f4;
+    font-weight: bold;
+    color: #333;
+    text-align: center;
+  }
+  
+  .dashboard-table td {
+    background-color: #fff;
+    text-align: center;
+  }
+  
+  .dashboard-table tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+  
+  .dashboard-table tbody tr:hover {
+    background-color: #f1f1f1;
+  }
+  
+  .btn {
+    padding: 6px 14px;
+    font-size: 14px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .approve-btn {
+    background-color: #28a745;
+    color: white;
+  }
+  
+  .approve-btn:hover {
+    background-color: #218838;
+  }
+  
+  .deny-btn {
+    background-color: #dc3545;
+    color: white;
+  }
+  
+  .deny-btn:hover {
+    background-color: #c82333;
+  }
+/* Animation for showing the container */
+@keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Animation for hiding the container */
+  @keyframes slideUp {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+  }
+  
+  /* Transition styles for questions container */
+  #questions-container {
+    display: none;
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  
+  /* Add smooth button transition */
+  #toggleQuestionsBtn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  #toggleQuestionsBtn:hover {
+    background-color: #0056b3;
+    transform: scale(1.05);
+  }
+  
+  /* Class for showing the container */
+  .show {
+    display: block;
+    animation: slideDown 0.5s forwards;
+  }
+  
+  /* Class for hiding the container */
+  .hide {
+    animation: slideUp 0.5s forwards;
+  }
+/* Fade-in animation for the subject-selection */
+@keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .subject-selection.fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+      

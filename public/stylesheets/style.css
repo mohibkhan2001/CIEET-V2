@@ -229,7 +229,7 @@ nav ul li a {
   position: relative;
   font-family: "Parkinsans", sans-serif;
 }
-.card::before{
+/* .card::before{
   content: '';
   position: absolute;
   height: 100%;
@@ -239,7 +239,7 @@ nav ul li a {
   background-color: #0052cc;
   right: 0;
   transition: width 0.2s ease-out;
-}
+} */
 .card:hover::before{
   width: 7%;
   color: white;

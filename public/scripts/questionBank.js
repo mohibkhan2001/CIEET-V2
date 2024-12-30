@@ -378,7 +378,9 @@ async function showQuestions(subject) {
 }
 
 // Initialize the page with questions
-showQuestions("math");
+// showQuestions("math");
+
+
 
 $(document).ready(function () {
   // Initialize event listeners

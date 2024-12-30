@@ -7,7 +7,7 @@ const multer = require("multer");
 const fs = require("fs");
 const puppeteer = require("puppeteer"); // Puppeteer for PDF generation
 const db = require("./models/database"); // MySQL database connection
-
+const router = express.Router();
 const app = express();
 const port = 3000;
 
@@ -21,13 +21,17 @@ app.use(
 // Middleware to check if the user's role matches the required role
 function checkRole(requiredRole) {
   return (req, res, next) => {
-    const userRole = req.session.user.role;
-    if (userRole !== requiredRole) {
-      return res.redirect('/StudentPortal'); // Redirect to StudentPortal if not authorized
+    // Check if the logged-in user's role matches the required role or if they are 'Admin'
+    if (req.session.user && (req.session.user.role === requiredRole || req.session.user.role === 'Admin')) {
+      return next(); // Proceed if the user has the required role
+    } else {
+      // Respond with a 403 Forbidden error if the user does not have the required role
+      return res.status(403).json({ errors: ['Access denied.'] });
     }
-    next(); // Proceed if the role matches
   };
 }
+
+
 
 
 // Middleware to prevent Teachers from accessing the StudentPortal
@@ -44,6 +48,7 @@ function preventTeacherAccess(req, res, next) {
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
 
 
 const resetUsersAutoIncrementIfEmpty = () => {
@@ -141,6 +146,9 @@ app.post(
     body("confirmPassword")
       .custom((value, { req }) => value === req.body.password)
       .withMessage("Passwords must match"),
+    body("role")
+      .isIn(["Teacher", "Student"])
+      .withMessage("Role must be either Teacher or Student"),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -150,26 +158,33 @@ app.post(
         .json({ errors: errors.array().map((error) => error.msg) });
     }
 
-    const { firstname, lastname, email, password } = req.body;
+    const { firstname, lastname, email, password, role } = req.body;
 
-    const checkEmailQuery = "SELECT * FROM users WHERE email = ?";
-    db.query(checkEmailQuery, [email], async (err, result) => {
+    // Check if email already exists in `users` or `pending_approvals`
+    const checkEmailQuery =
+      "SELECT email FROM users WHERE email = ? UNION SELECT email FROM pending_approvals WHERE email = ?";
+    db.query(checkEmailQuery, [email, email], async (err, result) => {
       if (err)
         return res.status(500).json({ errors: ["Database error occurred"] });
       if (result.length > 0)
-        return res.status(400).json({ errors: ["Email already registered"] });
+        return res.status(400).json({ errors: ["Email already registered or pending approval"] });
 
       try {
+        // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
-        const insertUserQuery =
-          "INSERT INTO users (firstname, lastname, email, password) VALUES (?, ?, ?, ?)";
+
+        // Insert into `pending_approvals` table
+        const insertPendingUserQuery =
+          "INSERT INTO pending_approvals (firstname, lastname, email, password, role) VALUES (?, ?, ?, ?, ?)";
         db.query(
-          insertUserQuery,
-          [firstname, lastname, email, hashedPassword],
+          insertPendingUserQuery,
+          [firstname, lastname, email, hashedPassword, role],
           (err) => {
             if (err)
-              return res.status(500).json({ errors: ["Error saving user"] });
-            res.json({ success: "Registered successfully" });
+              return res
+                .status(500)
+                .json({ errors: ["Error saving pending approval"] });
+            res.json({ success: "Signup successful! Awaiting admin approval." });
           }
         );
       } catch (err) {
@@ -178,6 +193,7 @@ app.post(
     });
   }
 );
+
 
 app.delete("/api/users", (req, res) => {
   const deleteQuery = "DELETE FROM users";
@@ -235,7 +251,12 @@ app.post('/login', async (req, res) => {
       return res.json({ success: 'Login successful', redirectUrl: '/index' });
     } else if (user.role === 'Student') {
       return res.json({ success: 'Login successful', redirectUrl: '/StudentPortal' });
-    } else {
+    
+    } 
+    else if (user.role === 'Admin') {
+      return res.json({ success: 'Login successful', redirectUrl: '/Admin' });
+    }
+    else {
       return res.status(401).json({ errors: ['Invalid role'] });
     }
   });
@@ -249,6 +270,103 @@ app.get("/api/user-info", (req, res) => {
     res.status(401).json({ message: "Not logged in" });
   }
 });
+
+
+// Fetch all users (Admin only)
+// Fetch users without using Promises
+app.get('/api/users', isLoggedIn, checkRole('Admin'), (req, res) => {
+  // Use the callback-based query method
+  db.query('SELECT user_id, firstname, lastname, email, role FROM users', (err, results) => {
+    if (err) {
+      console.error('Error fetching users:', err);
+      return res.status(500).json({ error: 'Failed to fetch users' });
+    }
+    
+    // Send the results to the client
+    res.status(200).json(results);
+  });
+});
+
+// Delete a user by ID (Admin only)
+app.delete('/api/users/:id', isLoggedIn, checkRole('Admin'), async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Use promise-based query for better async handling
+    const result = await db.promise().query('DELETE FROM users WHERE user_id = ?', [id]);
+
+    if (result[0].affectedRows === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.status(200).json({ success: 'User deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting user:', err);
+    res.status(500).json({ error: 'Failed to delete user' });
+  }
+});
+
+app.get("/api/pending-approvals", (req, res) => {
+  const query = "SELECT * FROM pending_approvals";
+  db.query(query, (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: "Database error occurred" });
+    }
+    res.json(results);
+  });
+});
+
+
+app.post("/api/pending-approvals/:id/approve", (req, res) => {
+  const userId = req.params.id;
+
+  // Fetch the user from pending approvals
+  const fetchQuery = "SELECT * FROM pending_approvals WHERE id = ?";
+  db.query(fetchQuery, [userId], (err, results) => {
+    if (err || results.length === 0) {
+      return res.status(500).json({ error: "Error fetching user" });
+    }
+
+    const user = results[0];
+
+    // Move user to `users` table
+    const insertQuery =
+      "INSERT INTO users (firstname, lastname, email, password, role) VALUES (?, ?, ?, ?, ?)";
+    db.query(
+      insertQuery,
+      [user.firstname, user.lastname, user.email, user.password, user.role],
+      (err) => {
+        if (err) {
+          return res.status(500).json({ error: "Error approving user" });
+        }
+
+        // Delete the user from pending approvals
+        const deleteQuery = "DELETE FROM pending_approvals WHERE id = ?";
+        db.query(deleteQuery, [userId], (err) => {
+          if (err) {
+            return res.status(500).json({ error: "Error cleaning up pending user" });
+          }
+          res.json({ success: "User approved and moved to users table" });
+        });
+      }
+    );
+  });
+});
+
+
+app.delete("/api/pending-approvals/:id/deny", (req, res) => {
+  const userId = req.params.id;
+
+  const deleteQuery = "DELETE FROM pending_approvals WHERE id = ?";
+  db.query(deleteQuery, [userId], (err) => {
+    if (err) {
+      return res.status(500).json({ error: "Error denying user" });
+    }
+    res.json({ success: "User denied and removed from pending approvals" });
+  });
+});
+
+
 
 // --------- LOGOUT ROUTE -----------
 app.post("/logout", (req, res) => {
@@ -329,11 +447,12 @@ app.post("/delete-file", (req, res) => {
 // Middleware to protect routes
 function isLoggedIn(req, res, next) {
   if (!req.session.user) {
-    // Redirect to login page if not logged in
-    return res.sendFile(path.join(__dirname, "views", "login.html"));
+    // Respond with a 401 Unauthorized error if the user is not logged in
+    return res.status(401).json({ error: "Unauthorized access. Please log in." });
   }
   next(); // Continue to the requested route if logged in
 }
+
 
 // Middleware to block access to "/" if the user is logged in
 function redirectIfLoggedIn(req, res, next) {
@@ -364,7 +483,7 @@ app.get('/generatedPapers', isLoggedIn, checkRole('Teacher'), (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'generatedPapers.html')); // Serve generated papers page for Teachers
 });
 
-app.get('/questionBank', isLoggedIn, checkRole('Teacher'), (req, res) => {
+app.get('/questionBank', isLoggedIn, checkRole('Teacher' || 'Admin'), (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'questionBank.html')); // Serve question bank page for Teachers
 });
 
@@ -375,6 +494,12 @@ app.get('/Exam_Automation', isLoggedIn, checkRole('Teacher'), (req, res) => {
 app.get('/reporting', isLoggedIn, checkRole('Teacher'), (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'reporting.html')); // Serve reporting page for Teachers
 });
+
+// Route for Admin only
+app.get('/Admin', isLoggedIn, checkRole('Admin'), (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'Admin.html')); // Serve admin page
+});
+
 
 // Route to fetch the generated papers (API)
 app.get("/api/generated-papers", (req, res) => {
