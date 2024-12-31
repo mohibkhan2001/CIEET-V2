@@ -1,55 +1,14 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Exam Automation</title>
-    <link rel="stylesheet" href="stylesheets/style.css" />
-    <link rel="stylesheet" href="stylesheets/questionBank.css" />
-    <link rel="stylesheet" href="stylesheets/Exam_automation.css" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
-      integrity="sha512-5Hs3dF2AEPkpNAR7UiOHba+lRSJNeM2ECkwxUIxC1Q/FLycGTbNapWXB4tP889k5T5Ju8fs4b1P5z/iB4nMfSQ=="
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
-    />
-  </head>
-  <body>
-    <header>
-      <div class="logo">
-        <span><a href="/index">CIE²T</a></span>
-      </div>
-      <nav>
-        <ul>
-          <li><a href="/questionBank">Question Databank</a></li>
-          <li><a href="/reporting">Assessment Reporting</a></li>
-          <li><a href="/Exam_Automation">Exam Automation</a></li>
-          <li><a href="/generatedPapers">Generated Papers</a></li>
-          <li><a href="#about">About</a></li>
-          <li><a href="#contact">Contact</a></li>
-        </ul>
-      </nav>
-
-      <!-- User Info Display -->
-      <div class="auth-buttons" id="auth-buttons">
-        <span id="username" class="username"></span>
-        <i
-          class="fa-solid fa-arrow-right-from-bracket logout-icon"
-          id="logout-btn"
-          title="Logout"
-        ></i>
-      </div>
-    </header>
+<section id="question-bank" class="card admin-section">
+    <h3><i class="fa-solid fa-circle-right"></i>Question Bank</h3>
 
     <main class="container">
       <h1>Select Subject</h1>
       <p>
         Welcome to the Cambridge Exam Question Bank! Explore subjects and
-        select questions to generate custom exam papers. Click a subject below
-        to view its questions.
+        select questions to generate custom exam papers. Click a subject
+        below to view its questions.
       </p>
-    
+
       <div class="subject-selection">
         <button data-subject="math" onclick="showQuestions('math')">
           <i class="fa-solid fa-square-root-alt"></i> Math
@@ -60,7 +19,10 @@
         <button data-subject="biology" onclick="showQuestions('biology')">
           <i class="fa-solid fa-dna"></i> Biology
         </button>
-        <button data-subject="chemistry" onclick="showQuestions('chemistry')">
+        <button
+          data-subject="chemistry"
+          onclick="showQuestions('chemistry')"
+        >
           <i class="fa-solid fa-flask"></i> Chemistry
         </button>
         <button
@@ -70,54 +32,16 @@
           <i class="fa-solid fa-laptop-code"></i> Computer Science
         </button>
       </div>
-    
+
       <!-- Questions Container -->
       <div id="questions-container" style="display: none">
         <h2>Questions</h2>
-    
-        <!-- Exam Automation Inputs -->
-        <div class="exam-automation-form">
-          <h3>Automate Exam Generation</h3>
-          <form id="exam-automation-form">
-            <div class="form-group">
-              <label for="subjective-questions">Subjective Questions</label>
-              <input
-                type="number"
-                id="subjective-questions"
-                name="subjective-questions"
-                placeholder="Enter number of subjective questions"
-                required
-              />
-            </div>
-            <div class="form-group">
-              <label for="objective-questions">Objective Questions (MCQ)</label>
-              <input
-                type="number"
-                id="objective-questions"
-                name="objective-questions"
-                placeholder="Enter number of objective questions"
-                required
-              />
-            </div>
-            <div class="form-group">
-              <label for="diagram-questions">Diagram Questions</label>
-              <input
-                type="number"
-                id="diagram-questions"
-                name="diagram-questions"
-                placeholder="Enter number of diagram questions"
-                required
-              />
-            </div>
-            <button type="submit" id="generate-exam-button">Generate Exam Paper</button>
-          </form>
-        </div>
-    
+
         <!-- Pagination Controls -->
         <div id="pagination-controls" class="pagination-controls">
           <!-- Pagination buttons will be inserted here -->
         </div>
-    
+
         <!-- Search Bar and Filters -->
         <div class="question-filters">
           <input
@@ -144,13 +68,15 @@
             </select>
           </div>
         </div>
-    
+
         <!-- Buttons for Actions -->
         <div class="action-buttons">
           <button id="selectAllButton" onclick="selectAllQuestions()">
             Select All Questions
           </button>
-          <label for="numQuestions">Number of Questions to Select: </label>
+          <label for="numQuestions"
+            >Number of Questions to Select:
+          </label>
           <input
             type="number"
             id="numQuestions"
@@ -160,23 +86,55 @@
           <button id="randomSelectButton" onclick="selectRandomly()">
             Select Randomly
           </button>
-    
+
           <!-- Add New Question Button Inside Action Buttons -->
           <button id="addNewQuestionBtn" onclick="openAddQuestionModal()">
             Add New Question
           </button>
         </div>
-    
+
         <!-- Pagination Container -->
         <div id="pagination"></div>
-    
+
         <form id="pdfForm">
           <div id="question-list" class="question-list">
             <!-- Questions will be dynamically inserted here -->
           </div>
+
+          <!-- Loader Spinner (hidden initially) -->
+          <div id="loader-container" style="display: none">
+            <div class="spinner">
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+
+          <input
+            type="text"
+            id="pdfName"
+            placeholder="Enter PDF name"
+            required
+          />
+          <button
+            type="button"
+            id="generatePDFButton"
+            onclick="handleGeneratePDF(event)"
+          >
+            Generate PDF
+          </button>
         </form>
+
+        <button onclick="viewGeneratedPapers()" id="viewBtn">
+          View Papers
+        </button>
       </div>
-    
+
       <!-- Add New Question Modal (Hidden by default) -->
       <div id="add-question-modal" class="modal">
         <div class="modal-content">
@@ -202,17 +160,17 @@
               <option value="biology">Biology</option>
               <!-- Add more subjects as needed -->
             </select>
-    
+
             <label>Question Type:</label>
             <select id="type" name="type" required>
               <option value="subjective">Subjective</option>
               <option value="objective">Objective (MCQ)</option>
               <option value="diagram">Diagram</option>
             </select>
-    
+
             <label>Question Text:</label>
             <textarea name="question_text" required></textarea>
-    
+
             <div id="options-container" style="display: none">
               <label>Option A:</label>
               <input type="text" name="option_a" />
@@ -225,20 +183,20 @@
               <label>Correct Answer:</label>
               <input type="text" name="correct_answer" />
             </div>
-    
+
             <div id="diagram-container" style="display: none">
               <label>Diagram Image:</label>
               <input type="file" name="diagram_image" accept="image/*" />
             </div>
-    
+
             <label>Year:</label>
             <input type="number" name="year" required />
-    
+
             <button type="submit">Add Question</button>
           </form>
         </div>
       </div>
-    
+
       <!-- Overlay to dim the background -->
       <div
         id="overlay"
@@ -246,14 +204,115 @@
         onclick="closeAddQuestionModal()"
       ></div>
     </main>
-    
-    
+  </section>
+  <section id="reporting" class="card admin-section">
+    <h3><i class="fa-solid fa-circle-right"></i>Assessment Reporting</h3>
 
-   
+    <section class="student-list">
+      <ul>
+        <li><a href="student1">Student1</a></li>
+        <li><a href="student2">Student2</a></li>
+        <li><a href="student3">Student3</a></li>
+      </ul>
+    </section>
+  </section>
+  <section id="reporting" class="card admin-section">
+    <h3><i class="fa-solid fa-circle-right"></i>Exam Automation</h3>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- Add jQuery for easier DOM manipulation -->
-    
-    <script src="/scripts/questionBank.js"></script>
-  </body>
-</html>
+    <div class="container-exam">
+      <h1>Exam Paper Generator</h1>
+      <p>
+        Create custom exam papers with ease. Easily add questions,
+        preview, and publish for your students.
+      </p>
+      <div class="form-and-image">
+        <form id="exam-form">
+          <div class="form-group">
+            <label for="subject">Subject</label>
+            <select id="subject" name="subject" required>
+              <!-- Subject options will be populated here dynamically -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="duration">Duration</label>
+            <input
+              type="text"
+              id="duration"
+              name="duration"
+              placeholder="Enter duration in minutes"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="number-of-questions">Number of Questions</label>
+            <input
+              type="number"
+              id="number-of-questions"
+              name="number-of-questions"
+              placeholder="Enter number of questions"
+              required
+            />
+          </div>
+          <button type="submit">Generate Exam Paper</button>
+        </form>
+
+        <div id="feedback"></div>
+        <!-- To display success or error messages -->
+
+        <img
+          src="Cieet Docs/exam vector img/vecteezy_flat-isometric-concept-illustration-problem-in-studying_6202183.jpg"
+          alt=""
+        />
+      </div>
+    </div>
+  </section>
+  <section id="reporting" class="card admin-section">
+    <h3><i class="fa-solid fa-circle-right"></i>Generated Papers</h3>
+    <div class="container-papers">
+      <h1>
+        Exam Papers Archive
+        <p id="download-link">Click on the file to download</p>
+      </h1>
+
+      <table id="generated-papers-list">
+        <thead>
+          <tr>
+            <th class="header-title">File Name</th>
+            <th class="header-title">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="5">Loading generated papers...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <style>
+    .admin-section {
+  overflow: hidden;
+  transition: height 0.5s ease, padding 0.5s ease;
+  cursor: pointer;
+}
+
+.admin-section.collapsed {
+  height: 10vh;
+  padding: 0;
+}
+
+.admin-section.expanded {
+  height: auto; /* Dynamically adjusts to content */
+  padding: 20px;
+}
+
+.admin-section h3 {
+  margin: 0;
+  padding-bottom: 10px;
+  margin-left: 20px;
+  font-weight: bold;
+  border-bottom: 2px solid #003366;
+  text-align: left; /* Aligns the heading to the left */
+}
+  </style>

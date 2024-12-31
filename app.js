@@ -448,7 +448,7 @@ app.post("/delete-file", (req, res) => {
 function isLoggedIn(req, res, next) {
   if (!req.session.user) {
     // Respond with a 401 Unauthorized error if the user is not logged in
-    return res.status(401).json({ error: "Unauthorized access. Please log in." });
+    return res.redirect("/")
   }
   next(); // Continue to the requested route if logged in
 }

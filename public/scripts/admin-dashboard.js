@@ -174,36 +174,64 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
   
-  
-  // Smooth scroll to the "question-bank" section
-document.querySelector('nav a[href="#question-bank"]').addEventListener("click", (e) => {
-    e.preventDefault();
-    const questionBankSection = document.getElementById("question-bank");
-    questionBankSection.scrollIntoView({ behavior: "smooth" });
-  });
-  
-  // Toggle the visibility of the questions container
-  function toggleQuestionsContainer() {
-  const questionsContainer = document.getElementById("questions-container");
-  const toggleButton = document.getElementById("toggleQuestionsBtn");
+//   document.addEventListener("DOMContentLoaded", () => {
+//     // Get all sections with the class 'admin-section'
+//     const adminSections = document.querySelectorAll(".admin-section");
 
-  if (questionsContainer.classList.contains("show")) {
-    // Hide the container with animation
-    questionsContainer.classList.remove("show");
-    questionsContainer.classList.add("hide");
+//     adminSections.forEach((section) => {
+//         // Initially collapse the section
+//         section.classList.add("collapsed");
 
-    // Wait for animation to complete before setting display to none
-    setTimeout(() => {
-      questionsContainer.style.display = "none";
-      toggleButton.textContent = "Show Questions";
-    }, 500); // Match the duration of the animation
+//         // Find the header inside each section (assuming it's labeled as 'section-header')
+//         const header = section.querySelector(".section-header");
+
+//         if (header) {
+//             // Add event listener to the section header
+//             header.addEventListener("click", (event) => {
+//                 // Prevent toggle if a subject button is clicked (only for the subject selection section)
+//                 if (event.target.closest(".subject-selection button")) {
+//                     return;
+//                 }
+
+//                 // Toggle between expanded and collapsed
+//                 if (section.classList.contains("collapsed")) {
+//                     section.classList.remove("collapsed");
+//                     section.classList.add("expanded");
+                    
+//                     // Optional: scroll to the section content after expanding
+//                     section.scrollIntoView({ behavior: "smooth" });
+//                 } else {
+//                     section.classList.remove("expanded");
+//                     section.classList.add("collapsed");
+//                 }
+//             });
+//         }
+//     });
+
+//     // Handle subject button clicks (specific to the question bank section)
+//     document.querySelectorAll(".subject-selection button").forEach((button) => {
+//         button.addEventListener("click", (e) => {
+//             e.stopPropagation(); // Prevent event from bubbling to parent
+//             const subject = button.getAttribute("data-subject");
+//             showQuestions(subject); // Call the function to show questions
+//         });
+//     });
+// });
+
+
+  // Get the button
+const scrollToTopBtn = document.getElementById("scrollToTopBtn");
+
+// Show the button when the user scrolls down 100px from the top
+window.onscroll = function() {
+  if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+    scrollToTopBtn.style.display = "block";
   } else {
-    // Show the container with animation
-    questionsContainer.style.display = "block"; // Make it visible initially
-    questionsContainer.classList.remove("hide");
-    questionsContainer.classList.add("show");
-    toggleButton.textContent = "Hide Questions";
+    scrollToTopBtn.style.display = "none";
   }
-}
+};
 
-  
+// Scroll to top when the button is clicked
+scrollToTopBtn.addEventListener("click", function() {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});

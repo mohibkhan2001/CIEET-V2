@@ -1,3 +1,8 @@
+.container{
+  height: auto;
+  width: 100%;
+}
+
 /* General Styling for Tables */
 .dashboard-table {
     width: 100%;
@@ -75,14 +80,14 @@
     margin-bottom: 20px;
     color: #003366;
     font-weight: bold;
-    border-bottom: 2px solid #003366;
+    /* border-bottom: 2px solid #003366; */
     padding-bottom: 5px;
 }
 
 /* Card Layout */
 .card {
     padding: 25px;
-    margin-bottom: 30px;
+    margin: 30px 0;
     background-color: #ffffff;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     border-radius: 12px;
@@ -216,77 +221,31 @@
   .deny-btn:hover {
     background-color: #c82333;
   }
-/* Animation for showing the container */
-@keyframes slideDown {
-    from {
-      opacity: 0;
-      transform: translateY(-20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  /* Animation for hiding the container */
-  @keyframes slideUp {
-    from {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    to {
-      opacity: 0;
-      transform: translateY(-20px);
-    }
-  }
-  
-  /* Transition styles for questions container */
-  #questions-container {
-    display: none;
-    opacity: 0;
-    transform: translateY(-20px);
-    transition: opacity 0.5s ease, transform 0.5s ease;
-  }
-  
-  /* Add smooth button transition */
-  #toggleQuestionsBtn {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-  
-  #toggleQuestionsBtn:hover {
-    background-color: #0056b3;
-    transform: scale(1.05);
-  }
-  
-  /* Class for showing the container */
-  .show {
-    display: block;
-    animation: slideDown 0.5s forwards;
-  }
-  
-  /* Class for hiding the container */
-  .hide {
-    animation: slideUp 0.5s forwards;
-  }
-/* Fade-in animation for the subject-selection */
-@keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(-20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  .subject-selection.fade-in {
-    animation: fadeIn 0.5s ease-out;
-  }
-      
+ /* General styles for all sections with the class 'admin-section' */
+
+
+/* Style for the Scroll to Top button */
+.scroll-to-top-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 50%;  /* Make the button circular */
+  width: 40px;          /* Set width */
+  height: 40px;         /* Set height equal to width for a perfect circle */
+  font-size: 25px;      /* Adjust font size to fit inside */
+  display: none;        /* Initially hidden */
+  z-index: 1000;        /* Ensure it stays above other content */
+  text-align: center;   /* Center the text (arrow) inside the button */
+  line-height: 10px;    /* Vertically center the text */
+  cursor: pointer;     /* Pointer cursor on hover */
+}
+
+.scroll-to-top-btn:hover {
+  background-color: #0056b3;  /* Darken the color on hover */
+}
+.fa-circle-right{
+  margin-right: 10px;
+}

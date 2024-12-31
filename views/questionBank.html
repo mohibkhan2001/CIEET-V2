@@ -254,5 +254,124 @@
       referrerpolicy="no-referrer"
     ></script>
     <script src="/scripts/questionBank.js"></script>
+    <script>
+      // Fetch the subjects from the backend when the page loads
+      $(document).ready(function () {
+        $.ajax({
+          url: "/get-subjects", // Backend route to get available subjects
+          method: "GET",
+          success: function (response) {
+            if (response.success && response.subjects.length > 0) {
+              const subjectSelect = $("#subject");
+              response.subjects.forEach((subject) => {
+                subjectSelect.append(
+                  `<option value="${subject}">${subject}</option>`
+                );
+              });
+            } else {
+              $("#feedback").html("Error: No subjects available.");
+            }
+          },
+          error: function () {
+            $("#feedback").html("Error: Unable to load subjects.");
+          },
+        });
+      });
+
+      // Handle form submission
+      document
+        .getElementById("exam-form")
+        .addEventListener("submit", function (event) {
+          event.preventDefault(); // Prevent default form submission
+
+          // Get form data
+          const subject = document.getElementById("subject").value;
+          const duration = document.getElementById("duration").value;
+          const numQuestions = document.getElementById(
+            "number-of-questions"
+          ).value;
+
+          // Show loading message while the paper is being generated
+          const feedback = document.getElementById("feedback");
+          feedback.innerHTML = "Generating exam paper... Please wait.";
+
+          // Prepare the data to send to the backend
+          const data = {
+            subject: subject,
+            duration: duration,
+            numQuestions: numQuestions,
+          };
+
+          // Make AJAX request to generate the exam paper
+          $.ajax({
+            url: "/generate-pdf", // Backend route to generate the exam paper
+            method: "POST",
+            data: JSON.stringify(data), // Send form data as JSON
+            contentType: "application/json",
+            success: function (response) {
+              // Success: show the generated paper link
+              if (response.success) {
+                feedback.innerHTML = `Exam paper generated successfully! You can download it <a href="/download-pdf/${response.pdfFileName}">here</a>.`;
+              } else {
+                feedback.innerHTML = `Error: ${response.error}`;
+              }
+            },
+            error: function (xhr, status, error) {
+              // Error: display error message
+              feedback.innerHTML = `Error: Unable to generate the paper. Please try again later.`;
+            },
+          });
+        });
+
+      // Simulated user data (replace with actual user data from backend)
+      const authContainer = document.getElementById("auth-buttons");
+
+      // Fetch user info from backend API after page loads
+      document.addEventListener("DOMContentLoaded", () => {
+        fetch("/api/user-info") // Endpoint to fetch the user's session info
+          .then((response) => {
+            if (!response.ok) {
+              console.error("User not logged in");
+              return;
+            }
+            return response.json();
+          })
+          .then((data) => {
+            const user = data.user;
+            const usernameSpan = document.getElementById("username");
+
+            if (user && usernameSpan) {
+              // Display user's first and last name
+              usernameSpan.textContent = `${user.firstname} ${user.lastname}`;
+            }
+          })
+          .catch((err) => {
+            console.error("Failed to fetch user info:", err);
+          });
+
+        // Handle the logout button click
+        const logoutButton = document.getElementById("logout-btn");
+        if (logoutButton) {
+          logoutButton.addEventListener("click", () => {
+            fetch("/logout", {
+              method: "POST",
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.success) {
+                  // Redirect to the homepage after successful logout
+                  window.location.href = "/";
+                } else {
+                  console.error("Failed to log out");
+                }
+              })
+              .catch((err) => {
+                console.error("Error logging out:", err);
+              });
+          });
+        }
+      });
+    </script>
+     
   </body>
 </html>

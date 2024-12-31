@@ -356,6 +356,11 @@ async function showQuestions(subject) {
     btn.classList.remove("active");
   });
 
+   // Scroll smoothly to the questions-container
+   const questionsContainer = document.getElementById("questions-container");
+   questionsContainer.style.display = "block"; // Ensure the container is visible
+   questionsContainer.scrollIntoView({ behavior: "smooth" });
+
   const clickedButton = document.querySelector(
     `button[data-subject="${subject}"]`
   );
