@@ -22,34 +22,30 @@ app.use(
 function checkRole(requiredRole) {
   return (req, res, next) => {
     // Check if the logged-in user's role matches the required role or if they are 'Admin'
-    if (req.session.user && (req.session.user.role === requiredRole || req.session.user.role === 'Admin')) {
+    if (
+      req.session.user &&
+      (req.session.user.role === requiredRole ||
+        req.session.user.role === "Admin")
+    ) {
       return next(); // Proceed if the user has the required role
     } else {
       // Respond with a 403 Forbidden error if the user does not have the required role
-      return res.status(403).json({ errors: ['Access denied.'] });
+      return res.render("/");
     }
   };
 }
 
-
-
-
 // Middleware to prevent Teachers from accessing the StudentPortal
 function preventTeacherAccess(req, res, next) {
   const userRole = req.session.user.role;
-  if (userRole === 'Teacher') {
-    return res.redirect('/index'); // Redirect Teacher to the index page (or other page)
+  if (userRole === "Teacher") {
+    return res.redirect("/index"); // Redirect Teacher to the index page (or other page)
   }
   next(); // Allow Student to access the StudentPortal
 }
 
-
-
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-
 
 const resetUsersAutoIncrementIfEmpty = () => {
   const checkTableQuery = "SELECT COUNT(*) AS count FROM users";
@@ -67,7 +63,9 @@ const resetUsersAutoIncrementIfEmpty = () => {
         if (err) {
           console.error("Error resetting AUTO_INCREMENT for users table:", err);
         } else {
-          console.log("AUTO_INCREMENT reset to 1 for users table as it is empty.");
+          console.log(
+            "AUTO_INCREMENT reset to 1 for users table as it is empty."
+          );
         }
       });
     } else {
@@ -78,7 +76,6 @@ const resetUsersAutoIncrementIfEmpty = () => {
 
 // Call the function when needed (e.g., during server startup or after a delete operation)
 resetUsersAutoIncrementIfEmpty();
-
 
 // Function to check and reset AUTO_INCREMENT
 const resetAutoIncrementIfEmpty = () => {
@@ -101,14 +98,15 @@ const resetAutoIncrementIfEmpty = () => {
         }
       });
     } else {
-      console.log(`generated_pdfs Table is not empty. Current row count: ${count}`);
+      console.log(
+        `generated_pdfs Table is not empty. Current row count: ${count}`
+      );
     }
   });
 };
 
 // Call the function when needed (e.g., during server startup or after a delete operation)
 resetAutoIncrementIfEmpty();
-
 
 // Session Configuration
 app.use(
@@ -167,7 +165,9 @@ app.post(
       if (err)
         return res.status(500).json({ errors: ["Database error occurred"] });
       if (result.length > 0)
-        return res.status(400).json({ errors: ["Email already registered or pending approval"] });
+        return res
+          .status(400)
+          .json({ errors: ["Email already registered or pending approval"] });
 
       try {
         // Hash the password
@@ -184,7 +184,9 @@ app.post(
               return res
                 .status(500)
                 .json({ errors: ["Error saving pending approval"] });
-            res.json({ success: "Signup successful! Awaiting admin approval." });
+            res.json({
+              success: "Signup successful! Awaiting admin approval.",
+            });
           }
         );
       } catch (err) {
@@ -193,7 +195,6 @@ app.post(
     });
   }
 );
-
 
 app.delete("/api/users", (req, res) => {
   const deleteQuery = "DELETE FROM users";
@@ -205,36 +206,39 @@ app.delete("/api/users", (req, res) => {
 
     resetUsersAutoIncrementIfEmpty();
 
-    res.status(200).json({ message: "All users deleted and AUTO_INCREMENT reset" });
+    res
+      .status(200)
+      .json({ message: "All users deleted and AUTO_INCREMENT reset" });
   });
 });
-
 
 // --------- LOGIN ROUTE -----------
 // Login Route (POST /login)
 // Login Route (POST /login)
-app.post('/login', async (req, res) => {
+app.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return res.status(400).json({ errors: ['Email and password are required'] });
+    return res
+      .status(400)
+      .json({ errors: ["Email and password are required"] });
   }
 
-  const query = 'SELECT * FROM users WHERE email = ?';
+  const query = "SELECT * FROM users WHERE email = ?";
   db.query(query, [email], async (err, results) => {
     if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ errors: ['Database error'] });
+      console.error("Database error:", err);
+      return res.status(500).json({ errors: ["Database error"] });
     }
     if (results.length === 0) {
-      return res.status(401).json({ errors: ['Invalid email or password'] });
+      return res.status(401).json({ errors: ["Invalid email or password"] });
     }
 
     const user = results[0];
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-      return res.status(401).json({ errors: ['Invalid email or password'] });
+      return res.status(401).json({ errors: ["Invalid email or password"] });
     }
 
     // Store user details in session
@@ -243,25 +247,24 @@ app.post('/login', async (req, res) => {
       firstname: user.firstname,
       lastname: user.lastname,
       email: user.email,
-      role: user.role,  // Store role in the session
+      role: user.role, // Store role in the session
     };
 
     // Redirect based on role
-    if (user.role === 'Teacher') {
-      return res.json({ success: 'Login successful', redirectUrl: '/index' });
-    } else if (user.role === 'Student') {
-      return res.json({ success: 'Login successful', redirectUrl: '/StudentPortal' });
-    
-    } 
-    else if (user.role === 'Admin') {
-      return res.json({ success: 'Login successful', redirectUrl: '/Admin' });
-    }
-    else {
-      return res.status(401).json({ errors: ['Invalid role'] });
+    if (user.role === "Teacher") {
+      return res.json({ success: "Login successful", redirectUrl: "/index" });
+    } else if (user.role === "Student") {
+      return res.json({
+        success: "Login successful",
+        redirectUrl: "/StudentPortal",
+      });
+    } else if (user.role === "Admin") {
+      return res.json({ success: "Login successful", redirectUrl: "/Admin" });
+    } else {
+      return res.status(401).json({ errors: ["Invalid role"] });
     }
   });
 });
-
 
 app.get("/api/user-info", (req, res) => {
   if (req.session.user) {
@@ -271,40 +274,49 @@ app.get("/api/user-info", (req, res) => {
   }
 });
 
-
 // Fetch all users (Admin only)
 // Fetch users without using Promises
-app.get('/api/users', isLoggedIn, checkRole('Admin'), (req, res) => {
+app.get("/api/users", isLoggedIn, checkRole("Admin"), (req, res) => {
   // Use the callback-based query method
-  db.query('SELECT user_id, firstname, lastname, email, role FROM users', (err, results) => {
-    if (err) {
-      console.error('Error fetching users:', err);
-      return res.status(500).json({ error: 'Failed to fetch users' });
+  db.query(
+    "SELECT user_id, firstname, lastname, email, role FROM users",
+    (err, results) => {
+      if (err) {
+        console.error("Error fetching users:", err);
+        return res.status(500).json({ error: "Failed to fetch users" });
+      }
+
+      // Send the results to the client
+      res.status(200).json(results);
     }
-    
-    // Send the results to the client
-    res.status(200).json(results);
-  });
+  );
 });
 
 // Delete a user by ID (Admin only)
-app.delete('/api/users/:id', isLoggedIn, checkRole('Admin'), async (req, res) => {
-  const { id } = req.params;
+app.delete(
+  "/api/users/:id",
+  isLoggedIn,
+  checkRole("Admin"),
+  async (req, res) => {
+    const { id } = req.params;
 
-  try {
-    // Use promise-based query for better async handling
-    const result = await db.promise().query('DELETE FROM users WHERE user_id = ?', [id]);
+    try {
+      // Use promise-based query for better async handling
+      const result = await db
+        .promise()
+        .query("DELETE FROM users WHERE user_id = ?", [id]);
 
-    if (result[0].affectedRows === 0) {
-      return res.status(404).json({ error: 'User not found' });
+      if (result[0].affectedRows === 0) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      res.status(200).json({ success: "User deleted successfully" });
+    } catch (err) {
+      console.error("Error deleting user:", err);
+      res.status(500).json({ error: "Failed to delete user" });
     }
-
-    res.status(200).json({ success: 'User deleted successfully' });
-  } catch (err) {
-    console.error('Error deleting user:', err);
-    res.status(500).json({ error: 'Failed to delete user' });
   }
-});
+);
 
 app.get("/api/pending-approvals", (req, res) => {
   const query = "SELECT * FROM pending_approvals";
@@ -315,7 +327,6 @@ app.get("/api/pending-approvals", (req, res) => {
     res.json(results);
   });
 });
-
 
 app.post("/api/pending-approvals/:id/approve", (req, res) => {
   const userId = req.params.id;
@@ -344,7 +355,9 @@ app.post("/api/pending-approvals/:id/approve", (req, res) => {
         const deleteQuery = "DELETE FROM pending_approvals WHERE id = ?";
         db.query(deleteQuery, [userId], (err) => {
           if (err) {
-            return res.status(500).json({ error: "Error cleaning up pending user" });
+            return res
+              .status(500)
+              .json({ error: "Error cleaning up pending user" });
           }
           res.json({ success: "User approved and moved to users table" });
         });
@@ -352,7 +365,6 @@ app.post("/api/pending-approvals/:id/approve", (req, res) => {
     );
   });
 });
-
 
 app.delete("/api/pending-approvals/:id/deny", (req, res) => {
   const userId = req.params.id;
@@ -365,8 +377,6 @@ app.delete("/api/pending-approvals/:id/deny", (req, res) => {
     res.json({ success: "User denied and removed from pending approvals" });
   });
 });
-
-
 
 // --------- LOGOUT ROUTE -----------
 app.post("/logout", (req, res) => {
@@ -448,11 +458,10 @@ app.post("/delete-file", (req, res) => {
 function isLoggedIn(req, res, next) {
   if (!req.session.user) {
     // Respond with a 401 Unauthorized error if the user is not logged in
-    return res.redirect("/")
+    return res.redirect("/");
   }
   next(); // Continue to the requested route if logged in
 }
-
 
 // Middleware to block access to "/" if the user is logged in
 function redirectIfLoggedIn(req, res, next) {
@@ -468,38 +477,44 @@ app.get("/", redirectIfLoggedIn, (req, res) => {
   res.sendFile(path.join(__dirname, "views", "login.html"));
 });
 
-
 // Route for Student Portal (Prevent Teacher from Accessing)
-app.get('/StudentPortal', isLoggedIn, preventTeacherAccess, (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'StudentPortal.html')); // Serve StudentPortal page
+app.get("/StudentPortal", isLoggedIn, preventTeacherAccess, (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "StudentPortal.html")); // Serve StudentPortal page
 });
 
 // Protected Routes for Teacher (Require Login and Role)
-app.get('/index', isLoggedIn, checkRole('Teacher'), (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'index.html')); // Serve index page for Teachers
+app.get("/index", isLoggedIn, checkRole("Teacher"), (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "index.html")); // Serve index page for Teachers
+});
+app.get("/std_exam", isLoggedIn, checkRole("Student"), (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "std_exam.html")); // Serve index page for Teachers
 });
 
-app.get('/generatedPapers', isLoggedIn, checkRole('Teacher'), (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'generatedPapers.html')); // Serve generated papers page for Teachers
+app.get("/generatedPapers", isLoggedIn, checkRole("Teacher"), (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "generatedPapers.html")); // Serve generated papers page for Teachers
 });
 
-app.get('/questionBank', isLoggedIn, checkRole('Teacher' || 'Admin'), (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'questionBank.html')); // Serve question bank page for Teachers
+app.get(
+  "/questionBank",
+  isLoggedIn,
+  checkRole("Teacher" || "Admin"),
+  (req, res) => {
+    res.sendFile(path.join(__dirname, "views", "questionBank.html")); // Serve question bank page for Teachers
+  }
+);
+
+app.get("/Exam_Automation", isLoggedIn, checkRole("Teacher"), (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "Exam_Automation.html")); // Serve exam automation page for Teachers
 });
 
-app.get('/Exam_Automation', isLoggedIn, checkRole('Teacher'), (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'Exam_Automation.html')); // Serve exam automation page for Teachers
-});
-
-app.get('/reporting', isLoggedIn, checkRole('Teacher'), (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'reporting.html')); // Serve reporting page for Teachers
+app.get("/reporting", isLoggedIn, checkRole("Teacher"), (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "reporting.html")); // Serve reporting page for Teachers
 });
 
 // Route for Admin only
-app.get('/Admin', isLoggedIn, checkRole('Admin'), (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'Admin.html')); // Serve admin page
+app.get("/Admin", isLoggedIn, checkRole("Admin"), (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "Admin.html")); // Serve admin page
 });
-
 
 // Route to fetch the generated papers (API)
 app.get("/api/generated-papers", (req, res) => {
@@ -644,101 +659,135 @@ app.get("/api/questions/:subject", (req, res) => {
     LIMIT ? OFFSET ?`;
 
   // Fetch subjective questions
-  db.query(subjectiveQuery, [subject, limit, offset], (err, subjectiveResults) => {
-    if (err) return res.status(500).json({ error: "Failed to fetch subjective questions" });
+  db.query(
+    subjectiveQuery,
+    [subject, limit, offset],
+    (err, subjectiveResults) => {
+      if (err)
+        return res
+          .status(500)
+          .json({ error: "Failed to fetch subjective questions" });
 
-    // Fetch MCQ questions
-    db.query(mcqQuery, [subject, limit, offset], (err, mcqResults) => {
-      if (err) return res.status(500).json({ error: "Failed to fetch MCQs" });
+      // Fetch MCQ questions
+      db.query(mcqQuery, [subject, limit, offset], (err, mcqResults) => {
+        if (err) return res.status(500).json({ error: "Failed to fetch MCQs" });
 
-      // Fetch diagram questions
-      db.query(diagramsQuery, [subject, limit, offset], (err, diagramsResults) => {
-        if (err) return res.status(500).json({ error: "Failed to fetch diagrams" });
+        // Fetch diagram questions
+        db.query(
+          diagramsQuery,
+          [subject, limit, offset],
+          (err, diagramsResults) => {
+            if (err)
+              return res
+                .status(500)
+                .json({ error: "Failed to fetch diagrams" });
 
-        // Count questions per category for pagination
-        const countSubjectiveQuery = `SELECT COUNT(*) as total FROM subjective_questions WHERE subject = ?`;
-        const countMcqQuery = `SELECT COUNT(*) as total FROM mcq_questions WHERE subject = ?`;
-        const countDiagramsQuery = `SELECT COUNT(*) as total FROM diagrams WHERE subject = ?`;
+            // Count questions per category for pagination
+            const countSubjectiveQuery = `SELECT COUNT(*) as total FROM subjective_questions WHERE subject = ?`;
+            const countMcqQuery = `SELECT COUNT(*) as total FROM mcq_questions WHERE subject = ?`;
+            const countDiagramsQuery = `SELECT COUNT(*) as total FROM diagrams WHERE subject = ?`;
 
-        // Counting subjective questions
-        db.query(countSubjectiveQuery, [subject], (err, countSubjective) => {
-          if (err) return res.status(500).json({ error: "Failed to count subjective questions" });
+            // Counting subjective questions
+            db.query(
+              countSubjectiveQuery,
+              [subject],
+              (err, countSubjective) => {
+                if (err)
+                  return res
+                    .status(500)
+                    .json({ error: "Failed to count subjective questions" });
 
-          // Counting MCQ questions
-          db.query(countMcqQuery, [subject], (err, countMcq) => {
-            if (err) return res.status(500).json({ error: "Failed to count MCQs" });
+                // Counting MCQ questions
+                db.query(countMcqQuery, [subject], (err, countMcq) => {
+                  if (err)
+                    return res
+                      .status(500)
+                      .json({ error: "Failed to count MCQs" });
 
-            // Counting diagram questions
-            db.query(countDiagramsQuery, [subject], (err, countDiagrams) => {
-              if (err) return res.status(500).json({ error: "Failed to count diagrams" });
+                  // Counting diagram questions
+                  db.query(
+                    countDiagramsQuery,
+                    [subject],
+                    (err, countDiagrams) => {
+                      if (err)
+                        return res
+                          .status(500)
+                          .json({ error: "Failed to count diagrams" });
 
-              // Format subjective questions
-              const formattedSubjective = subjectiveResults.map((q) => ({
-                id: q.id,
-                question_text: q.question_text,
-                subject: q.subject.toUpperCase(),
-                year: `YEAR: ${q.year}`,
-                question_type: "subjective", // Hardcoded as "subjective"
-              }));
+                      // Format subjective questions
+                      const formattedSubjective = subjectiveResults.map(
+                        (q) => ({
+                          id: q.id,
+                          question_text: q.question_text,
+                          subject: q.subject.toUpperCase(),
+                          year: `YEAR: ${q.year}`,
+                          question_type: "subjective", // Hardcoded as "subjective"
+                        })
+                      );
 
-              // Format MCQs
-              const formattedMcqs = mcqResults.map((q) => ({
-                id: q.id,
-                question_text: q.question_text,
-                year: `YEAR: ${q.year || "N/A"}`,
-                question_type: "objective",
-                options: [
-                  { option: "A", text: q.option_a || "N/A" },
-                  { option: "B", text: q.option_b || "N/A" },
-                  { option: "C", text: q.option_c || "N/A" },
-                  { option: "D", text: q.option_d || "N/A" },
-                ],
-                correct_answer: q.correct_answer || "N/A",
-              }));
+                      // Format MCQs
+                      const formattedMcqs = mcqResults.map((q) => ({
+                        id: q.id,
+                        question_text: q.question_text,
+                        year: `YEAR: ${q.year || "N/A"}`,
+                        question_type: "objective",
+                        options: [
+                          { option: "A", text: q.option_a || "N/A" },
+                          { option: "B", text: q.option_b || "N/A" },
+                          { option: "C", text: q.option_c || "N/A" },
+                          { option: "D", text: q.option_d || "N/A" },
+                        ],
+                        correct_answer: q.correct_answer || "N/A",
+                      }));
 
-              // Format diagrams
-              const formattedDiagrams = diagramsResults.map((q) => ({
-                id: q.id,
-                question_text: q.question_text,
-                subject: q.subject.toUpperCase(),
-                year: `YEAR: ${q.year}`,
-                question_type: "diagram", // Hardcoded as "diagram"
-                diagram_url: q.diagram_url || "N/A", // Add diagram URL if available
-              }));
+                      // Format diagrams
+                      const formattedDiagrams = diagramsResults.map((q) => ({
+                        id: q.id,
+                        question_text: q.question_text,
+                        subject: q.subject.toUpperCase(),
+                        year: `YEAR: ${q.year}`,
+                        question_type: "diagram", // Hardcoded as "diagram"
+                        diagram_url: q.diagram_url || "N/A", // Add diagram URL if available
+                      }));
 
-              // Send the formatted data along with pagination info
-              res.json({
-                subjective: formattedSubjective,
-                mcqs: formattedMcqs,
-                diagrams: formattedDiagrams,
-                totalQuestions: countSubjective[0].total + countMcq[0].total + countDiagrams[0].total, // Combine totals
-                pagination: {
-                  subjective: {
-                    total: countSubjective[0].total,
-                    pages: Math.ceil(countSubjective[0].total / limit),
-                    currentPage: page,
-                  },
-                  mcqs: {
-                    total: countMcq[0].total,
-                    pages: Math.ceil(countMcq[0].total / limit),
-                    currentPage: page,
-                  },
-                  diagrams: {
-                    total: countDiagrams[0].total,
-                    pages: Math.ceil(countDiagrams[0].total / limit),
-                    currentPage: page,
-                  },
-                },
-              });
-              
-            });
-          });
-        });
+                      // Send the formatted data along with pagination info
+                      res.json({
+                        subjective: formattedSubjective,
+                        mcqs: formattedMcqs,
+                        diagrams: formattedDiagrams,
+                        totalQuestions:
+                          countSubjective[0].total +
+                          countMcq[0].total +
+                          countDiagrams[0].total, // Combine totals
+                        pagination: {
+                          subjective: {
+                            total: countSubjective[0].total,
+                            pages: Math.ceil(countSubjective[0].total / limit),
+                            currentPage: page,
+                          },
+                          mcqs: {
+                            total: countMcq[0].total,
+                            pages: Math.ceil(countMcq[0].total / limit),
+                            currentPage: page,
+                          },
+                          diagrams: {
+                            total: countDiagrams[0].total,
+                            pages: Math.ceil(countDiagrams[0].total / limit),
+                            currentPage: page,
+                          },
+                        },
+                      });
+                    }
+                  );
+                });
+              }
+            );
+          }
+        );
       });
-    });
-  });
+    }
+  );
 });
-
 
 // Ensure the Images/Diagrams directory inside public exists
 const diagramDir = path.join(__dirname, "public", "Images", "Diagrams");
@@ -929,10 +978,14 @@ app.post("/generate-pdf", async (req, res) => {
     // Fetch data for each type
     const subjectiveResults = subjectiveQuestions.length
       ? await new Promise((resolve, reject) => {
-          db.query(subjectiveQuery, [subjectiveQuestions, subject], (err, results) => {
-            if (err) reject(err);
-            else resolve(results);
-          });
+          db.query(
+            subjectiveQuery,
+            [subjectiveQuestions, subject],
+            (err, results) => {
+              if (err) reject(err);
+              else resolve(results);
+            }
+          );
         })
       : [];
 
@@ -947,10 +1000,14 @@ app.post("/generate-pdf", async (req, res) => {
 
     const diagramResults = diagramQuestions.length
       ? await new Promise((resolve, reject) => {
-          db.query(diagramsQuery, [diagramQuestions, subject], (err, results) => {
-            if (err) reject(err);
-            else resolve(results);
-          });
+          db.query(
+            diagramsQuery,
+            [diagramQuestions, subject],
+            (err, results) => {
+              if (err) reject(err);
+              else resolve(results);
+            }
+          );
         })
       : [];
 
@@ -962,7 +1019,12 @@ app.post("/generate-pdf", async (req, res) => {
 
     // Generate HTML content
     const subjectiveSection = subjectiveResults
-      .map((q, i) => `<div class="question">${i + 1}. ${q.question_text}<div class="answer-space">Answer:</div></div>`)
+      .map(
+        (q, i) =>
+          `<div class="question">${i + 1}. ${
+            q.question_text
+          }<div class="answer-space">Answer:</div></div>`
+      )
       .join("");
 
     const mcqSection = mcqResults
@@ -985,9 +1047,13 @@ app.post("/generate-pdf", async (req, res) => {
       .map(
         (q, i) => `
           <div class="question">
-            ${i + 1 + subjectiveResults.length + mcqResults.length}. ${q.question_text}
+            ${i + 1 + subjectiveResults.length + mcqResults.length}. ${
+          q.question_text
+        }
             <div class="question-diagram">
-              <img src="http://localhost:3000/Images/Diagrams/${q.diagram_url}" alt="Diagram Question" />
+              <img src="http://localhost:3000/Images/Diagrams/${
+                q.diagram_url
+              }" alt="Diagram Question" />
             </div>
           </div>
         `
@@ -1114,9 +1180,6 @@ app.post("/generate-pdf", async (req, res) => {
   }
 });
 
-
-
-
 // Generated Papers List
 app.get("/api/generated-papers", (req, res) => {
   const query =
@@ -1163,6 +1226,277 @@ app.get("/api/generated-papers", (req, res) => {
 
     res.json({ papers: enrichedResults });
   });
+});
+// Generate Exam Endpoint
+app.post("/api/generate-exam", (req, res) => {
+  const { selectedQuestions } = req.body;
+
+  // Validate input
+  if (!Array.isArray(selectedQuestions) || selectedQuestions.length === 0) {
+    return res
+      .status(400)
+      .json({ error: "No questions selected for the exam." });
+  }
+
+  // Classify questions by type
+  const subjective = [];
+  const objective = [];
+  const diagram = [];
+
+  selectedQuestions.forEach((question) => {
+    const [type, id] = question.split("-");
+    if (type === "subjective") subjective.push(id);
+    if (type === "objective") objective.push(id);
+    if (type === "diagram") diagram.push(id);
+  });
+
+  // Validate IDs are numeric
+  const isValidId = (id) => /^\d+$/.test(id);
+  if (![...subjective, ...objective, ...diagram].every(isValidId)) {
+    return res.status(400).json({ error: "Invalid question ID detected." });
+  }
+
+  // Check the number of rows in the table and reset ID if necessary
+  const checkTableQuery = "SELECT COUNT(*) AS count FROM generated_exams";
+  db.query(checkTableQuery, (err, results) => {
+    if (err) {
+      console.error("Error checking table count:", err);
+      return res.status(500).json({ error: "An error occurred while processing the request." });
+    }
+
+    const rowCount = results[0].count;
+    console.log(`Current number of rows in the table: ${rowCount}`);
+
+    if (rowCount === 0) {
+      const resetIdQuery = "ALTER TABLE generated_exams AUTO_INCREMENT = 1";
+      db.query(resetIdQuery, (err) => {
+        if (err) {
+          console.error("Error resetting AUTO_INCREMENT:", err);
+          return res.status(500).json({ error: "An error occurred while resetting the table." });
+        }
+        console.log("Table ID reset to 1.");
+      });
+    }
+
+    // Prepare the exam data
+    const examData = {
+      subjective: subjective.length,
+      objective: objective.length,
+      diagram: diagram.length,
+      subjective_questions: JSON.stringify(subjective),
+      objective_questions: JSON.stringify(objective),
+      diagram_questions: JSON.stringify(diagram),
+      created_at: new Date(),
+    };
+
+    const query = `
+      INSERT INTO generated_exams (subjective, objective, diagram, subjective_questions, objective_questions, diagram_questions, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+    const values = [
+      examData.subjective,
+      examData.objective,
+      examData.diagram,
+      examData.subjective_questions,
+      examData.objective_questions,
+      examData.diagram_questions,
+      examData.created_at,
+    ];
+
+    // Execute the query using a callback
+    db.query(query, values, (err, result) => {
+      if (err) {
+        console.error("Error saving exam:", err);
+        return res
+          .status(500)
+          .json({ error: "An error occurred while generating the exam." });
+      }
+
+      // Respond with the generated exam ID
+      res.status(201).json({
+        message: "Exam generated successfully",
+        examId: result.insertId,
+      });
+    });
+  });
+});
+
+
+app.get("/api/exam", (req, res) => {
+  const { examId } = req.query; // Get examId from query parameters
+
+  if (!examId) {
+      return res.status(400).json({ error: "Exam ID is required." });
+  }
+
+  // Fetch exam metadata from the 'generated_exams' table based on exam_id
+  db.query("SELECT * FROM generated_exams WHERE exam_id = ?", [examId], (err, examData) => {
+      if (err) {
+          console.error("Error fetching exam metadata:", err);
+          return res.status(500).json({ error: "Database error while fetching exam metadata." });
+      }
+
+      if (examData.length === 0) {
+          return res.status(404).json({ error: "Exam not found." });
+      }
+
+      const { subjective_questions, objective_questions, diagram_questions } = examData[0];
+      let subjectiveIds = [], objectiveIds = [], diagramIds = [];
+
+      try {
+          subjectiveIds = subjective_questions ? JSON.parse(subjective_questions) : [];
+          objectiveIds = objective_questions ? JSON.parse(objective_questions) : [];
+          diagramIds = diagram_questions ? JSON.parse(diagram_questions) : [];
+      } catch (parseError) {
+          console.error("Error parsing question IDs:", parseError);
+          return res.status(500).json({ error: "Error parsing question data." });
+      }
+
+      // Fetch questions based on IDs
+      const subjectiveQuery = subjectiveIds.length
+          ? "SELECT * FROM subjective_questions WHERE id IN (?)"
+          : "SELECT * FROM subjective_questions WHERE 1=0";
+      const objectiveQuery = objectiveIds.length
+          ? "SELECT * FROM mcq_questions WHERE id IN (?)"
+          : "SELECT * FROM mcq_questions WHERE 1=0";
+      const diagramQuery = diagramIds.length
+          ? "SELECT * FROM diagrams WHERE id IN (?)"
+          : "SELECT * FROM diagrams WHERE 1=0";
+
+      db.query(subjectiveQuery, [subjectiveIds], (err, subjectiveQuestions) => {
+          if (err) {
+              console.error("Error fetching subjective questions:", err);
+              return res.status(500).json({ error: "An error occurred while fetching the subjective questions." });
+          }
+
+          db.query(objectiveQuery, [objectiveIds], (err, objectiveQuestions) => {
+              if (err) {
+                  console.error("Error fetching objective questions:", err);
+                  return res.status(500).json({ error: "An error occurred while fetching the objective questions." });
+              }
+
+              db.query(diagramQuery, [diagramIds], (err, diagramQuestions) => {
+                  if (err) {
+                      console.error("Error fetching diagram questions:", err);
+                      return res.status(500).json({ error: "An error occurred while fetching the diagram questions." });
+                  }
+
+                  res.status(200).json({
+                      examId,
+                      subjectiveQuestions,
+                      objectiveQuestions,
+                      diagramQuestions,
+                  });
+              });
+          });
+      });
+  });
+});
+
+
+// API to fetch questions
+// app.get("/api/exams/:examId", (req, res) => {
+//   const { examId } = req.params;
+
+//   // Fetch the exam details from the `generated_exams` table
+//   db.query(
+//       "SELECT * FROM generated_exams WHERE exam_id = ?",
+//       [examId],
+//       (err, examResult) => {
+//           if (err) return res.status(500).json({ error: "Database error while fetching exam details" });
+
+//           if (!examResult.length) return res.status(404).json({ error: "Exam not found" });
+
+//           const exam = examResult[0];
+//           const questions = [];
+
+//           // Fetch subjective questions
+//           if (exam.subjective && exam.subjective_questions) {
+//               const subjectiveIds = exam.subjective_questions.split(",");
+//               db.query(
+//                   `SELECT id, question_text FROM subjective_questions WHERE id IN (?)`,
+//                   [subjectiveIds],
+//                   (err, subjectiveResults) => {
+//                       if (err) return res.status(500).json({ error: "Database error while fetching subjective questions" });
+
+//                       subjectiveResults.forEach((q) => questions.push({ ...q, type: "subjective" }));
+
+//                       // Fetch objective questions
+//                       if (exam.objective && exam.objective_questions) {
+//                           const objectiveIds = exam.objective_questions.split(",");
+//                           db.query(
+//                               `SELECT id, question_text, option_a, option_b, option_c, option_d FROM mcq_questions WHERE id IN (?)`,
+//                               [objectiveIds],
+//                               (err, objectiveResults) => {
+//                                   if (err)
+//                                       return res.status(500).json({ error: "Database error while fetching objective questions" });
+
+//                                   objectiveResults.forEach((q) =>
+//                                       questions.push({
+//                                           id: q.id,
+//                                           question_text: q.question_text,
+//                                           type: "objective",
+//                                           options: [q.option_a, q.option_b, q.option_c, q.option_d],
+//                                       })
+//                                   );
+
+//                                   // Fetch diagram questions
+//                                   if (exam.diagram && exam.diagram_questions) {
+//                                       const diagramIds = exam.diagram_questions.split(",");
+//                                       db.query(
+//                                           `SELECT id, diagram_url, question_text FROM diagrams WHERE id IN (?)`,
+//                                           [diagramIds],
+//                                           (err, diagramResults) => {
+//                                               if (err)
+//                                                   return res
+//                                                       .status(500)
+//                                                       .json({ error: "Database error while fetching diagram questions" });
+
+//                                               diagramResults.forEach((q) =>
+//                                                   questions.push({
+//                                                       id: q.id,
+//                                                       diagram_url: q.diagram_url,
+//                                                       question_text: q.question_text,
+//                                                       type: "diagram",
+//                                                   })
+//                                               );
+
+//                                               // Send all collected questions
+//                                               return res.json({ questions });
+//                                           }
+//                                       );
+//                                   } else {
+//                                       // Send questions if no diagram questions
+//                                       return res.json({ questions });
+//                                   }
+//                               }
+//                           );
+//                       } else {
+//                           // Send questions if no objective questions
+//                           return res.json({ questions });
+//                       }
+//                   }
+//               );
+//           } else {
+//               // Send questions if no subjective questions
+//               return res.json({ questions });
+//           }
+//       }
+//   );
+// });
+
+
+// API to submit answers
+app.post("/api/exams/submit", (req, res) => {
+  const { examId, answers } = req.body;
+  db.query(
+    "INSERT INTO student_answers (exam_id, answers) VALUES (?, ?)",
+    [examId, JSON.stringify(answers)],
+    (err) => {
+      if (err) return res.status(500).json({ error: "Database error" });
+      res.json({ success: true });
+    }
+  );
 });
 
 // Start server

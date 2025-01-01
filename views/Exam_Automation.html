@@ -45,11 +45,11 @@
     <main class="container">
       <h1>Select Subject</h1>
       <p>
-        Welcome to the Cambridge Exam Question Bank! Explore subjects and
-        select questions to generate custom exam papers. Click a subject below
-        to view its questions.
+        Welcome to the Cambridge Exam Question Bank! Explore subjects and select
+        questions to generate custom exam papers. Click a subject below to view
+        its questions.
       </p>
-    
+
       <div class="subject-selection">
         <button data-subject="math" onclick="showQuestions('math')">
           <i class="fa-solid fa-square-root-alt"></i> Math
@@ -70,54 +70,20 @@
           <i class="fa-solid fa-laptop-code"></i> Computer Science
         </button>
       </div>
-    
+
       <!-- Questions Container -->
       <div id="questions-container" style="display: none">
         <h2>Questions</h2>
-    
-        <!-- Exam Automation Inputs -->
-        <div class="exam-automation-form">
-          <h3>Automate Exam Generation</h3>
-          <form id="exam-automation-form">
-            <div class="form-group">
-              <label for="subjective-questions">Subjective Questions</label>
-              <input
-                type="number"
-                id="subjective-questions"
-                name="subjective-questions"
-                placeholder="Enter number of subjective questions"
-                required
-              />
-            </div>
-            <div class="form-group">
-              <label for="objective-questions">Objective Questions (MCQ)</label>
-              <input
-                type="number"
-                id="objective-questions"
-                name="objective-questions"
-                placeholder="Enter number of objective questions"
-                required
-              />
-            </div>
-            <div class="form-group">
-              <label for="diagram-questions">Diagram Questions</label>
-              <input
-                type="number"
-                id="diagram-questions"
-                name="diagram-questions"
-                placeholder="Enter number of diagram questions"
-                required
-              />
-            </div>
-            <button type="submit" id="generate-exam-button">Generate Exam Paper</button>
-          </form>
-        </div>
-    
+        <!-- Generate Exam Button -->
+        <button id="automate-exam-btn" class="btn btn-primary">Automate Exam</button>
+
+
+
         <!-- Pagination Controls -->
         <div id="pagination-controls" class="pagination-controls">
           <!-- Pagination buttons will be inserted here -->
         </div>
-    
+
         <!-- Search Bar and Filters -->
         <div class="question-filters">
           <input
@@ -144,7 +110,7 @@
             </select>
           </div>
         </div>
-    
+
         <!-- Buttons for Actions -->
         <div class="action-buttons">
           <button id="selectAllButton" onclick="selectAllQuestions()">
@@ -160,23 +126,23 @@
           <button id="randomSelectButton" onclick="selectRandomly()">
             Select Randomly
           </button>
-    
+
           <!-- Add New Question Button Inside Action Buttons -->
           <button id="addNewQuestionBtn" onclick="openAddQuestionModal()">
             Add New Question
           </button>
         </div>
-    
+
         <!-- Pagination Container -->
         <div id="pagination"></div>
-    
+
         <form id="pdfForm">
           <div id="question-list" class="question-list">
             <!-- Questions will be dynamically inserted here -->
           </div>
         </form>
       </div>
-    
+
       <!-- Add New Question Modal (Hidden by default) -->
       <div id="add-question-modal" class="modal">
         <div class="modal-content">
@@ -202,17 +168,17 @@
               <option value="biology">Biology</option>
               <!-- Add more subjects as needed -->
             </select>
-    
+
             <label>Question Type:</label>
             <select id="type" name="type" required>
               <option value="subjective">Subjective</option>
               <option value="objective">Objective (MCQ)</option>
               <option value="diagram">Diagram</option>
             </select>
-    
+
             <label>Question Text:</label>
             <textarea name="question_text" required></textarea>
-    
+
             <div id="options-container" style="display: none">
               <label>Option A:</label>
               <input type="text" name="option_a" />
@@ -225,35 +191,31 @@
               <label>Correct Answer:</label>
               <input type="text" name="correct_answer" />
             </div>
-    
+
             <div id="diagram-container" style="display: none">
               <label>Diagram Image:</label>
               <input type="file" name="diagram_image" accept="image/*" />
             </div>
-    
+
             <label>Year:</label>
             <input type="number" name="year" required />
-    
+
             <button type="submit">Add Question</button>
           </form>
         </div>
       </div>
-    
+
       <!-- Overlay to dim the background -->
-      <div
-        id="overlay"
-        class="overlay"
-        onclick="closeAddQuestionModal()"
-      ></div>
+      <div id="overlay" class="overlay" onclick="closeAddQuestionModal()"></div>
     </main>
-    
-    
 
-   
-
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- Add jQuery for easier DOM manipulation -->
-    
-    <script src="/scripts/questionBank.js"></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"
+      integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <!-- <script src="/scripts/questionBank.js"></script> -->
+    <script src="/scripts/Exam_Automation.js"></script>
   </body>
 </html>
