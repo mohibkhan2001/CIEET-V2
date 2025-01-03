@@ -146,6 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Failed to fetch user info:", err);
     });
 });
+<<<<<<< HEAD
 
 //Questions will appear one on a single page
 
@@ -303,3 +304,5 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+=======
+>>>>>>> 0489eabccc899176a8b5929662c3c8fd7dd438cc
