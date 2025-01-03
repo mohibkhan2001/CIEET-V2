@@ -489,6 +489,9 @@ app.get("/index", isLoggedIn, checkRole("Teacher"), (req, res) => {
 app.get("/std_exam", isLoggedIn, checkRole("Student"), (req, res) => {
   res.sendFile(path.join(__dirname, "views", "std_exam.html")); // Serve index page for Teachers
 });
+app.get("/std_exam/:examId", isLoggedIn, checkRole("Student"), (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "examPage.html")); // Serve index page for Teachers
+});
 
 app.get("/generatedPapers", isLoggedIn, checkRole("Teacher"), (req, res) => {
   res.sendFile(path.join(__dirname, "views", "generatedPapers.html")); // Serve generated papers page for Teachers
@@ -1228,82 +1231,90 @@ app.get("/api/generated-papers", (req, res) => {
   });
 });
 // Generate Exam Endpoint
+// Generate Exam Endpoint
+// Generate Exam Endpoint
 app.post("/api/generate-exam", (req, res) => {
-  const { selectedQuestions } = req.body;
+  try {
+    const { subject, selectedQuestions, description, timer, examDate } = req.body;
 
-  // Validate input
-  if (!Array.isArray(selectedQuestions) || selectedQuestions.length === 0) {
-    return res
-      .status(400)
-      .json({ error: "No questions selected for the exam." });
-  }
-
-  // Classify questions by type
-  const subjective = [];
-  const objective = [];
-  const diagram = [];
-
-  selectedQuestions.forEach((question) => {
-    const [type, id] = question.split("-");
-    if (type === "subjective") subjective.push(id);
-    if (type === "objective") objective.push(id);
-    if (type === "diagram") diagram.push(id);
-  });
-
-  // Validate IDs are numeric
-  const isValidId = (id) => /^\d+$/.test(id);
-  if (![...subjective, ...objective, ...diagram].every(isValidId)) {
-    return res.status(400).json({ error: "Invalid question ID detected." });
-  }
-
-  // Check the number of rows in the table and reset ID if necessary
-  const checkTableQuery = "SELECT COUNT(*) AS count FROM generated_exams";
-  db.query(checkTableQuery, (err, results) => {
-    if (err) {
-      console.error("Error checking table count:", err);
-      return res.status(500).json({ error: "An error occurred while processing the request." });
+    // Validate input
+    if (!subject || typeof subject !== "string" || subject.trim() === "") {
+      return res.status(400).json({ error: "Subject is required." });
     }
 
-    const rowCount = results[0].count;
-    console.log(`Current number of rows in the table: ${rowCount}`);
-
-    if (rowCount === 0) {
-      const resetIdQuery = "ALTER TABLE generated_exams AUTO_INCREMENT = 1";
-      db.query(resetIdQuery, (err) => {
-        if (err) {
-          console.error("Error resetting AUTO_INCREMENT:", err);
-          return res.status(500).json({ error: "An error occurred while resetting the table." });
-        }
-        console.log("Table ID reset to 1.");
-      });
+    if (!Array.isArray(selectedQuestions) || selectedQuestions.length === 0) {
+      return res.status(400).json({ error: "No questions selected for the exam." });
     }
 
-    // Prepare the exam data
+    if (!description || typeof description !== "string" || description.trim() === "") {
+      return res.status(400).json({ error: "Exam description is required." });
+    }
+
+    if (!timer || typeof timer !== "number" || timer <= 0) {
+      return res.status(400).json({ error: "Valid exam timer (in minutes) is required." });
+    }
+
+    if (!examDate) {
+      return res.status(400).json({ error: "Exam date is required." });
+    }
+
+    const currentDateTime = new Date();
+    const examDateTime = new Date(examDate);
+
+    if (examDateTime <= currentDateTime) {
+      return res.status(400).json({ error: "Exam date must be in the future." });
+    }
+
+    // Classify questions by type
+    const subjective = [];
+    const objective = [];
+    const diagram = [];
+
+    selectedQuestions.forEach((question) => {
+      const [type, id] = question.split("-");
+      if (type === "subjective") subjective.push(id);
+      if (type === "objective") objective.push(id);
+      if (type === "diagram") diagram.push(id);
+    });
+
+    // Validate IDs are numeric
+    const isValidId = (id) => /^\d+$/.test(id);
+    if (![...subjective, ...objective, ...diagram].every(isValidId)) {
+      return res.status(400).json({ error: "Invalid question ID detected." });
+    }
+
     const examData = {
+      subject,
       subjective: subjective.length,
       objective: objective.length,
       diagram: diagram.length,
       subjective_questions: JSON.stringify(subjective),
       objective_questions: JSON.stringify(objective),
       diagram_questions: JSON.stringify(diagram),
+      description,
+      timer,
+      examDate,
       created_at: new Date(),
     };
 
-    const query = `
-      INSERT INTO generated_exams (subjective, objective, diagram, subjective_questions, objective_questions, diagram_questions, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
+    const query = `INSERT INTO generated_exams 
+      (subject, subjective, objective, diagram, subjective_questions, objective_questions, diagram_questions, description, timer, exam_date, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
     const values = [
+      examData.subject,
       examData.subjective,
       examData.objective,
       examData.diagram,
       examData.subjective_questions,
       examData.objective_questions,
       examData.diagram_questions,
+      examData.description,
+      examData.timer,
+      examData.examDate,
       examData.created_at,
     ];
 
-    // Execute the query using a callback
     db.query(query, values, (err, result) => {
       if (err) {
         console.error("Error saving exam:", err);
@@ -1312,18 +1323,40 @@ app.post("/api/generate-exam", (req, res) => {
           .json({ error: "An error occurred while generating the exam." });
       }
 
-      // Respond with the generated exam ID
       res.status(201).json({
         message: "Exam generated successfully",
         examId: result.insertId,
       });
     });
+  } catch (error) {
+    console.error("Unhandled exception:", error);
+    res.status(500).json({ error: "An unexpected error occurred." });
+  }
+});
+
+
+
+
+app.get("/api/exams", (req, res) => {
+  // Fetch all exams from the database
+  db.query("SELECT * FROM generated_exams", (err, exams) => {
+    if (err) {
+      console.error("Error fetching exams:", err);
+      return res.status(500).json({ error: "Database error while fetching exams." });
+    }
+
+    // Log the fetched exams for debugging
+    console.log("Fetched exams:", exams);
+
+    // Send the exams data to the client
+    res.status(200).json(exams);
   });
 });
 
 
-app.get("/api/exam", (req, res) => {
-  const { examId } = req.query; // Get examId from query parameters
+
+app.get("/api/exam/:examId", (req, res) => {
+  const { examId } = req.params; // Get examId from URL params
 
   if (!examId) {
       return res.status(400).json({ error: "Exam ID is required." });
@@ -1340,7 +1373,24 @@ app.get("/api/exam", (req, res) => {
           return res.status(404).json({ error: "Exam not found." });
       }
 
-      const { subjective_questions, objective_questions, diagram_questions } = examData[0];
+      const {
+          subject, // Fetch the subject name from the table
+          subjective_questions,
+          objective_questions,
+          diagram_questions,
+          description,
+          timer,
+          exam_date,
+      } = examData[0];
+
+      const currentDateTime = new Date();
+      const examDateTime = new Date(exam_date);
+
+      // Compare both the date and time
+      if (currentDateTime < examDateTime) {
+          return res.status(403).json({ error: "Exam cannot be accessed before the scheduled date and time." });
+      }
+
       let subjectiveIds = [], objectiveIds = [], diagramIds = [];
 
       try {
@@ -1381,8 +1431,12 @@ app.get("/api/exam", (req, res) => {
                       return res.status(500).json({ error: "An error occurred while fetching the diagram questions." });
                   }
 
+                  // Include subject, description, and timer in the response
                   res.status(200).json({
                       examId,
+                      subject,
+                      description,
+                      timer,
                       subjectiveQuestions,
                       objectiveQuestions,
                       diagramQuestions,
@@ -1392,6 +1446,10 @@ app.get("/api/exam", (req, res) => {
       });
   });
 });
+
+
+
+
 
 
 // API to fetch questions

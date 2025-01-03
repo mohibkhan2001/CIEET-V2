@@ -3,206 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/stylesheets/std_exam.css">
+    <link rel="stylesheet" href="/stylesheets/style.css">
+    <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
+    integrity="sha512-5Hs3dF2AEPkpNAR7UiOHba+lRSJNeM2ECkwxUIxC1Q/FLycGTbNapWXB4tP889k5T5Ju8fs4b1P5z/iB4nMfSQ=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
+    
+    
     <title>Document</title>
 </head>
 <body>
     
-  <style>
-    /* General Body Styling */
-    body {
-        font-family: 'Arial', sans-serif;
-        margin: 0;
-        padding: 0;
-        background-color: #f9f9f9;
-        color: #333;
-    }
-
-    /* Container for the exam */
-    .exam-container {
-        max-width: 1000px;
-        margin: 50px auto;
-        padding: 30px;
-        background: #ffffff;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        border-radius: 12px;
-        overflow: hidden;
-    }
-
-    /* Header Styling */
-    header {
-        text-align: center;
-        margin-bottom: 40px;
-    }
-
-    header h1 {
-        font-size: 2.5rem;
-        color: #4CAF50;
-        margin-bottom: 10px;
-    }
-
-    header p {
-        font-size: 1.2rem;
-        color: #555;
-    }
-
-    /* Timer Styling */
-    #timer {
-        font-size: 1.5rem;
-        font-weight: bold;
-        margin-top: 15px;
-        color: #E74C3C;
-    }
-
-    /* Styling for the exam questions section */
-    #examQuestions {
-        margin-top: 20px;
-        padding: 10px;
-        border-top: 2px solid #f1f1f1;
-    }
-
-    /* Individual question container */
-    .question {
-        margin-bottom: 40px;
-        padding: 20px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        background-color: #fafafa;
-    }
-
-    .question h2 {
-        font-size: 1.5rem;
-        margin: 10px 0;
-        color: #333;
-    }
-
-    /* Styling for the textarea in subjective questions */
-    textarea {
-        width: 100%;
-        padding: 12px;
-        font-size: 1rem;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        margin-top: 10px;
-        resize: vertical;
-    }
-
-    /* Styling for MCQ options */
-    .options {
-        margin-left: 20px;
-    }
-
-    .options input[type="radio"] {
-        margin-right: 10px;
-        margin-top: 5px;
-    }
-
-    /* Navigation buttons */
-    .navigation {
-        margin-top: 40px;
-        text-align: center;
-    }
-
-    .navigation button {
-        padding: 12px 25px;
-        font-size: 1.1rem;
-        margin: 0 10px;
-        cursor: pointer;
-        border: none;
-        border-radius: 8px;
-        background-color: #4CAF50;
-        color: #fff;
-        transition: background-color 0.3s ease;
-    }
-
-    .navigation button:hover {
-        background-color: #45a049;
-    }
-
-    /* Disabled button styling */
-    button:disabled {
-        background-color: #d3d3d3;
-        cursor: not-allowed;
-    }
-
-    /* Attempt Exam Button Styling */
-    #attemptExamButton {
-        padding: 15px 30px;
-        font-size: 1.5rem;
-        background-color: #3498DB;
-        color: white;
-        border: none;
-        cursor: pointer;
-        border-radius: 8px;
-        margin: 20px auto;
-        display: block;
-        transition: background-color 0.3s ease;
-    }
-
-    #attemptExamButton:hover {
-        background-color: #2980B9;
-    }
-
-    /* Styling for the exam question table */
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
-    }
-
-    table th,
-    table td {
-        padding: 12px;
-        text-align: left;
-        border-bottom: 1px solid #ddd;
-    }
-
-    table th {
-        background-color: #4CAF50;
-        color: white;
-    }
-
-    table tr:nth-child(even) {
-        background-color: #f9f9f9;
-    }
-
-    table tr:hover {
-        background-color: #f1f1f1;
-    }
-
-    /* Responsive styling for small screens */
-    @media (max-width: 768px) {
-        .exam-container {
-            padding: 15px;
-            margin: 20px;
-        }
-
-        .question h2 {
-            font-size: 1.3rem;
-        }
-
-        .navigation button {
-            padding: 10px 20px;
-            font-size: 1rem;
-        }
-
-        #attemptExamButton {
-            font-size: 1.2rem;
-        }
-
-        table th,
-        table td {
-            font-size: 0.9rem;
-        }
-    }
-</style>
-
   
+
+<header>
+    <div class="logo">
+      <span><a href="/StudentPortal">CIE²T</a></span>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="/std_exam">Exam</a></li>
+        <li><a href="/result">Result</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </nav>
+
+    <!-- User Info Display -->
+    <div class="auth-buttons" id="auth-buttons">
+      <span id="username" class="username"></span>
+      <i class="fa-solid fa-arrow-right-from-bracket logout-icon" id="logout-btn" title="Logout"></i>
+    </div>
+  </header>
    
-  <main class="exam-container">
+<!-- Exam List Container -->
+<section id="examListContainer">
+  <table id="examTable">
+    <thead>
+      <tr>
+        <th>Exam ID</th>
+        <th>Subject</th>
+        <th>Description</th>
+        <th>Scheduled Date</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Exam rows will be dynamically inserted here -->
+    </tbody>
+  </table>
+</section>
+
+<!-- Exam Container (Hidden Initially) -->
+<main class="exam-container" id="examContainer" style="display:none;">
     <header>
-        <h1>Exam: <span id="examTitle">Physics 101</span></h1>
-        <p>Student: <span id="studentName">Loading...</span></p>
-        <div id="timer" style="display:none;">Time Remaining: <span id="timeRemaining">00:00:00</span></div>
+        <h1>Exam: <span id="examTitle"></span></h1>
+        <p>Subject: <span id="examSubject"></span></p>
+        <p>Student: <span id="studentName"></span></p>
+        <p>Description: <span id="examDescription">Loading...</span></p>
+        <div id="timer" style="display:none;">
+            Time Remaining: <span id="timeRemaining">00:00:00</span>
+        </div>
     </header>
     <section id="examQuestions" style="display:none;">
         <!-- Questions will be dynamically inserted here -->
@@ -212,12 +76,12 @@
         <button id="nextBtn" onclick="navigateQuestion('next')" disabled>Next</button>
         <button id="submitBtn" onclick="submitExam()" disabled>Submit Exam</button>
     </div>
-    <button id="attemptExamButton" onclick="attemptExam()">Attempt Exam</button>
 </main>
 
 
+
+
   
-      
       <script src="/scripts/std_exam.js"></script>
       
 </body>

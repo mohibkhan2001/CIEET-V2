@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/stylesheets/std_exam.css">
+    <title>Exam Page</title>
+</head>
+<body>
+    <main class="exam-container" id="examContainer">
+        <header>
+            <h1>Exam: <span id="examTitle"></span></h1>
+            <p>Subject: <span id="examSubject"></span></p>
+            <p>Student: <span id="studentName"></span></p>
+            <p>Description: <span id="examDescription">Loading...</span></p>
+            <div id="timer" style="display:none;">
+                Time Remaining: <span id="timeRemaining">00:00</span>
+            </div>
+        </header>
+
+        <!-- Exam Questions Section -->
+        <section id="examQuestions" style="display:none;">
+            <!-- Questions will be dynamically inserted here  -->
+        </section>
+
+        <!-- Navigation and Timer Controls -->
+        <div class="navigation" style="display:none;">
+            <button id="previousBtn" onclick="navigateQuestion('previous')" disabled>Previous</button>
+            <button id="nextBtn" onclick="navigateQuestion('next')" disabled>Next</button>
+            <button id="submitBtn" onclick="submitExam()" disabled>Submit Exam</button>
+        </div>
+        
+        <!-- Attempt Exam Button -->
+        <button id="attemptExamButton" style="display:none;" onclick="attemptExam()">Attempt Exam</button>
+    </main>
+
+    <script>
+        let questions = [];
+        let currentQuestionIndex = 0;
+        let timerInterval;
+        let timeRemaining;
+
+        // Get the examId from the URL
+        const examId = window.location.pathname.split("/").pop();
+
+        window.onload = function () {
+          loadExamPage(examId); // Load the exam page with the specific exam ID
+        };
+
+        function loadExamPage(examId) {
+          // Fetch and display the selected exam details and questions
+          const xhr = new XMLHttpRequest();
+          xhr.open("GET", `/api/exam/${examId}`, true);
+
+          xhr.onload = function () {
+            if (xhr.status === 200) {
+              const data = JSON.parse(xhr.responseText);
+
+              // Load exam details immediately
+              document.getElementById("examTitle").textContent = `Exam: ${data.examId}`;
+              document.getElementById("examSubject").textContent =
+                data.subject || "No subject provided.";
+              document.getElementById("examDescription").textContent =
+                data.description || "No description provided.";
+              document.getElementById("studentName").textContent = "John Doe"; // Replace with dynamic data if needed
+
+              // Set timer duration but don't start it yet
+              timeRemaining = data.timer * 60;
+
+              const subjectiveQuestions = data.subjectiveQuestions || [];
+              const objectiveQuestions = data.objectiveQuestions || [];
+              const diagramQuestions = data.diagramQuestions || [];
+
+              questions = [
+                ...subjectiveQuestions.map((q) => ({ ...q, type: "subjective" })),
+                ...objectiveQuestions.map((q) => ({
+                  ...q,
+                  type: "objective",
+                  options: [q.option_a, q.option_b, q.option_c, q.option_d],
+                })),
+                ...diagramQuestions.map((q) => ({ ...q, type: "diagram" })),
+              ];
+
+              // Show the "Attempt Exam" button and start exam
+              document.getElementById("attemptExamButton").style.display = "block";
+            } else {
+              console.error("Failed to fetch questions:", xhr.responseText);
+              alert("Error fetching exam data.");
+            }
+          };
+
+          xhr.onerror = function () {
+            console.error("Network error while fetching exam data.");
+            alert("Network error. Please try again.");
+          };
+
+          xhr.send();
+        }
+
+        function attemptExam() {
+          document.getElementById("attemptExamButton").style.display = "none";
+          document.getElementById("examQuestions").style.display = "block";
+          document.querySelector(".navigation").style.display = "block";
+
+          // Start timer when exam is attempted, not on page load
+          startTimer(timeRemaining);
+
+          // Display the first question when the exam starts
+          renderQuestion();
+        }
+
+        function renderQuestion() {
+    const questionContainer = document.getElementById("examQuestions");
+    questionContainer.innerHTML = "";
+
+    if (questions.length === 0) {
+        questionContainer.innerHTML = `<p>No questions available.</p>`;
+        return;
+    }
+
+    const question = questions[currentQuestionIndex];
+    let questionHtml = `<div class="question"><p><strong>Q:  ${question.question_text}</strong></p>`;
+
+    if (question.type === "subjective") {
+        questionHtml += `<textarea rows="5" cols="50" name="answer"></textarea>`;
+    } else if (question.type === "objective") {
+        questionHtml += question.options
+            .map(
+                (option) =>
+                    `<div>
+                        <label>
+                            <input type="radio" name="answer" value="${option}" />
+                            ${option}
+                        </label>
+                    </div>`
+            )
+            .join("");
+    } else if (question.type === "diagram") {
+        questionHtml += `
+            <img src="http://localhost:3000/Images/Diagrams/${question.diagram_url}" alt="Diagram Question" />
+            <p>${question.question_text}</p>
+            <textarea rows="5" cols="50" name="answer"></textarea>`;
+    }
+
+    questionHtml += `</div>`;
+    questionContainer.innerHTML = questionHtml;
+
+    updateNavigationButtons();
+}
+
+        function startTimer(duration) {
+          let timeRemaining = duration;
+          document.getElementById("timer").style.display = "block";
+
+          timerInterval = setInterval(() => {
+            const minutes = Math.floor(timeRemaining / 60);
+            const seconds = timeRemaining % 60;
+
+            document.getElementById("timeRemaining").textContent = `${String(
+              minutes
+            ).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+            timeRemaining--;
+
+            if (timeRemaining < 0) {
+              clearInterval(timerInterval);
+              alert("Time's up!");
+              submitExam();
+            }
+          }, 1000);
+        }
+
+        function navigateQuestion(direction) {
+          if (direction === "next" && currentQuestionIndex < questions.length - 1) {
+            currentQuestionIndex++;
+            renderQuestion();
+          } else if (direction === "previous" && currentQuestionIndex > 0) {
+            currentQuestionIndex--;
+            renderQuestion();
+          }
+
+          updateNavigationButtons();
+        }
+
+        function updateNavigationButtons() {
+          document.getElementById("previousBtn").disabled = currentQuestionIndex === 0;
+          document.getElementById("nextBtn").disabled = currentQuestionIndex === questions.length - 1;
+          document.getElementById("submitBtn").disabled = false; // Enable submit button
+        }
+
+        function submitExam() {
+          alert("Exam submitted.");
+          // You can handle submission here, such as sending data to the backend
+        }
+    </script>
+
+</body>
+</html>

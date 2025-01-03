@@ -17,34 +17,6 @@ function initializeEventListeners() {
   document
     .getElementById("typeFilter")
     .addEventListener("change", filterQuestions);
-  // Attach the event listener to the Automate Exam button
-  
-
-  // Event listener for checkbox selection
-  document.querySelectorAll(".question-checkbox").forEach((checkbox) => {
-    checkbox.addEventListener("change", filterQuestions); // Re-filter when a checkbox is clicked
-  });
-}
-
-// Utility Functions
-function toggleModalVisibility(modalId, isVisible) {
-  document.getElementById(modalId).style.display = isVisible ? "flex" : "none";
-}
-
-// Initialize Event Listeners
-function initializeEventListeners() {
-  document
-    .getElementById("selectAllButton")
-    .addEventListener("click", selectAllQuestions);
-  document
-    .getElementById("searchInput")
-    .addEventListener("keyup", filterQuestions);
-  document
-    .getElementById("yearFilter")
-    .addEventListener("change", filterQuestions);
-  document
-    .getElementById("typeFilter")
-    .addEventListener("change", filterQuestions);
 
   // Event listener for checkbox selection
   document.querySelectorAll(".question-checkbox").forEach((checkbox) => {
@@ -412,75 +384,118 @@ async function showQuestions(subject) {
 // Initialize the page with questions
 // showQuestions("math");
 document.addEventListener("DOMContentLoaded", () => {
-    document
-      .getElementById("automate-exam-btn")
-      .addEventListener("click", handleAutomateExam);
-  });
-  
+  document
+    .getElementById("automate-exam-btn")
+    .addEventListener("click", handleAutomateExam);
+});
+
 // Generate Exam Button Click Event
 async function handleAutomateExam(event) {
-    event.preventDefault(); // Prevent default form submission
-  
-    const selectedButton = document.querySelector("button.active");
-    if (!selectedButton) {
-      alert("Please select a subject.");
+  event.preventDefault();
+
+  const subject = document.querySelector("button.active")?.getAttribute("data-subject");
+  const description = document.getElementById("examDescription").value.trim();
+  const timer = parseInt(document.getElementById("examTimer").value, 10);
+  const examDate = document.getElementById("examDate").value;
+
+  if (!subject || !description || !timer || !examDate) {
+      alert("Please fill in all fields before generating the exam.");
       return;
-    }
-  
-    const subject = selectedButton.getAttribute("data-subject");
-  
-    // Use the global selectedQuestions array (containing questions from all pages)
-    const selectedQuestions =
-      JSON.parse(localStorage.getItem("selectedQuestions")) || [];
-  
-    if (selectedQuestions.length === 0) {
+  }
+
+  const selectedQuestions = JSON.parse(localStorage.getItem("selectedQuestions")) || [];
+  if (selectedQuestions.length === 0) {
       alert("Please select at least one question.");
       return;
-    }
-  
-    // Show the loader while automating the exam
-    // showLoader();
-  
-    try {
+  }
+
+  try {
       const response = await fetch("/api/generate-exam", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject, selectedQuestions }),
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+              subject,
+              selectedQuestions,
+              description,
+              timer,
+              examDate
+          }),
       });
-  
+
       const data = await response.json();
-  
       if (response.ok) {
-        alert(`Exam Automated Successfully! Exam ID: ${data.examId}`);
-  
-        // Reset the selected questions and checkboxes after exam automation
-        resetSelectedQuestions();
+          alert(`Exam Automated Successfully! Exam ID: ${data.examId}`);
+          resetSelectedQuestions();
       } else {
-        alert(`Error: ${data.error || "Failed to automate the exam."}`);
+          alert(data.error || "Error creating the exam.");
       }
-    } catch (error) {
-      console.error("Error automating exam:", error);
-      alert("Failed to automate the exam. Please try again.");
-    } finally {
-      // Hide the loader after processing
-      // hideLoader();
-    }
+  } catch (error) {
+      console.error("Error:", error);
   }
-  
-  function resetSelectedQuestions() {
-    // Clear the selected questions from localStorage
-    localStorage.removeItem("selectedQuestions");
-  
-    // Reset checkboxes
-    const checkboxes = document.querySelectorAll("input[type='checkbox']");
-    checkboxes.forEach((checkbox) => {
-      checkbox.checked = false;
+}
+
+
+
+function resetSelectedQuestions() {
+  // Clear the selected questions from localStorage
+  localStorage.removeItem("selectedQuestions");
+
+  // Reset checkboxes
+  const checkboxes = document.querySelectorAll("input[type='checkbox']");
+  checkboxes.forEach((checkbox) => {
+    checkbox.checked = false;
+  });
+
+  // Optionally, reset any active buttons or visual indicators
+  const activeButton = document.querySelector("button.active");
+  if (activeButton) {
+    activeButton.classList.remove("active");
+  }
+}
+document.addEventListener("DOMContentLoaded", () => {
+  fetch("/api/user-info") // Endpoint to fetch the user's session info
+    .then((response) => {
+      if (!response.ok) {
+        console.error("User not logged in");
+        return;
+      }
+      return response.json();
+    })
+    .then((data) => {
+      const user = data.user;
+      const usernameSpan = document.getElementById("username");
+
+      if (user && usernameSpan) {
+        // Display user's first and last name
+        usernameSpan.textContent = `${user.firstname} ${user.lastname}`;
+      }
+    })
+    .catch((err) => {
+      console.error("Failed to fetch user info:", err);
     });
-  
-    // Optionally, reset any active buttons or visual indicators
-    const activeButton = document.querySelector("button.active");
-    if (activeButton) {
-      activeButton.classList.remove("active");
-    }
+
+  // Handle the logout button click
+  const logoutButton = document.getElementById("logout-btn");
+  if (logoutButton) {
+    logoutButton.addEventListener("click", () => {
+      fetch("/logout", {
+        method: "POST",
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            // Reset the checkboxes after logout
+            resetSelectedQuestions();
+            
+            // Redirect to the homepage after successful logout
+            window.location.href = "/";
+          } else {
+            console.error("Failed to log out");
+          }
+        })
+        .catch((err) => {
+          console.error("Error logging out:", err);
+        });
+    });
   }
-  
+});

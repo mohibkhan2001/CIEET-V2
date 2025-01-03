@@ -1,0 +1,188 @@
+    /* General Body Styling */
+    body {
+        font-family: 'Arial', sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f9f9f9;
+        color: #333;
+    }
+
+    /* Container for the exam */
+    .exam-container {
+        max-width: 1000px;
+        margin: 50px auto;
+        padding: 30px;
+        background: #ffffff;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    /* Header Styling */
+    header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    header h1 {
+        font-size: 2.5rem;
+        color: #4CAF50;
+        margin-bottom: 10px;
+    }
+
+    header p {
+        font-size: 1.2rem;
+        color: #555;
+    }
+
+    /* Timer Styling */
+    #timer {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-top: 15px;
+        color: #E74C3C;
+    }
+
+    /* Styling for the exam questions section */
+    #examQuestions {
+        margin-top: 20px;
+        padding: 10px;
+        border-top: 2px solid #f1f1f1;
+    }
+
+    /* Individual question container */
+    .question {
+        margin-bottom: 40px;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background-color: #fafafa;
+    }
+
+    .question h2 {
+        font-size: 1.5rem;
+        margin: 10px 0;
+        color: #333;
+    }
+
+    /* Styling for the textarea in subjective questions */
+    textarea {
+        width: 100%;
+        padding: 12px;
+        font-size: 1rem;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        margin-top: 10px;
+        resize: vertical;
+    }
+
+    /* Styling for MCQ options */
+    .options {
+        margin-left: 20px;
+    }
+
+    .options input[type="radio"] {
+        margin-right: 10px;
+        margin-top: 5px;
+    }
+
+    /* Navigation buttons */
+    .navigation {
+        margin-top: 40px;
+        text-align: center;
+    }
+
+    .navigation button {
+        padding: 12px 25px;
+        font-size: 1.1rem;
+        margin: 0 10px;
+        cursor: pointer;
+        border: none;
+        border-radius: 8px;
+        background-color: #4CAF50;
+        color: #fff;
+        transition: background-color 0.3s ease;
+    }
+
+    .navigation button:hover {
+        background-color: #45a049;
+    }
+
+    /* Disabled button styling */
+    button:disabled {
+        background-color: #d3d3d3;
+        cursor: not-allowed;
+    }
+
+    /* Attempt Exam Button Styling */
+    #attemptExamButton {
+        padding: 15px 30px;
+        font-size: 1.5rem;
+        background-color: #3498DB;
+        color: white;
+        border: none;
+        cursor: pointer;
+        border-radius: 8px;
+        margin: 20px auto;
+        display: block;
+        transition: background-color 0.3s ease;
+    }
+
+    #attemptExamButton:hover {
+        background-color: #2980B9;
+    }
+
+    /* Styling for the exam question table */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+
+    table th,
+    table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+
+    table th {
+        background-color: #4CAF50;
+        color: white;
+    }
+
+    table tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+
+    table tr:hover {
+        background-color: #f1f1f1;
+    }
+
+    /* Responsive styling for small screens */
+    @media (max-width: 768px) {
+        .exam-container {
+            padding: 15px;
+            margin: 20px;
+        }
+
+        .question h2 {
+            font-size: 1.3rem;
+        }
+
+        .navigation button {
+            padding: 10px 20px;
+            font-size: 1rem;
+        }
+
+        #attemptExamButton {
+            font-size: 1.2rem;
+        }
+
+        table th,
+        table td {
+            font-size: 0.9rem;
+        }
+    }
+
+    
