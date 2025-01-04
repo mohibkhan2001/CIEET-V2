@@ -1,0 +1,175 @@
+/* General Styling */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  display: flex;
+  height: 100vh;
+  overflow: hidden; /* Prevent body scrolling */
+  background-color: #f5f5f5;
+}
+
+/* Sidebar Styling */
+.sidebar {
+  width: 15%;
+  height: 100%;
+  background: #2c3e50;
+  color: white;
+  padding: 20px;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  margin: auto 20px;
+  overflow-y: auto; /* Enable scrolling for sidebar */
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.sidebar h3 {
+  text-align: center;
+  font-size: 24px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #ecf0f1;
+  padding-bottom: 10px;
+}
+
+#questionNumbers {
+  display: flex;
+  flex-direction: column;
+  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+  gap: 10px; /* Adds spacing between all grid items including the bottom */
+  padding-bottom: 20px; /* Extra padding at the bottom of the grid for more gap */
+  width: 100%;
+  align-content: start; /* Aligns content to the top but allows space at the bottom */
+}
+
+.question-number {
+  /* padding: 20px; */
+  border: none;
+  background: #3498db;
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+  text-align: center;
+  font-size: 16px;
+  transition: all 0.3s;
+}
+
+.question-number:hover {
+  background: #2980b9;
+  transform: scale(1.1);
+}
+/* Styling for the current active question button */
+.question-number.active {
+    background: #e74c3c; /* Red background for the active question */
+    color: white;
+    border: 2px solid #c0392b;
+    font-weight: bold;
+    transform: scale(1.1);
+}
+
+
+/* Main Exam Container Styling */
+.exam-container {
+  flex: 1;
+  padding: 20px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  overflow-y: auto; /* Enable scrolling for the exam container */
+  margin: auto;
+  max-height: 90vh; /* Prevent excessive height usage */
+}
+
+header {
+  text-align: center;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #ddd;
+}
+
+header h1 {
+  font-size: 28px;
+  color: #333;
+}
+
+#timer {
+  font-size: 18px;
+  color: #e74c3c;
+  font-weight: bold;
+}
+
+/* Question Section Styling */
+#examQuestions {
+  padding: 20px;
+  background: #ecf0f1;
+  border-radius: 10px;
+}
+
+.question {
+  padding: 15px;
+  border-bottom: 1px solid #ccc;
+  margin-bottom: 15px;
+}
+
+.question p {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+/* Input and Options Styling */
+textarea {
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 16px;
+}
+
+input[type="radio"] {
+  margin-right: 10px;
+}
+
+label {
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* Navigation Buttons Styling */
+.navigation {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+button {
+  padding: 10px 20px;
+  margin: 0 10px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  color: white;
+  background: #27ae60;
+  transition: background 0.3s;
+}
+
+button:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+}
+
+button:hover:not(:disabled) {
+  background: #2ecc71;
+}
+
+/* Attempt Button Styling */
+#attemptExamButton {
+  display: block;
+  margin: 20px auto;
+  background: #f39c12;
+  font-size: 18px;
+}
+
+#attemptExamButton:hover {
+  background: #e67e22;
+}

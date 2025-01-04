@@ -1235,7 +1235,8 @@ app.get("/api/generated-papers", (req, res) => {
 // Generate Exam Endpoint
 app.post("/api/generate-exam", (req, res) => {
   try {
-    const { subject, selectedQuestions, description, timer, examDate } = req.body;
+    const { subject, selectedQuestions, description, timer, examDate } =
+      req.body;
 
     // Validate input
     if (!subject || typeof subject !== "string" || subject.trim() === "") {
@@ -1243,15 +1244,23 @@ app.post("/api/generate-exam", (req, res) => {
     }
 
     if (!Array.isArray(selectedQuestions) || selectedQuestions.length === 0) {
-      return res.status(400).json({ error: "No questions selected for the exam." });
+      return res
+        .status(400)
+        .json({ error: "No questions selected for the exam." });
     }
 
-    if (!description || typeof description !== "string" || description.trim() === "") {
+    if (
+      !description ||
+      typeof description !== "string" ||
+      description.trim() === ""
+    ) {
       return res.status(400).json({ error: "Exam description is required." });
     }
 
     if (!timer || typeof timer !== "number" || timer <= 0) {
-      return res.status(400).json({ error: "Valid exam timer (in minutes) is required." });
+      return res
+        .status(400)
+        .json({ error: "Valid exam timer (in minutes) is required." });
     }
 
     if (!examDate) {
@@ -1262,7 +1271,9 @@ app.post("/api/generate-exam", (req, res) => {
     const examDateTime = new Date(examDate);
 
     if (examDateTime <= currentDateTime) {
-      return res.status(400).json({ error: "Exam date must be in the future." });
+      return res
+        .status(400)
+        .json({ error: "Exam date must be in the future." });
     }
 
     // Classify questions by type
@@ -1334,15 +1345,14 @@ app.post("/api/generate-exam", (req, res) => {
   }
 });
 
-
-
-
 app.get("/api/exams", (req, res) => {
   // Fetch all exams from the database
   db.query("SELECT * FROM generated_exams", (err, exams) => {
     if (err) {
       console.error("Error fetching exams:", err);
-      return res.status(500).json({ error: "Database error while fetching exams." });
+      return res
+        .status(500)
+        .json({ error: "Database error while fetching exams." });
     }
 
     // Log the fetched exams for debugging
@@ -1353,34 +1363,37 @@ app.get("/api/exams", (req, res) => {
   });
 });
 
-
-
 app.get("/api/exam/:examId", (req, res) => {
   const { examId } = req.params; // Get examId from URL params
 
   if (!examId) {
-      return res.status(400).json({ error: "Exam ID is required." });
+    return res.status(400).json({ error: "Exam ID is required." });
   }
 
   // Fetch exam metadata from the 'generated_exams' table based on exam_id
-  db.query("SELECT * FROM generated_exams WHERE exam_id = ?", [examId], (err, examData) => {
+  db.query(
+    "SELECT * FROM generated_exams WHERE exam_id = ?",
+    [examId],
+    (err, examData) => {
       if (err) {
-          console.error("Error fetching exam metadata:", err);
-          return res.status(500).json({ error: "Database error while fetching exam metadata." });
+        console.error("Error fetching exam metadata:", err);
+        return res
+          .status(500)
+          .json({ error: "Database error while fetching exam metadata." });
       }
 
       if (examData.length === 0) {
-          return res.status(404).json({ error: "Exam not found." });
+        return res.status(404).json({ error: "Exam not found." });
       }
 
       const {
-          subject, // Fetch the subject name from the table
-          subjective_questions,
-          objective_questions,
-          diagram_questions,
-          description,
-          timer,
-          exam_date,
+        subject, // Fetch the subject name from the table
+        subjective_questions,
+        objective_questions,
+        diagram_questions,
+        description,
+        timer,
+        exam_date,
       } = examData[0];
 
       const currentDateTime = new Date();
@@ -1388,69 +1401,125 @@ app.get("/api/exam/:examId", (req, res) => {
 
       // Compare both the date and time
       if (currentDateTime < examDateTime) {
-          return res.status(403).json({ error: "Exam cannot be accessed before the scheduled date and time." });
+        return res
+          .status(403)
+          .json({
+            error:
+              "Exam cannot be accessed before the scheduled date and time.",
+          });
       }
 
-      let subjectiveIds = [], objectiveIds = [], diagramIds = [];
+      let subjectiveIds = [],
+        objectiveIds = [],
+        diagramIds = [];
 
       try {
-          subjectiveIds = subjective_questions ? JSON.parse(subjective_questions) : [];
-          objectiveIds = objective_questions ? JSON.parse(objective_questions) : [];
-          diagramIds = diagram_questions ? JSON.parse(diagram_questions) : [];
+        subjectiveIds = subjective_questions
+          ? JSON.parse(subjective_questions)
+          : [];
+        objectiveIds = objective_questions
+          ? JSON.parse(objective_questions)
+          : [];
+        diagramIds = diagram_questions ? JSON.parse(diagram_questions) : [];
       } catch (parseError) {
-          console.error("Error parsing question IDs:", parseError);
-          return res.status(500).json({ error: "Error parsing question data." });
+        console.error("Error parsing question IDs:", parseError);
+        return res.status(500).json({ error: "Error parsing question data." });
       }
 
       // Fetch questions based on IDs
       const subjectiveQuery = subjectiveIds.length
-          ? "SELECT * FROM subjective_questions WHERE id IN (?)"
-          : "SELECT * FROM subjective_questions WHERE 1=0";
+        ? "SELECT * FROM subjective_questions WHERE id IN (?)"
+        : "SELECT * FROM subjective_questions WHERE 1=0";
       const objectiveQuery = objectiveIds.length
-          ? "SELECT * FROM mcq_questions WHERE id IN (?)"
-          : "SELECT * FROM mcq_questions WHERE 1=0";
+        ? "SELECT * FROM mcq_questions WHERE id IN (?)"
+        : "SELECT * FROM mcq_questions WHERE 1=0";
       const diagramQuery = diagramIds.length
-          ? "SELECT * FROM diagrams WHERE id IN (?)"
-          : "SELECT * FROM diagrams WHERE 1=0";
+        ? "SELECT * FROM diagrams WHERE id IN (?)"
+        : "SELECT * FROM diagrams WHERE 1=0";
 
       db.query(subjectiveQuery, [subjectiveIds], (err, subjectiveQuestions) => {
+        if (err) {
+          console.error("Error fetching subjective questions:", err);
+          return res
+            .status(500)
+            .json({
+              error:
+                "An error occurred while fetching the subjective questions.",
+            });
+        }
+
+        db.query(objectiveQuery, [objectiveIds], (err, objectiveQuestions) => {
           if (err) {
-              console.error("Error fetching subjective questions:", err);
-              return res.status(500).json({ error: "An error occurred while fetching the subjective questions." });
+            console.error("Error fetching objective questions:", err);
+            return res
+              .status(500)
+              .json({
+                error:
+                  "An error occurred while fetching the objective questions.",
+              });
           }
 
-          db.query(objectiveQuery, [objectiveIds], (err, objectiveQuestions) => {
-              if (err) {
-                  console.error("Error fetching objective questions:", err);
-                  return res.status(500).json({ error: "An error occurred while fetching the objective questions." });
-              }
+          db.query(diagramQuery, [diagramIds], (err, diagramQuestions) => {
+            if (err) {
+              console.error("Error fetching diagram questions:", err);
+              return res
+                .status(500)
+                .json({
+                  error:
+                    "An error occurred while fetching the diagram questions.",
+                });
+            }
 
-              db.query(diagramQuery, [diagramIds], (err, diagramQuestions) => {
-                  if (err) {
-                      console.error("Error fetching diagram questions:", err);
-                      return res.status(500).json({ error: "An error occurred while fetching the diagram questions." });
-                  }
-
-                  // Include subject, description, and timer in the response
-                  res.status(200).json({
-                      examId,
-                      subject,
-                      description,
-                      timer,
-                      subjectiveQuestions,
-                      objectiveQuestions,
-                      diagramQuestions,
-                  });
-              });
+            // Include subject, description, and timer in the response
+            res.status(200).json({
+              examId,
+              subject,
+              description,
+              timer,
+              subjectiveQuestions,
+              objectiveQuestions,
+              diagramQuestions,
+            });
           });
+        });
       });
-  });
+    }
+  );
 });
 
+app.post("/api/saveStudentAnswers", (req, res) => {
+  const answers = req.body; // Array of answers from frontend
 
+  // Get the user_id from the session
+  const userId = req.session.user ? req.session.user.id : null;
 
+  if (!userId) {
+    return res.status(401).json({ error: "User not logged in" });
+  }
 
+  // Insert answers into studentanswers table using user_id from session
+  const query = `
+    INSERT INTO studentanswers (user_id, exam_id, question_text, question_type, answer_text, submitted_at)
+    VALUES ?
+  `;
 
+  const values = answers.map((answer) => [
+    userId, // Use user_id from session
+    answer.exam_id,
+    answer.question_text,
+    answer.question_type,
+    answer.answer_text,
+    answer.submitted_at,
+  ]);
+
+  db.query(query, [values], (err, result) => {
+    if (err) {
+      console.error("Error saving answers:", err);
+      return res.status(500).json({ error: "Failed to save answers" });
+    }
+    res.status(200).json({ message: "Answers saved successfully!" });
+  });
+});
 
 // API to fetch questions
 // app.get("/api/exams/:examId", (req, res) => {
@@ -1542,7 +1611,6 @@ app.get("/api/exam/:examId", (req, res) => {
 //       }
 //   );
 // });
-
 
 // API to submit answers
 app.post("/api/exams/submit", (req, res) => {
