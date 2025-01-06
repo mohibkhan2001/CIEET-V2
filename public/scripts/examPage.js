@@ -25,6 +25,9 @@ function loadExamPage(examId) {
       document.getElementById("examDescription").textContent = data.description || "No description provided.";
       document.getElementById("studentName").textContent = "John Doe"; // Replace with dynamic data if needed
 
+      // Store subject in sessionStorage
+      sessionStorage.setItem("subject", data.subject);
+
       // Set timer duration but don't start it yet
       timeRemaining = data.timer * 60;
 
@@ -57,6 +60,7 @@ function loadExamPage(examId) {
 
   xhr.send();
 }
+
 
 function attemptExam() {
   document.getElementById("attemptExamButton").style.display = "none";
@@ -231,16 +235,25 @@ function updateNavigationButtons() {
   document.getElementById("submitBtn").disabled = false; // Enable submit button
 }
 
+
+
 function submitExam() {
   // Save all answers before submitting
   questions.forEach((_, index) => saveAnswer(index));
 
   const userId = sessionStorage.getItem("user_id");
+  const subject = sessionStorage.getItem("subject"); // Retrieve subject from sessionStorage
+
+  if (!subject) {
+    return alert("Subject is required");
+  }
+
   const savedAnswers = JSON.parse(localStorage.getItem("answers")) || {};
 
   const answers = questions.map((question, index) => ({
       user_id: userId,
       exam_id: examId,
+      subject: subject, // Ensure subject is passed here
       question_text: question.question_text,
       question_type: question.type,
       answer_text: savedAnswers[index] || "",
@@ -254,8 +267,14 @@ function submitExam() {
   xhr.onload = function () {
       if (xhr.status === 200) {
           alert("Exam submitted successfully.");
-          localStorage.removeItem("answers"); // Clear local storage
-          window.location.href = "http://localhost:3000/std_exam"; // Redirect after submission
+
+          // Reset local storage after exam submission
+          localStorage.removeItem("answers"); // Clear answers from local storage
+          sessionStorage.removeItem("subject"); // Clear subject from session storage
+          sessionStorage.removeItem("user_id"); // Optionally, clear user_id from session storage if needed
+
+          // Redirect after submission
+          window.location.href = "http://localhost:3000/std_exam";
       } else {
           alert("Error submitting exam. Please try again.");
       }
@@ -264,5 +283,7 @@ function submitExam() {
   xhr.onerror = () => alert("Network error. Please try again.");
   xhr.send(JSON.stringify(answers));
 }
+
+
 
 

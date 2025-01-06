@@ -1497,9 +1497,16 @@ app.post("/api/saveStudentAnswers", (req, res) => {
     return res.status(401).json({ error: "User not logged in" });
   }
 
+  // Extract subject from the first answer (assuming all answers in the array have the same subject)
+  const subject = answers[0].subject;
+
+  if (!subject) {
+    return res.status(400).json({ error: "Subject is required" });
+  }
+
   // Insert answers into studentanswers table using user_id from session
   const query = `
-    INSERT INTO studentanswers (user_id, exam_id, question_text, question_type, answer_text, submitted_at)
+    INSERT INTO studentanswers (user_id, exam_id, question_text, question_type, answer_text, subject, submitted_at)
     VALUES ?
   `;
 
@@ -1509,6 +1516,7 @@ app.post("/api/saveStudentAnswers", (req, res) => {
     answer.question_text,
     answer.question_type,
     answer.answer_text,
+    subject, // Save subject along with the answer
     answer.submitted_at,
   ]);
 
@@ -1520,6 +1528,8 @@ app.post("/api/saveStudentAnswers", (req, res) => {
     res.status(200).json({ message: "Answers saved successfully!" });
   });
 });
+
+
 
 // API to fetch questions
 // app.get("/api/exams/:examId", (req, res) => {
@@ -1614,16 +1624,25 @@ app.post("/api/saveStudentAnswers", (req, res) => {
 
 // API to submit answers
 app.post("/api/exams/submit", (req, res) => {
-  const { examId, answers } = req.body;
+  const { examId, answers, subject } = req.body;
+
+  // Ensure the required fields are provided
+  if (!examId || !answers || !subject) {
+    return res.status(400).json({ error: "Missing required fields: examId, answers, or subject" });
+  }
+
   db.query(
-    "INSERT INTO student_answers (exam_id, answers) VALUES (?, ?)",
-    [examId, JSON.stringify(answers)],
+    "INSERT INTO student_answers (exam_id, subject, answers) VALUES (?, ?, ?)",
+    [examId, subject, JSON.stringify(answers)], // Ensure answers are stringified
     (err) => {
       if (err) return res.status(500).json({ error: "Database error" });
+
       res.json({ success: true });
     }
   );
 });
+
+
 
 // Start server
 app.listen(port, () => {
