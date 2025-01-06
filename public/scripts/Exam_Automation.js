@@ -289,18 +289,23 @@ function filterQuestions() {
 
 // Select all questions function and save to localStorage
 function selectAllQuestions() {
-  const checkboxes = $('input[name="questions"]:visible'); // Select only visible checkboxes on the current page
-  checkboxes.prop("checked", true);
-
-  // Iterate over each checkbox and save its state in localStorage
-  checkboxes.each(function () {
-    const questionId = $(this).val();
-    localStorage.setItem(questionId, "checked"); // Save the checkbox state to localStorage
+  const checkboxes = document.querySelectorAll('input[name="questions"]');
+  const idsArray = [];
+  checkboxes.forEach((checkbox) => {
+    checkbox.checked = true; // Check the checkbox
+    const id = checkbox.id; // Get the ID of the checkbox
+    if (id) {
+      idsArray.push(id); // Add the ID to the array
+    }
   });
-
-  // Log the action (optional)
-  console.log("All checkboxes on the current page have been selected.");
+  console.log("Extracted IDs:", idsArray);
+    localStorage.setItem('selectedQuestions', JSON.stringify(idsArray));
 }
+
+
+
+
+
 
 // Fetch all questions function (make sure it's accessible)
 async function fetchAllQuestions(subject) {

@@ -81,28 +81,42 @@ function saveAnswer(index) {
   let answerText = "";
 
   const questionElement = document.querySelectorAll("#examQuestions .question")[index];
-
   if (!questionElement) return; // Ensure the question element exists
 
-  // Check for question type and get the answer accordingly
+  // Save answer based on question type
   if (question.type === "subjective" || question.type === "diagram") {
-    // Collect answer from textarea for subjective and diagram questions
-    const textarea = questionElement.querySelector("textarea");
-    if (textarea) {
-      answerText = textarea.value;
-    }
+      const textarea = questionElement.querySelector("textarea");
+      if (textarea) {
+          answerText = textarea.value.trim();
+      }
   } else if (question.type === "objective") {
-    // Collect answer from selected radio button for objective questions
-    const selectedOption = questionElement.querySelector('input[type="radio"]:checked');
-    if (selectedOption) {
-      answerText = selectedOption.value;
-    }
+      const selectedOption = questionElement.querySelector('input[type="radio"]:checked');
+      if (selectedOption) {
+          answerText = selectedOption.value;
+      }
   }
 
-  // Save the answer in `localStorage`
+  // Save the answer to local storage
   const savedAnswers = JSON.parse(localStorage.getItem("answers")) || {};
-  savedAnswers[index] = answerText; // Save answer for the current question
+  savedAnswers[index] = answerText;
   localStorage.setItem("answers", JSON.stringify(savedAnswers));
+}
+
+function addEventListenersToQuestion(index) {
+  const questionElement = document.querySelectorAll("#examQuestions .question")[index];
+  if (!questionElement) return;
+
+  // For text inputs (subjective/diagram)
+  const textarea = questionElement.querySelector("textarea");
+  if (textarea) {
+      textarea.addEventListener("input", () => saveAnswer(index));
+  }
+
+  // For radio buttons (objective)
+  const radioButtons = questionElement.querySelectorAll('input[type="radio"]');
+  radioButtons.forEach(radio => {
+      radio.addEventListener("change", () => saveAnswer(index));
+  });
 }
 
 function addEventListenersToQuestion(index) {
@@ -125,17 +139,17 @@ function addEventListenersToQuestion(index) {
   }
 }
 
-function navigateQuestion(direction) {
-  if (direction === "next" && currentQuestionIndex < questions.length - 1) {
-    currentQuestionIndex++;
-    renderQuestion();
-  } else if (direction === "previous" && currentQuestionIndex > 0) {
-    currentQuestionIndex--;
-    renderQuestion();
-  }
+// function navigateQuestion(direction) {
+//   if (direction === "next" && currentQuestionIndex < questions.length - 1) {
+//     currentQuestionIndex++;
+//     renderQuestion();
+//   } else if (direction === "previous" && currentQuestionIndex > 0) {
+//     currentQuestionIndex--;
+//     renderQuestion();
+//   }
 
-  updateNavigationButtons();
-}
+//   updateNavigationButtons();
+// }
 
 // Call addEventListenersToQuestion when rendering a question
 function renderQuestion() {
@@ -212,49 +226,43 @@ function startTimer(duration) {
 }
 
 function updateNavigationButtons() {
-  document.getElementById("previousBtn").disabled = currentQuestionIndex === 0;
-  document.getElementById("nextBtn").disabled = currentQuestionIndex === questions.length - 1;
+  // document.getElementById("previousBtn").disabled = currentQuestionIndex === 0;
+  // document.getElementById("nextBtn").disabled = currentQuestionIndex === questions.length - 1;
   document.getElementById("submitBtn").disabled = false; // Enable submit button
 }
 
 function submitExam() {
-  // Save the answer for the current question before submitting
-  saveAnswer(currentQuestionIndex);
+  // Save all answers before submitting
+  questions.forEach((_, index) => saveAnswer(index));
 
-  // Get the user_id from the session (this should be available after login)
-  const userId = sessionStorage.getItem("user_id"); // Example of session storage, make sure to use the session as needed
-
-  // Collect answers from all questions
+  const userId = sessionStorage.getItem("user_id");
   const savedAnswers = JSON.parse(localStorage.getItem("answers")) || {};
+
   const answers = questions.map((question, index) => ({
-    user_id: userId, // Use user_id from session
-    exam_id: examId,
-    question_text: question.question_text,
-    question_type: question.type,
-    answer_text: savedAnswers[index] || "", // Get answer from localStorage
-    submitted_at: new Date().toISOString(),
+      user_id: userId,
+      exam_id: examId,
+      question_text: question.question_text,
+      question_type: question.type,
+      answer_text: savedAnswers[index] || "",
+      submitted_at: new Date().toISOString(),
   }));
 
-  // Send the answers to the server to save in the database
   const xhr = new XMLHttpRequest();
   xhr.open("POST", "/api/saveStudentAnswers", true);
   xhr.setRequestHeader("Content-Type", "application/json");
 
   xhr.onload = function () {
-    if (xhr.status === 200) {
-      alert("Exam submitted successfully.");
-      // You can handle further actions after submission, e.g., redirect or show confirmation
-    } else {
-      console.error("Failed to submit exam:", xhr.responseText);
-      alert("Error submitting exam. Please try again.");
-    }
+      if (xhr.status === 200) {
+          alert("Exam submitted successfully.");
+          localStorage.removeItem("answers"); // Clear local storage
+          window.location.href = "http://localhost:3000/std_exam"; // Redirect after submission
+      } else {
+          alert("Error submitting exam. Please try again.");
+      }
   };
 
-  xhr.onerror = function () {
-    console.error("Network error while submitting exam.");
-    alert("Network error. Please try again.");
-  };
-
-  // Send the answers to the backend
+  xhr.onerror = () => alert("Network error. Please try again.");
   xhr.send(JSON.stringify(answers));
 }
+
+

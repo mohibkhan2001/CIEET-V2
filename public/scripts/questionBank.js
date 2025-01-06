@@ -108,7 +108,8 @@ function updatePaginationStyles() {
 
 // Display questions based on the current page
 // Display questions based on the current page
-function displayQuestions() {
+function displayQuestions(dt) {
+  let questionsToDisplay
   const questionList = $("#question-list");
   questionList.empty(); // Clear previous questions
 
@@ -116,7 +117,12 @@ function displayQuestions() {
   const endIndex = startIndex + questionsPerPage;
 
   // We always use allQuestions (not filtered by the current page)
-  const questionsToDisplay = allQuestions.slice(startIndex, endIndex);
+  if (dt) {
+    questionsToDisplay = dt
+  }
+  else {
+    questionsToDisplay = allQuestions.slice(startIndex, endIndex);
+  }
 
   questionsToDisplay.forEach((q) => {
     const questionItem = $("<div>")
@@ -125,11 +131,11 @@ function displayQuestions() {
 
     const optionsHTML = q.options
       ? q.options
-          .map(
-            (option) =>
-              `<div class="option">${option.option}: ${option.text}</div>`
-          )
-          .join("")
+        .map(
+          (option) =>
+            `<div class="option">${option.option}: ${option.text}</div>`
+        )
+        .join("")
       : "";
 
     const diagramHTML = q.diagram_url
@@ -203,6 +209,7 @@ function updateSelectedQuestions(uniqueKey, isChecked) {
     }
   }
 
+  console.log('selected questions=>', selectedQuestions)
   // Save the updated selected questions to localStorage
   localStorage.setItem('selectedQuestions', JSON.stringify(selectedQuestions));
 }
@@ -250,13 +257,13 @@ function restoreSelectedQuestions() {
 }
 
 // Call restoreSelectedQuestions on page load
-window.onload = function() {
+window.onload = function () {
   restoreSelectedQuestions(); // Ensure the selected questions are restored
   // Other initializations...
 };
 
 // Call restoreSelectedQuestions on page load
-window.onload = function() {
+window.onload = function () {
   restoreSelectedQuestions(); // Ensure the selected questions are restored
   // Other initializations...
 };
@@ -289,19 +296,22 @@ function filterQuestions() {
 }
 
 // Select all questions function and save to localStorage
-function selectAllQuestions() {
-  const checkboxes = $('input[name="questions"]:visible'); // Select only visible checkboxes on the current page
-  checkboxes.prop("checked", true);
+// function selectAllQuestions() {
+//   const checkboxes = $('input[name="questions"]:visible'); // Select only visible checkboxes on the current page
+//   checkboxes.prop("checked", true);
 
-  // Iterate over each checkbox and save its state in localStorage
-  checkboxes.each(function () {
-    const questionId = $(this).val();
-    localStorage.setItem(questionId, "checked"); // Save the checkbox state to localStorage
-  });
+//   console.log('checkboxes selectAll',checkboxes)
 
-  // Log the action (optional)
-  console.log("All checkboxes on the current page have been selected.");
-}
+//   // Iterate over each checkbox and save its state in localStorage
+//   checkboxes.each(function () {
+//     const questionId = $(this).val();
+//     localStorage.setItem(questionId, "checked"); // Save the checkbox state to localStorage
+//   });
+
+//   // localStorage.setItem('selectedQuestions', JSON.stringify(selectedQuestions));
+//   // Log the action (optional)
+//   console.log("All checkboxes on the current page have been selected.");
+// }
 
 // Fetch all questions function (make sure it's accessible)
 async function fetchAllQuestions(subject) {
@@ -356,10 +366,10 @@ async function showQuestions(subject) {
     btn.classList.remove("active");
   });
 
-   // Scroll smoothly to the questions-container
-   const questionsContainer = document.getElementById("questions-container");
-   questionsContainer.style.display = "block"; // Ensure the container is visible
-   questionsContainer.scrollIntoView({ behavior: "smooth" });
+  // Scroll smoothly to the questions-container
+  const questionsContainer = document.getElementById("questions-container");
+  questionsContainer.style.display = "block"; // Ensure the container is visible
+  questionsContainer.scrollIntoView({ behavior: "smooth" });
 
   const clickedButton = document.querySelector(
     `button[data-subject="${subject}"]`
@@ -502,7 +512,16 @@ function openAddQuestionModal() {
 // Function to select all questions
 function selectAllQuestions() {
   const checkboxes = document.querySelectorAll('input[name="questions"]');
-  checkboxes.forEach((checkbox) => (checkbox.checked = true));
+  const idsArray = [];
+  checkboxes.forEach((checkbox) => {
+    checkbox.checked = true; // Check the checkbox
+    const id = checkbox.id; // Get the ID of the checkbox
+    if (id) {
+      idsArray.push(id); // Add the ID to the array
+    }
+  });
+  console.log("Extracted IDs:", idsArray);
+    localStorage.setItem('selectedQuestions', JSON.stringify(idsArray));
 }
 
 // Select the loader container
@@ -560,7 +579,7 @@ async function handleGeneratePDF(event) {
     if (data.success) {
       const fileSize = formatFileSize(data.size); // Format the size
       alert(`PDF Generated Successfully: ${data.pdfFileName}`);
-      
+
       // Reset the selected questions and checkboxes after PDF generation
       resetSelectedQuestions();
     } else {
@@ -605,9 +624,11 @@ async function selectRandomly() {
     .querySelector("button.active")
     .getAttribute("data-subject");
   const questionCount = parseInt(
-    document.getElementById("random-question-count").value,
+    document.getElementById("numQuestions").value,
     10
   );
+
+  // console.log('meh chala', subject, questionCount)
 
   // Fetch questions for the selected subject
   const response = await fetch(`/api/questions/${subject}`);
@@ -624,7 +645,7 @@ async function selectRandomly() {
   }
 
   // Shuffle the questions and select the specified number
-  const selectedQuestions = shuffle(allQuestions).slice(0, questionCount);
+  let selectedQuestions = shuffle(allQuestions).slice(0, questionCount);
 
   // Select the checkboxes for the randomly chosen questions
   document.querySelectorAll('input[name="questions"]').forEach((checkbox) => {
@@ -639,6 +660,9 @@ async function selectRandomly() {
       checkbox.checked = true;
     }
   });
+
+  console.log('meh hu kya', selectedQuestions)
+  displayQuestions(selectedQuestions)
 }
 
 // Function to shuffle an array (Fisher-Yates algorithm)
@@ -732,7 +756,7 @@ document.addEventListener("DOMContentLoaded", () => {
           if (data.success) {
             // Reset the checkboxes after logout
             resetSelectedQuestions();
-            
+
             // Redirect to the homepage after successful logout
             window.location.href = "/";
           } else {
