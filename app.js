@@ -540,7 +540,7 @@ app.get("/api/generated-papers", (req, res) => {
     }
 
     if (results.length === 0) {
-      return res.status(404).json({ message: "No generated papers found" });
+      return res.status(200).json({ message: "No generated papers found" }); // Change status code to 200
     }
 
     // Send the generated papers as JSON
@@ -552,6 +552,7 @@ app.get("/api/generated-papers", (req, res) => {
     });
   });
 });
+
 
 app.get("/api/user-info", (req, res) => {
   if (!req.session.user) {
@@ -1235,8 +1236,15 @@ app.get("/api/generated-papers", (req, res) => {
 // Generate Exam Endpoint
 app.post("/api/generate-exam", (req, res) => {
   try {
-    const { subject, selectedQuestions, description, timer, examDate } =
-      req.body;
+    console.log(req.session);
+    const { subject, selectedQuestions, description, timer, examDate } = req.body;
+
+    // Assuming user_id is stored in the session
+    const user_id = req.session.user ? req.session.user.id : null;
+
+    // if (!user_id) {
+    //   return res.status(401).json({ error: "User not authenticated." });
+    // }
 
     // Validate input
     if (!subject || typeof subject !== "string" || subject.trim() === "") {
@@ -1244,23 +1252,15 @@ app.post("/api/generate-exam", (req, res) => {
     }
 
     if (!Array.isArray(selectedQuestions) || selectedQuestions.length === 0) {
-      return res
-        .status(400)
-        .json({ error: "No questions selected for the exam." });
+      return res.status(400).json({ error: "No questions selected for the exam." });
     }
 
-    if (
-      !description ||
-      typeof description !== "string" ||
-      description.trim() === ""
-    ) {
+    if (!description || typeof description !== "string" || description.trim() === "") {
       return res.status(400).json({ error: "Exam description is required." });
     }
 
     if (!timer || typeof timer !== "number" || timer <= 0) {
-      return res
-        .status(400)
-        .json({ error: "Valid exam timer (in minutes) is required." });
+      return res.status(400).json({ error: "Valid exam timer (in minutes) is required." });
     }
 
     if (!examDate) {
@@ -1269,12 +1269,6 @@ app.post("/api/generate-exam", (req, res) => {
 
     const currentDateTime = new Date();
     const examDateTime = new Date(examDate);
-
-    if (examDateTime <= currentDateTime) {
-      return res
-        .status(400)
-        .json({ error: "Exam date must be in the future." });
-    }
 
     // Classify questions by type
     const subjective = [];
@@ -1295,6 +1289,7 @@ app.post("/api/generate-exam", (req, res) => {
     }
 
     const examData = {
+      user_id,  // Add user_id to the exam data
       subject,
       subjective: subjective.length,
       objective: objective.length,
@@ -1309,10 +1304,11 @@ app.post("/api/generate-exam", (req, res) => {
     };
 
     const query = `INSERT INTO generated_exams 
-      (subject, subjective, objective, diagram, subjective_questions, objective_questions, diagram_questions, description, timer, exam_date, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      (user_id, subject, subjective, objective, diagram, subjective_questions, objective_questions, diagram_questions, description, timer, exam_date, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     const values = [
+      examData.user_id,
       examData.subject,
       examData.subjective,
       examData.objective,
@@ -1329,9 +1325,7 @@ app.post("/api/generate-exam", (req, res) => {
     db.query(query, values, (err, result) => {
       if (err) {
         console.error("Error saving exam:", err);
-        return res
-          .status(500)
-          .json({ error: "An error occurred while generating the exam." });
+        return res.status(500).json({ error: "An error occurred while generating the exam." });
       }
 
       res.status(201).json({
@@ -1345,9 +1339,10 @@ app.post("/api/generate-exam", (req, res) => {
   }
 });
 
+
 app.get("/api/exams", (req, res) => {
   // Fetch all exams from the database
-  db.query("SELECT * FROM generated_exams", (err, exams) => {
+  db.query("SELECT * FROM generated_exams WHERE user_id = 2", (err, exams) => {
     if (err) {
       console.error("Error fetching exams:", err);
       return res
@@ -1358,10 +1353,21 @@ app.get("/api/exams", (req, res) => {
     // Log the fetched exams for debugging
     console.log("Fetched exams:", exams);
 
+    // If no exams are found, return a message indicating no exams have been generated
+    if (exams.length === 0) {
+      return res.status(404).json({ message: "No exams have been generated yet." });
+    }
+
     // Send the exams data to the client
-    res.status(200).json(exams);
+    res.status(200).json({
+      message: "Exams fetched successfully",
+      exams: exams,
+    });
   });
 });
+
+
+
 
 app.get("/api/exam/:examId", (req, res) => {
   const { examId } = req.params; // Get examId from URL params

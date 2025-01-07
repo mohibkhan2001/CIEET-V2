@@ -544,8 +544,8 @@ async function handleGeneratePDF(event) {
 
   const selectedButton = document.querySelector("button.active");
   if (!selectedButton) {
-    alert("Please select a subject.");
-    return;
+      alert("Please select a subject.");
+      return;
   }
 
   const subject = selectedButton.getAttribute("data-subject");
@@ -556,43 +556,50 @@ async function handleGeneratePDF(event) {
   const pdfName = document.getElementById("pdfName").value.trim();
 
   if (selectedQuestions.length === 0) {
-    alert("Please select at least one question.");
-    return;
+      alert("Please select at least one question.");
+      return;
   }
   if (!pdfName) {
-    alert("Please provide a name for the PDF.");
-    return;
+      alert("Please provide a name for the PDF.");
+      return;
   }
 
   // Show the loader while generating PDF
   showLoader();
 
   try {
-    const response = await fetch("/generate-pdf", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subject, questions: selectedQuestions, pdfName }),
-    });
+      const response = await fetch("/generate-pdf", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ subject, questions: selectedQuestions, pdfName }),
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (data.success) {
-      const fileSize = formatFileSize(data.size); // Format the size
-      alert(`PDF Generated Successfully: ${data.pdfFileName}`);
+      if (data.success) {
+          const fileSize = formatFileSize(data.size); // Format the size
+          alert(`PDF Generated Successfully: ${data.pdfFileName}`);
 
-      // Reset the selected questions and checkboxes after PDF generation
-      resetSelectedQuestions();
-    } else {
-      alert(`Error: ${data.error}`);
-    }
+          // Clear local storage and reset the selected questions
+          localStorage.removeItem('selectedQuestions');
+          resetSelectedQuestions();
+
+          // Uncheck all checkboxes after PDF generation
+          const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+          checkboxes.forEach(checkbox => checkbox.checked = false);
+      } else {
+          alert(`Error: ${data.error}`);
+      }
   } catch (error) {
-    console.error("Error generating PDF:", error);
-    alert("Failed to generate PDF. Please try again.");
+      console.error("Error generating PDF:", error);
+      alert("Failed to generate PDF. Please try again.");
   } finally {
-    // Hide the loader after processing
-    hideLoader();
+      // Hide the loader after processing
+      hideLoader();
   }
 }
+
+
 
 
 
