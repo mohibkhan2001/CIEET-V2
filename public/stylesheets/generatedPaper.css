@@ -166,3 +166,70 @@ h1 {
 #generated-papers-list td{
     padding: 10px;
 }
+
+/* Styling for the generated exams table */
+#generated-exams-list {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Arial', sans-serif;
+    margin-top: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Styling the table header */
+#generated-exams-list thead {
+    background-color: #4CAF50;
+    color: white;
+    text-align: left;
+}
+
+#generated-exams-list thead th {
+    padding: 12px;
+    font-size: 16px;
+}
+
+/* Styling the table rows and cells */
+#generated-exams-list tbody tr {
+    border-bottom: 1px solid #ddd;
+    transition: background-color 0.2s ease-in-out;
+}
+
+#generated-exams-list tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+#generated-exams-list tbody tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* Styling the table data cells */
+#generated-exams-list tbody td {
+    padding: 12px;
+    font-size: 15px;
+    color: #333;
+}
+
+/* Styling the delete button */
+#generated-exams-list button {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+#generated-exams-list button:hover {
+    background-color: #c0392b;
+}
+
+/* Add some spacing and responsiveness */
+@media (max-width: 768px) {
+    #generated-exams-list thead th,
+    #generated-exams-list tbody td {
+        padding: 10px;
+        font-size: 14px;
+    }
+}

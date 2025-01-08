@@ -553,7 +553,6 @@ app.get("/api/generated-papers", (req, res) => {
   });
 });
 
-
 app.get("/api/user-info", (req, res) => {
   if (!req.session.user) {
     return res.status(401).json({ errors: ["User not logged in"] });
@@ -1237,7 +1236,8 @@ app.get("/api/generated-papers", (req, res) => {
 app.post("/api/generate-exam", (req, res) => {
   try {
     console.log(req.session);
-    const { subject, selectedQuestions, description, timer, examDate } = req.body;
+    const { subject, selectedQuestions, description, timer, examDate } =
+      req.body;
 
     // Assuming user_id is stored in the session
     const user_id = req.session.user ? req.session.user.id : null;
@@ -1252,15 +1252,23 @@ app.post("/api/generate-exam", (req, res) => {
     }
 
     if (!Array.isArray(selectedQuestions) || selectedQuestions.length === 0) {
-      return res.status(400).json({ error: "No questions selected for the exam." });
+      return res
+        .status(400)
+        .json({ error: "No questions selected for the exam." });
     }
 
-    if (!description || typeof description !== "string" || description.trim() === "") {
+    if (
+      !description ||
+      typeof description !== "string" ||
+      description.trim() === ""
+    ) {
       return res.status(400).json({ error: "Exam description is required." });
     }
 
     if (!timer || typeof timer !== "number" || timer <= 0) {
-      return res.status(400).json({ error: "Valid exam timer (in minutes) is required." });
+      return res
+        .status(400)
+        .json({ error: "Valid exam timer (in minutes) is required." });
     }
 
     if (!examDate) {
@@ -1289,7 +1297,7 @@ app.post("/api/generate-exam", (req, res) => {
     }
 
     const examData = {
-      user_id,  // Add user_id to the exam data
+      user_id, // Add user_id to the exam data
       subject,
       subjective: subjective.length,
       objective: objective.length,
@@ -1325,7 +1333,9 @@ app.post("/api/generate-exam", (req, res) => {
     db.query(query, values, (err, result) => {
       if (err) {
         console.error("Error saving exam:", err);
-        return res.status(500).json({ error: "An error occurred while generating the exam." });
+        return res
+          .status(500)
+          .json({ error: "An error occurred while generating the exam." });
       }
 
       res.status(201).json({
@@ -1339,10 +1349,9 @@ app.post("/api/generate-exam", (req, res) => {
   }
 });
 
-
 app.get("/api/exams", (req, res) => {
   // Fetch all exams from the database
-  db.query("SELECT * FROM generated_exams WHERE user_id = 2", (err, exams) => {
+  db.query("SELECT * FROM generated_exams", (err, exams) => {
     if (err) {
       console.error("Error fetching exams:", err);
       return res
@@ -1355,19 +1364,95 @@ app.get("/api/exams", (req, res) => {
 
     // If no exams are found, return a message indicating no exams have been generated
     if (exams.length === 0) {
-      return res.status(404).json({ message: "No exams have been generated yet." });
+      return res
+        .status(404)
+        .json({ message: "No exams have been generated yet." });
     }
 
     // Send the exams data to the client
-    res.status(200).json({
-      message: "Exams fetched successfully",
-      exams: exams,
-    });
+    res.status(200).json(exams);
   });
 });
 
+app.get("/api/teacher/exams", (req, res) => {
+  // Ensure user is authenticated and authorized as a teacher
+  if (
+    !req.session.user ||
+    !req.session.user.id ||
+    req.session.user.role !== "Teacher"
+  ) {
+    return res.status(403).json({ error: "Access denied. Teachers only." });
+  }
 
+  const query = `
+      SELECT subject, subjective, objective, diagram, description, timer, exam_date, created_at, exam_id 
+      FROM generated_exams 
+      WHERE user_id = ? 
+      ORDER BY created_at DESC
+  `;
 
+  db.query(query, [req.session.user.id], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Failed to fetch teacher exams." });
+    }
+
+    const enrichedResults = results.map((exam) => {
+      let creationDate = "Unknown";
+      let creationTime = "Unknown";
+
+      try {
+        const createdAt = new Date(exam.created_at);
+        creationDate = createdAt.toISOString().split("T")[0]; // YYYY-MM-DD
+        creationTime = createdAt.toISOString().split("T")[1].split(".")[0]; // HH:MM:SS
+      } catch (err) {
+        console.error(`Error processing date for exam: ${exam.exam_id}`, err);
+      }
+
+      return {
+        ...exam,
+        creationDate,
+        creationTime,
+      };
+    });
+
+    res.status(200).json({ exams: enrichedResults });
+  });
+});
+
+app.delete("/api/delete-exam/:examId", (req, res) => {
+  const examId = req.params.examId; // Get exam_id from the request parameters
+
+  // Ensure user is authenticated and authorized as a teacher
+  if (
+    !req.session.user ||
+    !req.session.user.id
+  ) {
+    return res.status(403).json({ error: "Access denied. Teachers only." });
+  }
+
+  // SQL query to delete the exam from the database
+  const query = "DELETE FROM generated_exams WHERE exam_id = ? AND user_id = ?";
+
+  db.query(query, [examId, req.session.user.id], (err, result) => {
+    if (err) {
+      console.error("Error deleting exam:", err);
+      return res.status(500).json({ error: "Failed to delete the exam." });
+    }
+
+    if (result.affectedRows === 0) {
+      return res
+        .status(404)
+        .json({
+          error: "Exam not found or you do not have permission to delete it.",
+        });
+    }
+
+    res
+      .status(200)
+      .json({ success: true, message: "Exam deleted successfully." });
+  });
+});
 
 app.get("/api/exam/:examId", (req, res) => {
   const { examId } = req.params; // Get examId from URL params
@@ -1407,12 +1492,9 @@ app.get("/api/exam/:examId", (req, res) => {
 
       // Compare both the date and time
       if (currentDateTime < examDateTime) {
-        return res
-          .status(403)
-          .json({
-            error:
-              "Exam cannot be accessed before the scheduled date and time.",
-          });
+        return res.status(403).json({
+          error: "Exam cannot be accessed before the scheduled date and time.",
+        });
       }
 
       let subjectiveIds = [],
@@ -1446,34 +1528,27 @@ app.get("/api/exam/:examId", (req, res) => {
       db.query(subjectiveQuery, [subjectiveIds], (err, subjectiveQuestions) => {
         if (err) {
           console.error("Error fetching subjective questions:", err);
-          return res
-            .status(500)
-            .json({
-              error:
-                "An error occurred while fetching the subjective questions.",
-            });
+          return res.status(500).json({
+            error: "An error occurred while fetching the subjective questions.",
+          });
         }
 
         db.query(objectiveQuery, [objectiveIds], (err, objectiveQuestions) => {
           if (err) {
             console.error("Error fetching objective questions:", err);
-            return res
-              .status(500)
-              .json({
-                error:
-                  "An error occurred while fetching the objective questions.",
-              });
+            return res.status(500).json({
+              error:
+                "An error occurred while fetching the objective questions.",
+            });
           }
 
           db.query(diagramQuery, [diagramIds], (err, diagramQuestions) => {
             if (err) {
               console.error("Error fetching diagram questions:", err);
-              return res
-                .status(500)
-                .json({
-                  error:
-                    "An error occurred while fetching the diagram questions.",
-                });
+              return res.status(500).json({
+                error:
+                  "An error occurred while fetching the diagram questions.",
+              });
             }
 
             // Include subject, description, and timer in the response
@@ -1534,8 +1609,6 @@ app.post("/api/saveStudentAnswers", (req, res) => {
     res.status(200).json({ message: "Answers saved successfully!" });
   });
 });
-
-
 
 // API to fetch questions
 // app.get("/api/exams/:examId", (req, res) => {
@@ -1634,7 +1707,9 @@ app.post("/api/exams/submit", (req, res) => {
 
   // Ensure the required fields are provided
   if (!examId || !answers || !subject) {
-    return res.status(400).json({ error: "Missing required fields: examId, answers, or subject" });
+    return res
+      .status(400)
+      .json({ error: "Missing required fields: examId, answers, or subject" });
   }
 
   db.query(
@@ -1647,8 +1722,6 @@ app.post("/api/exams/submit", (req, res) => {
     }
   );
 });
-
-
 
 // Start server
 app.listen(port, () => {

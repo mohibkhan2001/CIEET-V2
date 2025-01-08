@@ -65,6 +65,32 @@
       </table>
     </div>
 
+    <div class="container-papers">
+      <h1>Generated Exams Archive</h1>
+      <p id="exam-instructions">All generated exams are listed below.</p>
+  
+      <table id="generated-exams-list">
+          <thead>
+              <tr>
+                  <!-- <th>User ID</th> -->
+                  <th>Subject</th>
+                  <th>Subjective</th>
+                  <th>Objective</th>
+                  <th>Diagram</th>
+                  <th>Timer</th>
+                  <th>Exam Date</th>
+                  <th>Created At</th>
+                  <th>Actions</th>
+              </tr>
+          </thead>
+          <tbody>
+              <tr>
+                  <td colspan="13">Loading exams...</td>
+              </tr>
+          </tbody>
+      </table>
+  </div>
+  
     
 
     <script>
@@ -259,6 +285,75 @@
           });
         }
       });
+
+
+
+      //-------------------------------------------
+
+      async function fetchTeacherExams() {
+    try {
+        const response = await fetch("/api/teacher/exams");  // Fetching from the teacher-specific endpoint
+        if (!response.ok) throw new Error(`Error fetching exams: ${response.statusText}`);
+
+        const data = await response.json();
+        const exams = Array.isArray(data.exams) ? data.exams : [];  
+        const examListContainer = document.getElementById("generated-exams-list").querySelector("tbody");
+
+        // Clear the table before repopulating
+        examListContainer.innerHTML = ""; 
+
+        // If no exams are found, show a message
+        if (exams.length === 0) {
+            examListContainer.innerHTML = '<tr><td colspan="10">No generated exams found.</td></tr>';
+            return;
+        }
+
+        // Display each exam with enriched data
+        exams.forEach((exam) => {
+            const examRow = document.createElement("tr");
+            examRow.innerHTML = `
+                <td>${exam.subject}</td>
+                <td>${exam.subjective}</td>
+                <td>${exam.objective}</td>
+                <td>${exam.diagram}</td>
+                <td>${exam.timer}</td>
+                <td>${exam.creationDate}</td>
+                <td>${exam.creationTime}</td>
+                <td><button onclick="deleteExam('${exam.exam_id}')">Delete</button></td>
+            `;
+            examListContainer.appendChild(examRow);
+        });
+
+    } catch (error) {
+        console.error("Error fetching exams:", error);
+        alert("Failed to fetch exams. Please try again later.");
+    }
+}
+
+
+async function deleteExam(examId) {
+    if (confirm("Are you sure you want to delete this exam?")) {
+        try {
+            const response = await fetch(`/api/delete-exam/${examId}`, {
+                method: "DELETE",
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                alert("Exam deleted successfully");
+                fetchTeacherExams();  // Refresh the list of exams after deletion
+            } else {
+                alert(result.error || "Error deleting exam");
+            }
+        } catch (error) {
+            console.error("Error deleting exam:", error);
+            alert("An error occurred while deleting the exam.");
+        }
+    }
+}
+
+// Call the function when the page loads
+document.addEventListener("DOMContentLoaded", fetchTeacherExams);
 
     </script>
 
