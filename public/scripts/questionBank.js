@@ -11,15 +11,7 @@ function initializeEventListeners() {
   document
     .getElementById("selectAllButton")
     .addEventListener("click", selectAllQuestions);
-  document
-    .getElementById("searchInput")
-    .addEventListener("keyup", filterQuestions);
-  document
-    .getElementById("yearFilter")
-    .addEventListener("change", filterQuestions);
-  document
-    .getElementById("typeFilter")
-    .addEventListener("change", filterQuestions);
+
   document
     .getElementById("randomSelectButton")
     .addEventListener("click", toggleRandomSelectionInput);
@@ -28,9 +20,6 @@ function initializeEventListeners() {
   //   .addEventListener("input", validateRandomInput);
 
   // Event listener for checkbox selection
-  document.querySelectorAll(".question-checkbox").forEach((checkbox) => {
-    checkbox.addEventListener("change", filterQuestions); // Re-filter when a checkbox is clicked
-  });
 }
 // Initialize pagination-related variables
 const questionsPerPage = 5; // Number of questions per page
@@ -109,7 +98,7 @@ function updatePaginationStyles() {
 // Display questions based on the current page
 // Display questions based on the current page
 function displayQuestions(dt) {
-  let questionsToDisplay
+  let questionsToDisplay;
   const questionList = $("#question-list");
   questionList.empty(); // Clear previous questions
 
@@ -118,9 +107,8 @@ function displayQuestions(dt) {
 
   // We always use allQuestions (not filtered by the current page)
   if (dt) {
-    questionsToDisplay = dt
-  }
-  else {
+    questionsToDisplay = dt;
+  } else {
     questionsToDisplay = allQuestions.slice(startIndex, endIndex);
   }
 
@@ -131,11 +119,11 @@ function displayQuestions(dt) {
 
     const optionsHTML = q.options
       ? q.options
-        .map(
-          (option) =>
-            `<div class="option">${option.option}: ${option.text}</div>`
-        )
-        .join("")
+          .map(
+            (option) =>
+              `<div class="option">${option.option}: ${option.text}</div>`
+          )
+          .join("")
       : "";
 
     const diagramHTML = q.diagram_url
@@ -148,7 +136,11 @@ function displayQuestions(dt) {
 
     questionItem.html(`
       <div class="check_container">
-        <input id="${q.question_type}-${q.id}" class="question-checkbox hidden" type="checkbox" value="${q.question_type}-${q.id}" name="questions">
+        <input id="${q.question_type}-${
+      q.id
+    }" class="question-checkbox hidden" type="checkbox" value="${
+      q.question_type
+    }-${q.id}" name="questions">
         <label class="checkbox" for="${q.question_type}-${q.id}"></label>
       </div>
       <span class="question-text">${q.question_text}</span>
@@ -173,7 +165,6 @@ function displayQuestions(dt) {
   setupPagination(allQuestions.length);
 }
 
-
 // Save checkbox state to localStorage
 $(document).on("change", 'input[name="questions"]', function () {
   const questionId = $(this).val(); // Question ID
@@ -192,7 +183,8 @@ $(document).on("change", 'input[name="questions"]', function () {
 });
 
 // Global array to store selected question unique keys across pages
-let selectedQuestions = JSON.parse(localStorage.getItem('selectedQuestions')) || [];
+let selectedQuestions =
+  JSON.parse(localStorage.getItem("selectedQuestions")) || [];
 
 // Function to update selected questions and sync with localStorage
 function updateSelectedQuestions(uniqueKey, isChecked) {
@@ -209,9 +201,9 @@ function updateSelectedQuestions(uniqueKey, isChecked) {
     }
   }
 
-  console.log('selected questions=>', selectedQuestions)
+  console.log("selected questions=>", selectedQuestions);
   // Save the updated selected questions to localStorage
-  localStorage.setItem('selectedQuestions', JSON.stringify(selectedQuestions));
+  localStorage.setItem("selectedQuestions", JSON.stringify(selectedQuestions));
 }
 
 // On page load, restore checkbox states
@@ -231,7 +223,7 @@ $(document).ready(function () {
 });
 
 // Event listener for checkbox change
-$(document).on('change', 'input[name="questions"]', function () {
+$(document).on("change", 'input[name="questions"]', function () {
   const questionId = $(this).val();
   const isChecked = this.checked;
 
@@ -239,12 +231,17 @@ $(document).on('change', 'input[name="questions"]', function () {
   updateSelectedQuestions(questionId, isChecked);
 
   // Log the action (optional)
-  console.log(isChecked ? `Checkbox checked: ${questionId}` : `Checkbox unchecked: ${questionId}`);
+  console.log(
+    isChecked
+      ? `Checkbox checked: ${questionId}`
+      : `Checkbox unchecked: ${questionId}`
+  );
 });
 
 // Function to restore selected questions from localStorage on page load
 function restoreSelectedQuestions() {
-  const savedQuestions = JSON.parse(localStorage.getItem('selectedQuestions')) || [];
+  const savedQuestions =
+    JSON.parse(localStorage.getItem("selectedQuestions")) || [];
   selectedQuestions = savedQuestions; // Populate the global selectedQuestions array
 
   // Restore the checked state of the checkboxes based on the saved data
@@ -272,28 +269,6 @@ window.onload = function () {
 window.onload = restoreSelectedQuestions;
 
 
-// Filter questions after page change and ensure they work with pagination
-function filterQuestions() {
-  const searchQuery = $("#searchInput").val().toLowerCase();
-  const yearFilter = $("#yearFilter").val();
-  const typeFilter = $("#typeFilter").val().toLowerCase();
-
-  const filteredQuestions = allQuestions.filter((q) => {
-    const questionText = q.question_text.toLowerCase();
-    const questionYear = q.year || "";
-    const questionType = q.question_type.toLowerCase();
-
-    return (
-      questionText.includes(searchQuery) &&
-      (yearFilter ? questionYear.includes(yearFilter) : true) &&
-      (typeFilter ? questionType === typeFilter : true)
-    );
-  });
-
-  allQuestions = filteredQuestions;
-  currentPage = 1; // Reset to the first page
-  displayQuestions();
-}
 
 // Select all questions function and save to localStorage
 // function selectAllQuestions() {
@@ -392,10 +367,75 @@ async function showQuestions(subject) {
   }
 }
 
+async function showSubjective(subject) {
+  document.getElementById("questions-container").style.display = "block";
+  currentSubject = subject;
+
+  document.querySelectorAll(".subject-selection button").forEach((btn) => {
+    btn.classList.remove("active");
+  });
+
+  // Scroll smoothly to the questions-container
+  const questionsContainer = document.getElementById("questions-container");
+  questionsContainer.style.display = "block"; // Ensure the container is visible
+  questionsContainer.scrollIntoView({ behavior: "smooth" });
+
+  const clickedButton = document.querySelector(
+    `button[data-subject="${subject}"]`
+  );
+  clickedButton.classList.add("active");
+
+  try {
+    const data = await fetchAllQuestions(subject);
+
+    allQuestions = [
+      ...(data.subjective || []),
+      
+      ...(data.diagrams || []),
+    ];
+
+    displayQuestions();
+  } catch (error) {
+    console.error("Error fetching questions:", error);
+    alert("Failed to fetch questions. Please try again later.");
+  }
+}
+
+async function showObjective(subject) {
+  document.getElementById("questions-container").style.display = "block";
+  currentSubject = subject;
+
+  document.querySelectorAll(".subject-selection button").forEach((btn) => {
+    btn.classList.remove("active");
+  });
+
+  // Scroll smoothly to the questions-container
+  const questionsContainer = document.getElementById("questions-container");
+  questionsContainer.style.display = "block"; // Ensure the container is visible
+  questionsContainer.scrollIntoView({ behavior: "smooth" });
+
+  const clickedButton = document.querySelector(
+    `button[data-subject="${subject}"]`
+  );
+  clickedButton.classList.add("active");
+
+  try {
+    const data = await fetchAllQuestions(subject);
+
+    allQuestions = [
+      
+      ...(data.mcqs || []),
+      
+    ];
+
+    displayQuestions();
+  } catch (error) {
+    console.error("Error fetching questions:", error);
+    alert("Failed to fetch questions. Please try again later.");
+  }
+}
 // Initialize the page with questions
 // showQuestions("math");
-
-
 
 $(document).ready(function () {
   // Initialize event listeners
@@ -521,7 +561,7 @@ function selectAllQuestions() {
     }
   });
   console.log("Extracted IDs:", idsArray);
-    localStorage.setItem('selectedQuestions', JSON.stringify(idsArray));
+  localStorage.setItem("selectedQuestions", JSON.stringify(idsArray));
 }
 
 // Select the loader container
@@ -537,85 +577,80 @@ function hideLoader() {
   loaderContainer.style.display = "none";
 }
 
-
 // Handle form submission to generate PDF
 async function handleGeneratePDF(event) {
   event.preventDefault(); // Prevent default form submission
 
   const selectedButton = document.querySelector("button.active");
   if (!selectedButton) {
-      alert("Please select a subject.");
-      return;
+    alert("Please select a subject.");
+    return;
   }
 
   const subject = selectedButton.getAttribute("data-subject");
 
   // Use the global selectedQuestions array (containing questions from all pages)
-  const selectedQuestions = JSON.parse(localStorage.getItem('selectedQuestions')) || [];
+  const selectedQuestions =
+    JSON.parse(localStorage.getItem("selectedQuestions")) || [];
 
   const pdfName = document.getElementById("pdfName").value.trim();
 
   if (selectedQuestions.length === 0) {
-      alert("Please select at least one question.");
-      return;
+    alert("Please select at least one question.");
+    return;
   }
   if (!pdfName) {
-      alert("Please provide a name for the PDF.");
-      return;
+    alert("Please provide a name for the PDF.");
+    return;
   }
 
   // Show the loader while generating PDF
   showLoader();
 
   try {
-      const response = await fetch("/generate-pdf", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ subject, questions: selectedQuestions, pdfName }),
-      });
+    const response = await fetch("/generate-pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subject, questions: selectedQuestions, pdfName }),
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (data.success) {
-          const fileSize = formatFileSize(data.size); // Format the size
-          alert(`PDF Generated Successfully: ${data.pdfFileName}`);
+    if (data.success) {
+      const fileSize = formatFileSize(data.size); // Format the size
+      alert(`PDF Generated Successfully: ${data.pdfFileName}`);
 
-          // Clear local storage and reset the selected questions
-          localStorage.removeItem('selectedQuestions');
-          resetSelectedQuestions();
+      // Clear local storage and reset the selected questions
+      localStorage.removeItem("selectedQuestions");
+      resetSelectedQuestions();
 
-          // Uncheck all checkboxes after PDF generation
-          const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-          checkboxes.forEach(checkbox => checkbox.checked = false);
-      } else {
-          alert(`Error: ${data.error}`);
-      }
+      // Uncheck all checkboxes after PDF generation
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+      checkboxes.forEach((checkbox) => (checkbox.checked = false));
+    } else {
+      alert(`Error: ${data.error}`);
+    }
   } catch (error) {
-      console.error("Error generating PDF:", error);
-      alert("Failed to generate PDF. Please try again.");
+    console.error("Error generating PDF:", error);
+    alert("Failed to generate PDF. Please try again.");
   } finally {
-      // Hide the loader after processing
-      hideLoader();
+    // Hide the loader after processing
+    hideLoader();
   }
 }
-
-
-
-
 
 // Function to reset selected questions and clear localStorage
 // Function to reset selected questions and clear localStorage
 function resetSelectedQuestions() {
   // Clear the selected questions from localStorage
-  localStorage.removeItem('selectedQuestions');
+  localStorage.removeItem("selectedQuestions");
 
   // Reset all checkboxes on the page
-  $('input[name="questions"]').prop('checked', false);
+  $('input[name="questions"]').prop("checked", false);
 
   // Optional: Log the action for debugging
   console.log("Checkboxes have been reset.");
 }
-
 
 // Helper function to format file size from bytes to B, KB, MB, etc.
 function formatFileSize(bytes) {
@@ -668,8 +703,8 @@ async function selectRandomly() {
     }
   });
 
-  console.log('meh hu kya', selectedQuestions)
-  displayQuestions(selectedQuestions)
+  console.log("meh hu kya", selectedQuestions);
+  displayQuestions(selectedQuestions);
 }
 
 // Function to shuffle an array (Fisher-Yates algorithm)
@@ -776,4 +811,3 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
-

@@ -100,3 +100,93 @@
     outline: none;
     box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
 }
+#question-type-selector {
+  display: inline-block;
+  margin-top: 10px;
+}
+
+#question-type-selector label {
+  margin-left: 5px; /* Adds spacing between the radio buttons */
+  margin-right: 5px; /* Adds spacing between the radio buttons */
+  margin-bottom: 20px;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 12px 25px; /* Adds padding inside the label */
+  border-radius: 8px; /* Rounded corners for the label */
+  background-color: #002244; /* Background color for each radio button label */
+  color: #fff;
+  transition: background-color 0.3s ease;
+}
+
+#automate-exam-btn{
+  margin-left: 5px; /* Adds spacing between the radio buttons */
+  margin-right: 5px; /* Adds spacing between the radio buttons */
+  margin-bottom: 20px;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 12px 25px; /* Adds padding inside the label */
+  border-radius: 8px; /* Rounded corners for the label */
+  background-color: #002244; /* Background color for each radio button label */
+  color: #fff;
+  transition: background-color 0.3s ease;
+  border: none;
+}
+#automate-exam-btn:hover {
+  background-color: #0056b3; /* Lighter background color on hover */
+}
+
+#question-type-selector label:hover {
+  background-color: #0056b3; /* Lighter background color on hover */
+}
+
+#question-type-selector input[type="radio"] {
+  display: none; /* Hide the default radio button */
+}
+
+#question-type-selector input[type="radio"] + span {
+  position: relative;
+  padding-left: 30px; /* Space for custom radio button */
+  cursor: pointer;
+  font-weight: bold;
+}
+
+#question-type-selector input[type="radio"]:checked + span {
+  color: #fff; /* White text when selected */
+}
+
+#question-type-selector input[type="radio"]:checked + span::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #007bff; /* Blue background when checked */
+}
+
+#question-type-selector input[type="radio"]:not(:checked) + span::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #fff; /* White background for unselected state */
+  
+}
+
+#question-type-selector input[type="radio"]:hover + span::before {
+  border-color: #0056b3; /* Darker border color on hover */
+}
+
+#question-type-selector input[type="radio"]:checked + span::before {
+  background-color: #0056b3; /* Darker background color when checked */
+}
+ 
+#question-list{
+  margin: 50px;
+}

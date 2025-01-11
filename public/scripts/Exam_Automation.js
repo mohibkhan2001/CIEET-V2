@@ -354,6 +354,73 @@ async function showQuestions(subject) {
   }
 }
 
+async function showObjective(subject) {
+  document.getElementById("questions-container").style.display = "block";
+  currentSubject = subject;
+
+  document.querySelectorAll(".subject-selection button").forEach((btn) => {
+    btn.classList.remove("active");
+  });
+
+  // Scroll smoothly to the questions-container
+  const questionsContainer = document.getElementById("questions-container");
+  questionsContainer.style.display = "block"; // Ensure the container is visible
+  questionsContainer.scrollIntoView({ behavior: "smooth" });
+
+  const clickedButton = document.querySelector(
+    `button[data-subject="${subject}"]`
+  );
+  clickedButton.classList.add("active");
+
+  try {
+    const data = await fetchAllQuestions(subject);
+
+    allQuestions = [
+      
+      ...(data.mcqs || []),
+      
+    ];
+
+    displayQuestions();
+  } catch (error) {
+    console.error("Error fetching questions:", error);
+    alert("Failed to fetch questions. Please try again later.");
+  }
+}
+async function showSubjective(subject) {
+  document.getElementById("questions-container").style.display = "block";
+  currentSubject = subject;
+
+  document.querySelectorAll(".subject-selection button").forEach((btn) => {
+    btn.classList.remove("active");
+  });
+
+  // Scroll smoothly to the questions-container
+  const questionsContainer = document.getElementById("questions-container");
+  questionsContainer.style.display = "block"; // Ensure the container is visible
+  questionsContainer.scrollIntoView({ behavior: "smooth" });
+
+  const clickedButton = document.querySelector(
+    `button[data-subject="${subject}"]`
+  );
+  clickedButton.classList.add("active");
+
+  try {
+    const data = await fetchAllQuestions(subject);
+
+    allQuestions = [
+      ...(data.subjective || []),
+      
+      ...(data.diagrams || []),
+    ];
+
+    displayQuestions();
+  } catch (error) {
+    console.error("Error fetching questions:", error);
+    alert("Failed to fetch questions. Please try again later.");
+  }
+}
+
 // Initialize the page with questions
 // showQuestions("math");
 document.addEventListener("DOMContentLoaded", () => {

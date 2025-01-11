@@ -37,7 +37,7 @@
         ></i>
       </div>
     </header>
-    <h1>Student Exam Report</h1>
+    <h1>Student Exam Report Subjective</h1>
     <table id="answers-table">
       <thead>
         <tr>
@@ -52,7 +52,12 @@
       <tbody>
         <!-- Answers will be dynamically inserted here -->
       </tbody>
+      
     </table>
+    <div id="submit">
+      <button type="submit" id="submit-report">Submit Report</button>
+    </div>
+    
 
     <script>
       async function fetchStudentAnswers() {
@@ -78,7 +83,7 @@
           data.forEach((answer) => {
             const row = `
                     <tr>
-                        <td><strong>* </strong>${answer.question_text}</td>
+                        <td>${answer.question_text}</td>
                         <td>${answer.answer_text}</td>
                         <td>${answer.correct_answer}</td>
                         <td>${answer.question_type}</td>
