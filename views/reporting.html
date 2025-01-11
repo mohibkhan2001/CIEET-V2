@@ -3,98 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Assessment Reports</title>
+    <title>Student Submitted Answers</title>
     <link rel="stylesheet" href="stylesheets/style.css">
     <link rel="stylesheet" href="stylesheets/reporting.css">
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
-      integrity="sha512-5Hs3dF2AEPkpNAR7UiOHba+lRSJNeM2ECkwxUIxC1Q/FLycGTbNapWXB4tP889k5T5Ju8fs4b1P5z/iB4nMfSQ=="
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
-    />
-    <link
-    href="https://fonts.googleapis.com/css2?family=Parkinsans:wght@300..800&display=swap"
-    rel="stylesheet"
-  />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css">
 </head>
 <body>
-  <header>
-    <div class="logo">
-      <span><a href="/index">CIE²T</a></span>
-    </div>
-    <nav>
-      <ul>
-        <li><a href="/questionBank">Question Databank</a></li>
-        <li><a href="/reporting">Assessment Reporting</a></li>
-        <li><a href="/Exam_Automation">Exam Automation</a></li>
-        <li><a href="/generatedPapers">Generated Papers</a></li>
-        <li><a href="#about">About</a></li>
-        <li><a href="#contact">Contact</a></li>
-      </ul>
-    </nav>
-  
-    <!-- User Info Display -->
-    <div class="auth-buttons" id="auth-buttons">
-      <span id="username" class="username"></span>
-      <i class="fa-solid fa-arrow-right-from-bracket logout-icon" id="logout-btn" title="Logout"></i>
-    </div>
-  </header>
+    <header>
+        <div class="logo">
+            <span><a href="/index">CIE²T</a></span>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="/questionBank">Question Databank</a></li>
+                <li><a href="/reporting">Assessment Reporting</a></li>
+                <li><a href="/Exam_Automation">Exam Automation</a></li>
+                <li><a href="/generatedPapers">Generated Papers</a></li>
+            </ul>
+        </nav>
+        <div class="auth-buttons" id="auth-buttons">
+            <span id="username" class="username"></span>
+            <i class="fa-solid fa-arrow-right-from-bracket logout-icon" id="logout-btn" title="Logout"></i>
+        </div>
+    </header>
 
     <div class="container">
-        
-        <section class="student-list">
-            <h1>Assessment Mohib-khan </h1>
-            <ul>
-                <li><a href="student1">Student1</a></li>
-                <li><a href="student2">Student2</a></li>
-                <li><a href="student3">Student3</a></li>
-        
-        </ul>
-        </section>
+        <h1>Student Submitted Answers</h1>
+        <table id="submitted-answers-table">
+            <thead>
+                <tr>
+                    <th>Exam Code</th>
+                    <!-- <th>User ID</th> -->
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Subject</th>
+                    <th>Submitted At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Data will be dynamically inserted here -->
+            </tbody>
+        </table>
+
+        <!-- Modal for displaying student answers -->
+        <div id="answers-modal" class="modal">
+            <div class="modal-content">
+                <span class="close-btn" onclick="closeModal()">&times;</span>
+                <h2>Student Answers</h2>
+                <table id="answers-table">
+                    <thead>
+                        <tr>
+                            <th>Question Text</th>
+                            <th>Question Type</th>
+                            <th>Answer Text</th>
+                            <th>Submitted At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Answers will be dynamically inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-    <footer id="contact">
-        <div class="footer-content">
-            <div class="footer-section">
-                <h3>About Us</h3>
-                <p>CIE²T is a leading tool for Cambridge International Education and Examination. Our platform offers comprehensive question databanks, automated exam tools, and detailed assessment reporting.</p>
-            </div>
-            <div class="footer-section">
-                <h3>Quick Links</h3>
-                <ul>
-                    <li><a href="index.html">Home</a></li>
-                    <li><a href="questionbank.html">Question Databank</a></li>
-                    <li><a href="assessment-reports.html">Assessment Reporting</a></li>
-                    <li><a href="#">Exam Automation</a></li>
-                    <li><a href="#about">About</a></li>
-                    <li><a href="#contact">Contact</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>Contact Us</h3>
-                <p>Email: support@cie2t.com</p>
-                <p>Phone: +123 456 7890</p>
-                <p>Address: Hamdard University, madinat al-hikmah</p>
-            </div>
-            <div class="footer-section">
-                <h3>Follow Us</h3>
-                <div class="social-icons">
-                    <a href="#"><img src="path/to/facebook-icon.png" alt="Facebook"></a>
-                    <a href="#"><img src="path/to/twitter-icon.png" alt="Twitter"></a>
-                    <a href="#"><img src="path/to/linkedin-icon.png" alt="LinkedIn"></a>
-                </div>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>&copy; 2024 CIE²T. All rights reserved.</p>
-        </div>
-    </footer>
+
 
     <script>
-        // Simulated user data (replace with actual user data from backend)
-const authContainer = document.getElementById("auth-buttons");
+        // Fetch all data from the studentanswers table
+       // Fetch all data from the studentanswers table
+       async function fetchStudentAnswers() {
+    try {
+        const response = await fetch('/api/student-answers');
+        if (!response.ok) throw new Error('Failed to fetch data');
 
-// Fetch user info from backend API after page loads
+        const data = await response.json();
+        const tableBody = document.querySelector("#submitted-answers-table tbody");
+        tableBody.innerHTML = ""; // Clear existing data
+
+        data.forEach(student => {
+            const date = new Date(student.submitted_at);
+            const formattedDate = date.toLocaleDateString('en-GB', { timeZone: 'Asia/Karachi' });
+            const formattedTime = date.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true,
+                timeZone: 'Asia/Karachi'
+            });
+
+            const row = `
+                <tr>
+                   <td>${student.exam_id}</td>
+                    <td>${student.firstname}</td>
+                    <td>${student.lastname}</td>
+                    <td>${student.subject}</td>
+                    <td>${formattedDate}</td>
+                    <td>
+                        <button onclick="redirectToReport(${student.exam_id}, ${student.user_id})">Check Answers</button>
+                    </td>
+                </tr>
+            `;
+            tableBody.innerHTML += row;
+        });
+    } catch (error) {
+        console.error('Error fetching student answers:', error);
+    }
+}
+
+// Redirect to the report page with query parameters
+function redirectToReport(examId, userId) {
+    window.location.href = `student-report.html?exam_id=${examId}&user_id=${userId}`;
+}
+
+document.addEventListener("DOMContentLoaded", fetchStudentAnswers);
+
 document.addEventListener("DOMContentLoaded", () => {
   fetch("/api/user-info") // Endpoint to fetch the user's session info
     .then((response) => {
@@ -127,6 +149,7 @@ document.addEventListener("DOMContentLoaded", () => {
         .then((response) => response.json())
         .then((data) => {
           if (data.success) {
+            
             // Redirect to the homepage after successful logout
             window.location.href = "/";
           } else {
@@ -142,5 +165,44 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     </script>
+
+    <style>
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+
+        .close-btn {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            top: 10px;
+            right: 25px;
+        }
+
+        .close-btn:hover,
+        .close-btn:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
 </body>
 </html>

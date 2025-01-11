@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Report</title>
+    <link rel="stylesheet" href="stylesheets/student-report.css" />
+    <link rel="stylesheet" href="stylesheets/style.css" />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
+      integrity="sha512-5Hs3dF2AEPkpNAR7UiOHba+lRSJNeM2ECkwxUIxC1Q/FLycGTbNapWXB4tP889k5T5Ju8fs4b1P5z/iB4nMfSQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+  </head>
+  <body>
+    <header>
+      <div class="logo">
+        <span><a href="/index">CIE²T</a></span>
+      </div>
+      <nav>
+        <ul>
+          <li><a href="/questionBank">Question Databank</a></li>
+          <li><a href="/reporting">Assessment Reporting</a></li>
+          <li><a href="/Exam_Automation">Exam Automation</a></li>
+          <li><a href="/generatedPapers">Generated Papers</a></li>
+        </ul>
+      </nav>
+      <div class="auth-buttons" id="auth-buttons">
+        <span id="username" class="username"></span>
+        <i
+          class="fa-solid fa-arrow-right-from-bracket logout-icon"
+          id="logout-btn"
+          title="Logout"
+        ></i>
+      </div>
+    </header>
+    <h1>Student Exam Report</h1>
+    <table id="answers-table">
+      <thead>
+        <tr>
+          <th>Question Text</th>
+
+          <th>Submitted Answer</th>
+          <th>Correct Answer</th>
+          <th>Question Type</th>
+          <th>Score</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Answers will be dynamically inserted here -->
+      </tbody>
+    </table>
+
+    <script>
+      async function fetchStudentAnswers() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const examId = urlParams.get("exam_id");
+        const userId = urlParams.get("user_id");
+
+        if (!examId || !userId) {
+          alert("Missing exam or user ID");
+          return;
+        }
+
+        try {
+          const response = await fetch(
+            `/api/student-answers/${examId}/${userId}`
+          );
+          if (!response.ok) throw new Error("Failed to fetch data");
+
+          const data = await response.json();
+          const tableBody = document.querySelector("#answers-table tbody");
+          tableBody.innerHTML = "";
+
+          data.forEach((answer) => {
+            const row = `
+                    <tr>
+                        <td><strong>* </strong>${answer.question_text}</td>
+                        <td>${answer.answer_text}</td>
+                        <td>${answer.correct_answer}</td>
+                        <td>${answer.question_type}</td>
+                        
+                        
+                        <td><input type="number" min="0" max="5" step="0.5" value="0"></td>
+                    </tr>
+                `;
+            tableBody.innerHTML += row;
+          });
+        } catch (error) {
+          console.error("Error fetching student answers:", error);
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", fetchStudentAnswers);
+      document.addEventListener("DOMContentLoaded", () => {
+        fetch("/api/user-info") // Endpoint to fetch the user's session info
+          .then((response) => {
+            if (!response.ok) {
+              console.error("User not logged in");
+              return;
+            }
+            return response.json();
+          })
+          .then((data) => {
+            const user = data.user;
+            const usernameSpan = document.getElementById("username");
+
+            if (user && usernameSpan) {
+              // Display user's first and last name
+              usernameSpan.textContent = `${user.firstname} ${user.lastname}`;
+            }
+          })
+          .catch((err) => {
+            console.error("Failed to fetch user info:", err);
+          });
+
+        // Handle the logout button click
+        const logoutButton = document.getElementById("logout-btn");
+        if (logoutButton) {
+          logoutButton.addEventListener("click", () => {
+            fetch("/logout", {
+              method: "POST",
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.success) {
+                  // Redirect to the homepage after successful logout
+                  window.location.href = "/";
+                } else {
+                  console.error("Failed to log out");
+                }
+              })
+              .catch((err) => {
+                console.error("Error logging out:", err);
+              });
+          });
+        }
+      });
+    </script>
+  </body>
+</html>

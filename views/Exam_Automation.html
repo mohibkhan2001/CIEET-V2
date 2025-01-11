@@ -26,8 +26,7 @@
           <li><a href="/reporting">Assessment Reporting</a></li>
           <li><a href="/Exam_Automation">Exam Automation</a></li>
           <li><a href="/generatedPapers">Generated Papers</a></li>
-          <li><a href="#about">About</a></li>
-          <li><a href="#contact">Contact</a></li>
+          
         </ul>
       </nav>
 
@@ -102,32 +101,25 @@
         </div>
 
         <!-- Search Bar and Filters -->
-        <div class="question-filters">
-          <input
-            type="text"
-            id="searchInput"
-            placeholder="Search questions..."
-            onkeyup="filterQuestions()"
-          />
-          <div class="filter-options">
-            <label for="yearFilter">Year:</label>
-            <select id="yearFilter" onchange="filterQuestions()">
-              <option value="">All Years</option>
-              <option value="2023">2023</option>
-              <option value="2022">2022</option>
-              <option value="2021">2021</option>
-              <option value="2020">2020</option>
-            </select>
-            <label for="typeFilter">Type:</label>
-            <select id="typeFilter" onchange="filterQuestions()">
-              <option value="">All Types</option>
-              <option value="objective">Objective</option>
-              <option value="subjective">Subjective</option>
-              <option value="diagram">Diagram</option>
-            </select>
-          </div>
-        </div>
+        
 
+        <!-- Question Type Selector (Radio Buttons) -->
+<div id="question-type-selector">
+  <label>
+    <input type="radio" name="question-type" value="subjective" id="subjective" checked onchange="showSubjective(currentSubject)">
+    Subjective
+  </label>
+  <label>
+    <input type="radio" name="question-type" value="objective" id="objective" onchange="showQuestions(currentSubject)">
+    Objective
+  </label>
+</div>
+
+        
+        <div id="questions-container">
+          <!-- Questions will be displayed here -->
+        </div>
+        
         <!-- Buttons for Actions -->
         <div class="action-buttons">
           <button id="selectAllButton" onclick="selectAllQuestions()">

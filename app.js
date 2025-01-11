@@ -496,6 +496,10 @@ app.get("/std_exam/:examId", isLoggedIn, checkRole("Student"), (req, res) => {
 app.get("/generatedPapers", isLoggedIn, checkRole("Teacher"), (req, res) => {
   res.sendFile(path.join(__dirname, "views", "generatedPapers.html")); // Serve generated papers page for Teachers
 });
+app.get("/student-report.html", isLoggedIn, checkRole("Teacher"), (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "student-report.html"));
+});
+
 
 app.get(
   "/questionBank",
@@ -1609,6 +1613,60 @@ app.post("/api/saveStudentAnswers", (req, res) => {
     res.status(200).json({ message: "Answers saved successfully!" });
   });
 });
+
+// Route to fetch all data from studentanswers table
+app.get('/api/student-attempts', (req, res) => {
+  const query = `SELECT * FROM studentanswers  GROUP BY user_id`;  // Fetch all columns from the table
+
+  db.query(query, (err, results) => {
+      if (err) {
+          console.error('Error fetching data:', err);
+          return res.status(500).json({ error: 'Failed to fetch student data' });
+      }
+      res.json(results);
+  });
+});
+
+
+// Fetch all unique student attempts (one row per student)
+app.get('/api/student-answers', (req, res) => {
+  const query = `
+      SELECT sa.user_id, sa.exam_id, u.firstname, u.lastname, sa.subject, sa.submitted_at 
+      FROM studentanswers sa
+      JOIN users u ON sa.user_id = u.user_id
+      GROUP BY sa.user_id, sa.exam_id, u.firstname, u.lastname, sa.subject, sa.submitted_at
+  `;
+  db.query(query, (err, results) => {
+      if (err) {
+          console.error('Error fetching student data:', err);
+          return res.status(500).json({ error: 'Failed to fetch student data' });
+      }
+      res.json(results);
+  });
+});
+
+
+app.get('/api/student-answers/:examId/:userId', (req, res) => {
+  const { examId, userId } = req.params;
+  const query = `
+      SELECT sa.question_text, sa.question_type, sa.answer_text, 
+             COALESCE(sq.correct_answer, mq.correct_answer, d.correct_answer) AS correct_answer
+      FROM studentanswers sa
+      LEFT JOIN subjective_questions sq ON sa.question_text = sq.question_text
+      LEFT JOIN mcq_questions mq ON sa.question_text = mq.question_text
+      LEFT JOIN diagrams d ON sa.question_text = d.question_text
+      WHERE sa.exam_id = ? AND sa.user_id = ?
+  `;
+
+  db.query(query, [examId, userId], (err, results) => {
+      if (err) {
+          console.error('Error fetching detailed answers:', err);
+          return res.status(500).json({ error: 'Failed to fetch student answers' });
+      }
+      res.json(results);
+  });
+});
+
 
 // API to fetch questions
 // app.get("/api/exams/:examId", (req, res) => {

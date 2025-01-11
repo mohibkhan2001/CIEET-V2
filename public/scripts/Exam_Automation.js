@@ -8,20 +8,7 @@ function initializeEventListeners() {
   document
     .getElementById("selectAllButton")
     .addEventListener("click", selectAllQuestions);
-  document
-    .getElementById("searchInput")
-    .addEventListener("keyup", filterQuestions);
-  document
-    .getElementById("yearFilter")
-    .addEventListener("change", filterQuestions);
-  document
-    .getElementById("typeFilter")
-    .addEventListener("change", filterQuestions);
-
-  // Event listener for checkbox selection
-  document.querySelectorAll(".question-checkbox").forEach((checkbox) => {
-    checkbox.addEventListener("change", filterQuestions); // Re-filter when a checkbox is clicked
-  });
+ 
 }
 // Initialize pagination-related variables
 const questionsPerPage = 5; // Number of questions per page
@@ -249,6 +236,8 @@ function restoreSelectedQuestions() {
   });
 }
 
+
+
 // Call restoreSelectedQuestions on page load
 window.onload = function () {
   restoreSelectedQuestions(); // Ensure the selected questions are restored
@@ -264,28 +253,7 @@ window.onload = function () {
 // Call restoreSelectedQuestions on page load
 window.onload = restoreSelectedQuestions;
 
-// Filter questions after page change and ensure they work with pagination
-function filterQuestions() {
-  const searchQuery = $("#searchInput").val().toLowerCase();
-  const yearFilter = $("#yearFilter").val();
-  const typeFilter = $("#typeFilter").val().toLowerCase();
 
-  const filteredQuestions = allQuestions.filter((q) => {
-    const questionText = q.question_text.toLowerCase();
-    const questionYear = q.year || "";
-    const questionType = q.question_type.toLowerCase();
-
-    return (
-      questionText.includes(searchQuery) &&
-      (yearFilter ? questionYear.includes(yearFilter) : true) &&
-      (typeFilter ? questionType === typeFilter : true)
-    );
-  });
-
-  allQuestions = filteredQuestions;
-  currentPage = 1; // Reset to the first page
-  displayQuestions();
-}
 
 // Select all questions function and save to localStorage
 function selectAllQuestions() {

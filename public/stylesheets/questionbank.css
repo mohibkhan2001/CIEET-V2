@@ -203,7 +203,7 @@ td:first-child {
 
 
 /* Button Styling */
-#generate-pdf-button {
+#generatePDFButton {
     background-color: #003366;
     color: white;
     padding: 12px 25px;
@@ -717,7 +717,7 @@ button.active {
 #pagination {
   display: flex;
   justify-content: center;
-  margin-top: 20px;
+  margin: 40px 0;
   list-style-type: none;
   padding: 0;
 }
