@@ -66,4 +66,75 @@ td:nth-child(3){
     margin: 20px 10px 30px 0;
     color: #fff;
     font-size: 16px;
+    transition: background-color 0.2s ease-in-out;
+    cursor: pointer;
 }
+#submit-report:hover{
+    background-color: #007BFF;
+}
+
+#report-summary {
+    width: 80%;
+    margin: 30px auto;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  #report-summary h2 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+  }
+
+  .summary-item {
+    margin-bottom: 15px;
+  }
+
+  .summary-item label {
+    font-weight: bold;
+    color: #555;
+  }
+
+  .summary-item span {
+    font-size: 16px;
+    color: #333;
+    font-weight: normal;
+    display: inline-block;
+    margin-top: 5px;
+  }
+
+  .summary-item textarea {
+    width: 100%;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    resize: vertical;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+  }
+
+  #submit {
+    text-align: center;
+    margin-top: 20px;
+  }
+
+  #submit button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 12px 24px;
+    font-size: 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+
+  #submit button:hover {
+    background-color: #45a049;
+  }
+
+  #submit button:active {
+    transform: scale(0.98);
+  }

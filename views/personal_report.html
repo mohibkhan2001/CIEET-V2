@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Report</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
+      integrity="sha512-5Hs3dF2AEPkpNAR7UiOHba+lRSJNeM2ECkwxUIxC1Q/FLycGTbNapWXB4tP889k5T5Ju8fs4b1P5z/iB4nMfSQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="/stylesheets/style.css">
+    <link rel="stylesheet" href="/stylesheets/personal_report.css">
+</head>
+<body>
+    <header>
+        <div class="logo">
+          <span><a href="/StudentPortal">CIE²T</a></span>
+        </div>
+        <nav>
+          <ul>
+            <li><a href="/std_exam">Exam</a></li>
+            <li><a href="/personal_report">Result</a></li>
+            <li><a href="#contact">Contact</a></li>
+          </ul>
+        </nav>
+  
+        <!-- User Info Display -->
+        <div class="auth-buttons" id="auth-buttons">
+          <span id="username" class="username"></span>
+          <i class="fa-solid fa-arrow-right-from-bracket logout-icon" id="logout-btn" title="Logout"></i>
+        </div>
+      </header>
+    <div class="container">
+        <h1>Personal Exam Report</h1>
+        <table id="reportTable">
+            <thead>
+                <tr>
+                    <th>firsname</th>
+                    <th>lastname</th>
+                    <th>Total Marks</th>
+                    <th>Obtained Marks</th>
+                    <th>Remarks</th>
+                    <th>Grade</th>
+                    <!-- <th>Created At</th> -->
+                </tr>
+            </thead>
+            <tbody id="reportBody">
+                <!-- Report data will be injected here dynamically -->
+            </tbody>
+        </table>
+    </div>
+
+    <script src="/scripts/personal_report.js"></script>
+</body>
+</html>

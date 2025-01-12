@@ -90,6 +90,31 @@
         <section id="manage-exams" class="card admin-section">
           <h3 class="section-header"><i class="fa-solid fa-circle-right"></i>Manage Exams</h3>
           <p>Oversee and configure exams here.</p>
+          <div class="container-papers">
+            <h1>Generated Exams Archive</h1>
+            <p id="exam-instructions">All generated exams are listed below.</p>
+        
+            <table id="generated-exams-list">
+                <thead>
+                    <tr>
+                        <!-- <th>User ID</th> -->
+                        <th>Subject</th>
+                        <th>Subjective</th>
+                        <th>Objective</th>
+                        <th>Diagram</th>
+                        <th>Timer</th>
+                        <th>Exam Date</th>
+                        <th>Created At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="13">Loading exams...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
         </section>
 
        
@@ -105,5 +130,269 @@
     ></script>
     <script src="/scripts/admin-dashboard.js"></script>
     <script src="/scripts/questionBank.js"></script>
+    <script>
+      // Function to fetch generated papers and display them
+      async function fetchGeneratedPapers() {
+        try {
+          const response = await fetch("/api/generated-papers");
+          if (!response.ok)
+            throw new Error(`Error fetching papers: ${response.statusText}`);
+
+          const data = await response.json();
+          console.log("Fetched Papers:", data);
+
+          const papers = Array.isArray(data.papers) ? data.papers : [];
+          const papersListContainer = document
+            .getElementById("generated-papers-list")
+            .querySelector("tbody");
+          papersListContainer.innerHTML = ""; // Clear previous content
+
+          if (papers.length === 0) {
+            papersListContainer.innerHTML =
+              '<tr><td colspan="5">No papers have been generated yet.</td></tr>';
+            return;
+          }
+
+          papers.forEach((paper) => {
+            const paperRow = document.createElement("tr");
+            paperRow.innerHTML = `
+              <td>
+                <a href="/download-pdf/${paper.filename}" 
+                   class="paper-name" 
+                   data-filename="${paper.filename}"
+                   style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                   ${paper.filename}
+                </a>
+              </td>
+              <td class="actions">
+               
+                <button class="delete-btn" onclick="deleteFile('${paper.filename}')">
+                  Delete <i class="fa-solid fa-trash"></i>
+                </button>
+              </td>
+            `;
+            papersListContainer.appendChild(paperRow);
+          });
+        } catch (error) {
+          console.error("Error:", error);
+          document
+            .getElementById("generated-papers-list")
+            .querySelector("tbody").innerHTML =
+            '<tr><td colspan="5">No generated papers</td></tr>';
+        }
+      }
+
+      // Function to handle renaming of the file
+      function renameFile(oldFileName) {
+        const fileExtension = ".pdf"; // Assuming all files are PDFs
+        const newFileName = prompt(
+          "Enter the new name for the file:",
+          oldFileName
+        );
+
+        if (newFileName && newFileName !== oldFileName) {
+          let updatedFileName = newFileName;
+          if (!updatedFileName.endsWith(fileExtension)) {
+            updatedFileName += fileExtension;
+          }
+
+          fetch("/rename-file", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              oldFileName: oldFileName,
+              newFileName: updatedFileName,
+            }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                alert("File renamed successfully");
+                fetchGeneratedPapers(); // Reload the papers list
+              } else {
+                alert("Error renaming file");
+              }
+            })
+            .catch((error) => {
+              console.error("Error renaming file:", error);
+              alert("Error renaming file");
+            });
+        }
+      }
+
+      // Function to handle deletion of the file
+      function deleteFile(fileName) {
+        const confirmDelete = confirm(
+          `Are you sure you want to delete the file: ${fileName}?`
+        );
+        if (confirmDelete) {
+          fetch("/delete-file", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              fileName: fileName,
+            }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                alert("File deleted successfully");
+                fetchGeneratedPapers(); // Reload the papers list
+              } else {
+                alert("Error deleting file");
+              }
+            })
+            .catch((error) => {
+              console.error("Error deleting file:", error);
+              alert("Error deleting file");
+            });
+        }
+      }
+
+      // Fetch user info from backend API after page loads
+      document.addEventListener("DOMContentLoaded", () => {
+        fetch("/api/user-info") // Endpoint to fetch the user's session info
+          .then((response) => {
+            if (!response.ok) {
+              console.error("User not logged in");
+              return;
+            }
+            return response.json();
+          })
+          .then((data) => {
+            const user = data.user;
+            const usernameSpan = document.getElementById("username");
+
+            if (user && usernameSpan) {
+              // Display user's first and last name
+              usernameSpan.textContent = `${user.firstname} ${user.lastname}`;
+            }
+          })
+          .catch((err) => {
+            console.error("Failed to fetch user info:", err);
+          });
+
+        // Handle the logout button click
+        const logoutButton = document.getElementById("logout-btn");
+        if (logoutButton) {
+          logoutButton.addEventListener("click", () => {
+            fetch("/logout", {
+              method: "POST",
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.success) {
+                  // Redirect to the homepage after successful logout
+                  window.location.href = "/";
+                } else {
+                  console.error("Failed to log out");
+                }
+              })
+              .catch((err) => {
+                console.error("Error logging out:", err);
+              });
+          });
+        }
+      });
+
+      // Fetch generated papers on page load
+      document.addEventListener("DOMContentLoaded", () => {
+
+
+        fetchGeneratedPapers();
+
+        // Handle logout button
+        const logoutButton = document.getElementById("logout-btn");
+        if (logoutButton) {
+          logoutButton.addEventListener("click", () => {
+            fetch("/logout", { method: "POST" })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.success) {
+                  window.location.href = "/"; // Redirect to home
+                } else {
+                  console.error("Logout failed");
+                }
+              })
+              .catch((error) => console.error("Error logging out:", error));
+          });
+        }
+      });
+
+
+
+      //-------------------------------------------
+
+      async function fetchTeacherExams() {
+    try {
+        const response = await fetch("/api/teacher/exams");  // Fetching from the teacher-specific endpoint
+        if (!response.ok) throw new Error(`Error fetching exams: ${response.statusText}`);
+
+        const data = await response.json();
+        const exams = Array.isArray(data.exams) ? data.exams : [];  
+        const examListContainer = document.getElementById("generated-exams-list").querySelector("tbody");
+
+        // Clear the table before repopulating
+        examListContainer.innerHTML = ""; 
+
+        // If no exams are found, show a message
+        if (exams.length === 0) {
+            examListContainer.innerHTML = '<tr><td colspan="10">No generated exams found.</td></tr>';
+            return;
+        }
+
+        // Display each exam with enriched data
+        exams.forEach((exam) => {
+            const examRow = document.createElement("tr");
+            examRow.innerHTML = `
+                <td>${exam.subject}</td>
+                <td>${exam.subjective}</td>
+                <td>${exam.objective}</td>
+                <td>${exam.diagram}</td>
+                <td>${exam.timer}</td>
+                <td>${exam.creationDate}</td>
+                <td>${exam.creationTime}</td>
+                <td><button onclick="deleteExam('${exam.exam_id}')">Delete</button></td>
+            `;
+            examListContainer.appendChild(examRow);
+        });
+
+    } catch (error) {
+        console.error("Error fetching exams:", error);
+        alert("Failed to fetch exams. Please try again later.");
+    }
+}
+
+
+async function deleteExam(examId) {
+    if (confirm("Are you sure you want to delete this exam?")) {
+        try {
+            const response = await fetch(`/api/delete-exam/${examId}`, {
+                method: "DELETE",
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                alert("Exam deleted successfully");
+                fetchTeacherExams();  // Refresh the list of exams after deletion
+            } else {
+                alert(result.error || "Error deleting exam");
+            }
+        } catch (error) {
+            console.error("Error deleting exam:", error);
+            alert("An error occurred while deleting the exam.");
+        }
+    }
+}
+
+// Call the function when the page loads
+document.addEventListener("DOMContentLoaded", fetchTeacherExams);
+
+    </script>
+
   </body>
 </html>

@@ -496,10 +496,17 @@ app.get("/std_exam/:examId", isLoggedIn, checkRole("Student"), (req, res) => {
 app.get("/generatedPapers", isLoggedIn, checkRole("Teacher"), (req, res) => {
   res.sendFile(path.join(__dirname, "views", "generatedPapers.html")); // Serve generated papers page for Teachers
 });
-app.get("/student-report.html", isLoggedIn, checkRole("Teacher"), (req, res) => {
-  res.sendFile(path.join(__dirname, "views", "student-report.html"));
+app.get(
+  "/student-report.html",
+  isLoggedIn,
+  checkRole("Teacher"),
+  (req, res) => {
+    res.sendFile(path.join(__dirname, "views", "student-report.html"));
+  }
+);
+app.get("/personal_report", isLoggedIn, checkRole("Student"), (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "personal_report.html")); // Serve index page for Teachers
 });
-
 
 app.get(
   "/questionBank",
@@ -1240,15 +1247,18 @@ app.get("/api/generated-papers", (req, res) => {
 app.post("/api/generate-exam", (req, res) => {
   try {
     console.log(req.session);
-    const { subject, selectedQuestions, description, timer, examDate } =
-      req.body;
+    const {
+      subject,
+      selectedQuestions,
+      description,
+      timer,
+      examDate,
+      examName,
+      totalMarks,
+    } = req.body;
 
     // Assuming user_id is stored in the session
     const user_id = req.session.user ? req.session.user.id : null;
-
-    // if (!user_id) {
-    //   return res.status(401).json({ error: "User not authenticated." });
-    // }
 
     // Validate input
     if (!subject || typeof subject !== "string" || subject.trim() === "") {
@@ -1279,10 +1289,16 @@ app.post("/api/generate-exam", (req, res) => {
       return res.status(400).json({ error: "Exam date is required." });
     }
 
-    const currentDateTime = new Date();
-    const examDateTime = new Date(examDate);
+    if (!examName || typeof examName !== "string" || examName.trim() === "") {
+      return res.status(400).json({ error: "Exam name is required." });
+    }
 
-    // Classify questions by type
+    if (!totalMarks || typeof totalMarks !== "number" || totalMarks <= 0) {
+      return res.status(400).json({
+        error: "Total marks is required and should be a positive number.",
+      });
+    }
+
     const subjective = [];
     const objective = [];
     const diagram = [];
@@ -1294,14 +1310,14 @@ app.post("/api/generate-exam", (req, res) => {
       if (type === "diagram") diagram.push(id);
     });
 
-    // Validate IDs are numeric
     const isValidId = (id) => /^\d+$/.test(id);
     if (![...subjective, ...objective, ...diagram].every(isValidId)) {
       return res.status(400).json({ error: "Invalid question ID detected." });
     }
 
     const examData = {
-      user_id, // Add user_id to the exam data
+      user_id,
+      exam_name: examName,
       subject,
       subjective: subjective.length,
       objective: objective.length,
@@ -1312,15 +1328,17 @@ app.post("/api/generate-exam", (req, res) => {
       description,
       timer,
       examDate,
+      totalMarks, // Added totalMarks
       created_at: new Date(),
     };
 
     const query = `INSERT INTO generated_exams 
-      (user_id, subject, subjective, objective, diagram, subjective_questions, objective_questions, diagram_questions, description, timer, exam_date, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      (user_id, exam_name, subject, subjective, objective, diagram, subjective_questions, objective_questions, diagram_questions, description, timer, exam_date, total_marks, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     const values = [
       examData.user_id,
+      examData.exam_name,
       examData.subject,
       examData.subjective,
       examData.objective,
@@ -1331,6 +1349,7 @@ app.post("/api/generate-exam", (req, res) => {
       examData.description,
       examData.timer,
       examData.examDate,
+      examData.totalMarks, // Added totalMarks value
       examData.created_at,
     ];
 
@@ -1389,7 +1408,7 @@ app.get("/api/teacher/exams", (req, res) => {
   }
 
   const query = `
-      SELECT subject, subjective, objective, diagram, description, timer, exam_date, created_at, exam_id 
+      SELECT exam_name, subject, subjective, objective, diagram, description, timer, exam_date, created_at, exam_id 
       FROM generated_exams 
       WHERE user_id = ? 
       ORDER BY created_at DESC
@@ -1428,10 +1447,7 @@ app.delete("/api/delete-exam/:examId", (req, res) => {
   const examId = req.params.examId; // Get exam_id from the request parameters
 
   // Ensure user is authenticated and authorized as a teacher
-  if (
-    !req.session.user ||
-    !req.session.user.id
-  ) {
+  if (!req.session.user || !req.session.user.id) {
     return res.status(403).json({ error: "Access denied. Teachers only." });
   }
 
@@ -1445,11 +1461,9 @@ app.delete("/api/delete-exam/:examId", (req, res) => {
     }
 
     if (result.affectedRows === 0) {
-      return res
-        .status(404)
-        .json({
-          error: "Exam not found or you do not have permission to delete it.",
-        });
+      return res.status(404).json({
+        error: "Exam not found or you do not have permission to delete it.",
+      });
     }
 
     res
@@ -1615,173 +1629,209 @@ app.post("/api/saveStudentAnswers", (req, res) => {
 });
 
 // Route to fetch all data from studentanswers table
-app.get('/api/student-attempts', (req, res) => {
-  const query = `SELECT * FROM studentanswers  GROUP BY user_id`;  // Fetch all columns from the table
-
-  db.query(query, (err, results) => {
-      if (err) {
-          console.error('Error fetching data:', err);
-          return res.status(500).json({ error: 'Failed to fetch student data' });
-      }
-      res.json(results);
-  });
-});
-
-
-// Fetch all unique student attempts (one row per student)
-app.get('/api/student-answers', (req, res) => {
+app.get("/api/student-attempts", (req, res) => {
   const query = `
-      SELECT sa.user_id, sa.exam_id, u.firstname, u.lastname, sa.subject, sa.submitted_at 
+      SELECT sa.user_id, u.firstname, u.lastname, COUNT(sa.question_text) AS total_attempts
       FROM studentanswers sa
       JOIN users u ON sa.user_id = u.user_id
-      GROUP BY sa.user_id, sa.exam_id, u.firstname, u.lastname, sa.subject, sa.submitted_at
-  `;
+      GROUP BY sa.user_id
+  `; // Join with the users table and group by user_id to get the first name, last name, and total attempts
+
   db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching data:", err);
+      return res.status(500).json({ error: "Failed to fetch student data" });
+    }
+
+    // Debugging: Log the retrieved data to ensure firstname and lastname are not null
+    console.log("Retrieved data:", results);
+
+    // Filter out rows where firstname or lastname is null or undefined
+    const filteredResults = results.filter(
+      (row) => row.firstname && row.lastname
+    );
+
+    if (filteredResults.length === 0) {
+      console.error("No valid student data found.");
+      return res.status(400).json({
+        error: "No valid student data found with firstname and lastname.",
+      });
+    }
+
+    // Insert results into student_exam_reports table
+    const insertQuery = `
+          INSERT INTO student_exam_reports (user_id, firstname, lastname, total_attempts)
+          VALUES ?
+      `;
+
+    // Prepare values to be inserted into the student_exam_reports table
+    const values = filteredResults.map((row) => [
+      row.user_id,
+      row.firstname,
+      row.lastname,
+      row.total_attempts,
+    ]);
+
+    db.query(insertQuery, [values], (err, insertResults) => {
       if (err) {
-          console.error('Error fetching student data:', err);
-          return res.status(500).json({ error: 'Failed to fetch student data' });
+        console.error("Error inserting into student_exam_reports:", err);
+        return res
+          .status(500)
+          .json({ error: "Failed to insert data into student_exam_reports" });
       }
-      res.json(results);
+      res.json({ message: "Data saved successfully!", data: filteredResults });
+    });
   });
 });
 
+app.post("/api/update-score", (req, res) => {
+  const { exam_id, user_id, score } = req.body;
 
-app.get('/api/student-answers/:examId/:userId', (req, res) => {
+  const query = `UPDATE studentanswers 
+                 SET score = ? 
+                 WHERE exam_id = ? AND user_id = ? AND question_type != 'Objective'`;
+
+  db.query(query, [score, exam_id, user_id], (err, result) => {
+    if (err) {
+      console.error("Error updating score:", err);
+      return res.status(500).json({ error: "Failed to update score." });
+    }
+    res.status(200).json({ message: "Score updated successfully!" });
+  });
+});
+
+// Fetch all unique student attempts (one row per student)
+app.get("/api/student-answers", (req, res) => {
+  const query = `
+      SELECT 
+        sa.user_id, 
+        sa.exam_id, 
+        u.firstname, 
+        u.lastname, 
+        sa.subject, 
+        sa.submitted_at, 
+        ge.exam_name, 
+        ge.total_marks  -- Fetch total_marks from generated_exams table
+      FROM studentanswers sa
+      JOIN users u ON sa.user_id = u.user_id
+      JOIN generated_exams ge ON sa.exam_id = ge.exam_id
+      GROUP BY 
+        sa.user_id, 
+        sa.exam_id, 
+        u.firstname, 
+        u.lastname, 
+        sa.subject, 
+        sa.submitted_at, 
+        ge.exam_name, 
+        ge.total_marks  -- Group by total_marks as well
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching student data:", err);
+      return res.status(500).json({ error: "Failed to fetch student data" });
+    }
+    res.json(results);
+  });
+});
+
+app.get("/api/student-answers/:examId/:userId", (req, res) => {
   const { examId, userId } = req.params;
   const query = `
       SELECT sa.question_text, sa.question_type, sa.answer_text, 
-             COALESCE(sq.correct_answer, mq.correct_answer, d.correct_answer) AS correct_answer
+             COALESCE(sq.correct_answer, mq.correct_answer, d.correct_answer) AS correct_answer,
+             u.firstname, u.lastname,
+             ge.total_marks
       FROM studentanswers sa
       LEFT JOIN subjective_questions sq ON sa.question_text = sq.question_text
       LEFT JOIN mcq_questions mq ON sa.question_text = mq.question_text
       LEFT JOIN diagrams d ON sa.question_text = d.question_text
+      LEFT JOIN users u ON sa.user_id = u.user_id
+      LEFT JOIN generated_exams ge ON sa.exam_id = ge.exam_id
       WHERE sa.exam_id = ? AND sa.user_id = ?
   `;
 
   db.query(query, [examId, userId], (err, results) => {
-      if (err) {
-          console.error('Error fetching detailed answers:', err);
-          return res.status(500).json({ error: 'Failed to fetch student answers' });
-      }
-      res.json(results);
+    if (err) {
+      console.error("Error fetching detailed answers:", err);
+      return res.status(500).json({ error: "Failed to fetch student answers" });
+    }
+    res.json(results);
   });
 });
 
+app.post("/api/save-student-report", (req, res) => {
+  const { examId, userId, obtainedMarks, remarks, grade } = req.body;
 
-// API to fetch questions
-// app.get("/api/exams/:examId", (req, res) => {
-//   const { examId } = req.params;
-
-//   // Fetch the exam details from the `generated_exams` table
-//   db.query(
-//       "SELECT * FROM generated_exams WHERE exam_id = ?",
-//       [examId],
-//       (err, examResult) => {
-//           if (err) return res.status(500).json({ error: "Database error while fetching exam details" });
-
-//           if (!examResult.length) return res.status(404).json({ error: "Exam not found" });
-
-//           const exam = examResult[0];
-//           const questions = [];
-
-//           // Fetch subjective questions
-//           if (exam.subjective && exam.subjective_questions) {
-//               const subjectiveIds = exam.subjective_questions.split(",");
-//               db.query(
-//                   `SELECT id, question_text FROM subjective_questions WHERE id IN (?)`,
-//                   [subjectiveIds],
-//                   (err, subjectiveResults) => {
-//                       if (err) return res.status(500).json({ error: "Database error while fetching subjective questions" });
-
-//                       subjectiveResults.forEach((q) => questions.push({ ...q, type: "subjective" }));
-
-//                       // Fetch objective questions
-//                       if (exam.objective && exam.objective_questions) {
-//                           const objectiveIds = exam.objective_questions.split(",");
-//                           db.query(
-//                               `SELECT id, question_text, option_a, option_b, option_c, option_d FROM mcq_questions WHERE id IN (?)`,
-//                               [objectiveIds],
-//                               (err, objectiveResults) => {
-//                                   if (err)
-//                                       return res.status(500).json({ error: "Database error while fetching objective questions" });
-
-//                                   objectiveResults.forEach((q) =>
-//                                       questions.push({
-//                                           id: q.id,
-//                                           question_text: q.question_text,
-//                                           type: "objective",
-//                                           options: [q.option_a, q.option_b, q.option_c, q.option_d],
-//                                       })
-//                                   );
-
-//                                   // Fetch diagram questions
-//                                   if (exam.diagram && exam.diagram_questions) {
-//                                       const diagramIds = exam.diagram_questions.split(",");
-//                                       db.query(
-//                                           `SELECT id, diagram_url, question_text FROM diagrams WHERE id IN (?)`,
-//                                           [diagramIds],
-//                                           (err, diagramResults) => {
-//                                               if (err)
-//                                                   return res
-//                                                       .status(500)
-//                                                       .json({ error: "Database error while fetching diagram questions" });
-
-//                                               diagramResults.forEach((q) =>
-//                                                   questions.push({
-//                                                       id: q.id,
-//                                                       diagram_url: q.diagram_url,
-//                                                       question_text: q.question_text,
-//                                                       type: "diagram",
-//                                                   })
-//                                               );
-
-//                                               // Send all collected questions
-//                                               return res.json({ questions });
-//                                           }
-//                                       );
-//                                   } else {
-//                                       // Send questions if no diagram questions
-//                                       return res.json({ questions });
-//                                   }
-//                               }
-//                           );
-//                       } else {
-//                           // Send questions if no objective questions
-//                           return res.json({ questions });
-//                       }
-//                   }
-//               );
-//           } else {
-//               // Send questions if no subjective questions
-//               return res.json({ questions });
-//           }
-//       }
-//   );
-// });
-
-// API to submit answers
-app.post("/api/exams/submit", (req, res) => {
-  const { examId, answers, subject } = req.body;
-
-  // Ensure the required fields are provided
-  if (!examId || !answers || !subject) {
-    return res
-      .status(400)
-      .json({ error: "Missing required fields: examId, answers, or subject" });
+  if (!examId || !userId || obtainedMarks === undefined || !remarks || !grade) {
+    return res.status(400).json({ error: "Missing required data" });
   }
 
-  db.query(
-    "INSERT INTO student_answers (exam_id, subject, answers) VALUES (?, ?, ?)",
-    [examId, subject, JSON.stringify(answers)], // Ensure answers are stringified
-    (err) => {
-      if (err) return res.status(500).json({ error: "Database error" });
+  const query = `
+      INSERT INTO student_exam_reports 
+      (exam_id, user_id, total_marks, obtained_marks, remarks, grade) 
+      SELECT ge.exam_id, sa.user_id, ge.total_marks, ?, ?, ? 
+      FROM studentanswers sa
+      JOIN generated_exams ge ON sa.exam_id = ge.exam_id
+      WHERE sa.exam_id = ? AND sa.user_id = ?
+      GROUP BY user_id
+  `;
 
-      res.json({ success: true });
+  const values = [obtainedMarks, remarks, grade, examId, userId];
+
+  db.query(query, values, (err, result) => {
+    if (err) {
+      console.error("Error saving student report:", err);
+      return res
+        .status(500)
+        .json({ error: "An error occurred while saving the report" });
     }
-  );
+
+    res.status(201).json({
+      message: "Report saved successfully",
+      reportId: result.insertId,
+    });
+  });
 });
 
-// Start server
+app.get("/api/getPersonalReport", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ errors: ["Please log in to view reports"] });
+  }
+
+  const userId = req.session.user.id; // Get user_id from the session
+
+  const query = `
+      SELECT 
+          ser.report_id, 
+          ser.exam_id, 
+          ser.user_id, 
+          u.firstname, 
+          u.lastname, 
+          ser.total_marks, 
+          ser.obtained_marks, 
+          ser.remarks, 
+          ser.grade, 
+          ser.created_at
+      FROM 
+          student_exam_reports ser
+      JOIN 
+          users u 
+      ON 
+          ser.user_id = u.user_id
+      WHERE 
+          ser.user_id = ?
+  `;
+
+  db.query(query, [userId], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: "Failed to fetch the report" });
+    }
+
+    res.json({ reports: results });
+  });
+});
+
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });

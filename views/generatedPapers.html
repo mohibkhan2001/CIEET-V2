@@ -72,6 +72,7 @@
           <thead>
               <tr>
                   <!-- <th>User ID</th> -->
+                  <th>Exam Name</th>
                   <th>Subject</th>
                   <th>Subjective</th>
                   <th>Objective</th>
@@ -311,6 +312,7 @@
         exams.forEach((exam) => {
             const examRow = document.createElement("tr");
             examRow.innerHTML = `
+            <td>${exam.exam_name}</td>
                 <td>${exam.subject}</td>
                 <td>${exam.subjective}</td>
                 <td>${exam.objective}</td>

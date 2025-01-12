@@ -429,16 +429,17 @@ document.addEventListener("DOMContentLoaded", () => {
     .addEventListener("click", handleAutomateExam);
 });
 
-// Generate Exam Button Click Event
 async function handleAutomateExam(event) {
   event.preventDefault();
 
   const subject = document.querySelector("button.active")?.getAttribute("data-subject");
+  const examName = document.getElementById("examName").value.trim(); // New exam name field
   const description = document.getElementById("examDescription").value.trim();
   const timer = parseInt(document.getElementById("examTimer").value, 10);
   const examDate = document.getElementById("examDate").value;
+  const totalMarks = parseInt(document.getElementById("totalMarks").value, 10); // Get total marks
 
-  if (!subject || !description || !timer || !examDate) {
+  if (!subject || !examName || !description || !timer || !examDate || !totalMarks) {
       alert("Please fill in all fields before generating the exam.");
       return;
   }
@@ -455,10 +456,12 @@ async function handleAutomateExam(event) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
               subject,
+              examName,  // Added examName
               selectedQuestions,
               description,
               timer,
-              examDate
+              examDate,
+              totalMarks  // Pass totalMarks
           }),
       });
 
@@ -473,6 +476,7 @@ async function handleAutomateExam(event) {
       console.error("Error:", error);
   }
 }
+
 
 
 

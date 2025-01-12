@@ -33,6 +33,7 @@
             <thead>
                 <tr>
                     <th>Exam Code</th>
+                    <th>Exam Name</th>
                     <!-- <th>User ID</th> -->
                     <th>First Name</th>
                     <th>Last Name</th>
@@ -71,17 +72,26 @@
 
     <script>
         // Fetch all data from the studentanswers table
-       // Fetch all data from the studentanswers table
-       async function fetchStudentAnswers() {
+       // Fetch all data from the studentanswers table and filter by teacher's generated exams
+async function fetchStudentAnswers() {
     try {
         const response = await fetch('/api/student-answers');
         if (!response.ok) throw new Error('Failed to fetch data');
 
         const data = await response.json();
+        const sessionResponse = await fetch('/api/teacher/exams');
+        if (!sessionResponse.ok) throw new Error('Failed to fetch teacher exams');
+
+        const teacherExams = await sessionResponse.json();
+        const teacherExamIds = teacherExams.exams.map(exam => exam.exam_id);
+
         const tableBody = document.querySelector("#submitted-answers-table tbody");
         tableBody.innerHTML = ""; // Clear existing data
 
-        data.forEach(student => {
+        // Filter student answers to match only exams created by the logged-in teacher
+        const filteredData = data.filter(student => teacherExamIds.includes(student.exam_id));
+
+        filteredData.forEach(student => {
             const date = new Date(student.submitted_at);
             const formattedDate = date.toLocaleDateString('en-GB', { timeZone: 'Asia/Karachi' });
             const formattedTime = date.toLocaleTimeString('en-US', {
@@ -94,6 +104,7 @@
             const row = `
                 <tr>
                    <td>${student.exam_id}</td>
+                    <td>${student.exam_name}</td>
                     <td>${student.firstname}</td>
                     <td>${student.lastname}</td>
                     <td>${student.subject}</td>
@@ -105,6 +116,11 @@
             `;
             tableBody.innerHTML += row;
         });
+
+        if (filteredData.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="6">No submitted answers available for your exams.</td></tr>`;
+        }
+
     } catch (error) {
         console.error('Error fetching student answers:', error);
     }

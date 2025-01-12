@@ -242,6 +242,7 @@ function submitExam() {
   questions.forEach((_, index) => saveAnswer(index));
 
   const userId = sessionStorage.getItem("user_id");
+  console.log(userId);
   const subject = sessionStorage.getItem("subject"); // Retrieve subject from sessionStorage
 
   if (!subject) {
@@ -283,7 +284,3 @@ function submitExam() {
   xhr.onerror = () => alert("Network error. Please try again.");
   xhr.send(JSON.stringify(answers));
 }
-
-
-
-
