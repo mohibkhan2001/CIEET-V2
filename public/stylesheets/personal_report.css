@@ -36,4 +36,9 @@ th {
   border-radius: 2px;
   color: white;
 }
+td:nth-child(5){
+  text-align: left;
+  /* margin: auto 100px; */
+  
+}
  

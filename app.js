@@ -489,7 +489,7 @@ app.get("/index", isLoggedIn, checkRole("Teacher"), (req, res) => {
 app.get("/std_exam", isLoggedIn, checkRole("Student"), (req, res) => {
   res.sendFile(path.join(__dirname, "views", "std_exam.html")); // Serve index page for Teachers
 });
-app.get("/std_exam/:examId", isLoggedIn, checkRole("Student"), (req, res) => {
+app.get("/examPage/:examId", isLoggedIn, checkRole("Student"), (req, res) => {
   res.sendFile(path.join(__dirname, "views", "examPage.html")); // Serve index page for Teachers
 });
 
@@ -1760,39 +1760,41 @@ app.get("/api/student-answers/:examId/:userId", (req, res) => {
   });
 });
 
-app.post("/api/save-student-report", (req, res) => {
-  const { examId, userId, obtainedMarks, remarks, grade } = req.body;
+app.post("/api/save-student-report", async (req, res) => {
+  const { examId, userId, obtainedMarks, remarks, grade, teacherId } = req.body;
 
-  if (!examId || !userId || obtainedMarks === undefined || !remarks || !grade) {
-    return res.status(400).json({ error: "Missing required data" });
+  // Validate required fields
+  if (!examId || !userId || !teacherId || obtainedMarks === undefined || !remarks || !grade) {
+      return res.status(400).json({ error: "Missing required data" });
   }
 
   const query = `
       INSERT INTO student_exam_reports 
-      (exam_id, user_id, total_marks, obtained_marks, remarks, grade) 
-      SELECT ge.exam_id, sa.user_id, ge.total_marks, ?, ?, ? 
+      (exam_id, user_id, teacher_id, total_marks, obtained_marks, remarks, grade) 
+      SELECT ge.exam_id, sa.user_id, ?, ge.total_marks, ?, ?, ? 
       FROM studentanswers sa
       JOIN generated_exams ge ON sa.exam_id = ge.exam_id
       WHERE sa.exam_id = ? AND sa.user_id = ?
-      GROUP BY user_id
+      GROUP BY sa.user_id
   `;
 
-  const values = [obtainedMarks, remarks, grade, examId, userId];
+  const values = [teacherId, obtainedMarks, remarks, grade, examId, userId];
 
   db.query(query, values, (err, result) => {
-    if (err) {
-      console.error("Error saving student report:", err);
-      return res
-        .status(500)
-        .json({ error: "An error occurred while saving the report" });
-    }
+      if (err) {
+          console.error("Error saving student report:", err);
+          return res
+              .status(500)
+              .json({ error: "An error occurred while saving the report" });
+      }
 
-    res.status(201).json({
-      message: "Report saved successfully",
-      reportId: result.insertId,
-    });
+      res.status(201).json({
+          message: "Report saved successfully",
+          reportId: result.insertId,
+      });
   });
 });
+
 
 app.get("/api/getPersonalReport", (req, res) => {
   if (!req.session.user) {
@@ -1831,6 +1833,73 @@ app.get("/api/getPersonalReport", (req, res) => {
     res.json({ reports: results });
   });
 });
+
+// New route to check if the report exists for a given exam, teacher, and student
+app.get("/api/verify-report", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ errors: ["Please log in to verify reports"] });
+  }
+
+  const { examId, userId } = req.query; // Get examId and userId from query params
+  const teacherId = req.session.user.id; // Get teacherId from the session
+
+  if (!examId || !userId) {
+    return res.status(400).json({ errors: ["Missing examId or userId"] });
+  }
+
+  const query = `
+    SELECT 
+        ser.report_id
+    FROM 
+        student_exam_reports ser
+    WHERE 
+        ser.exam_id = ? 
+        AND ser.user_id = ? 
+        AND ser.teacher_id = ?
+  `;
+
+  db.query(query, [examId, userId, teacherId], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: "Failed to check existing report" });
+    }
+
+    if (results.length > 0) {
+      return res.json({ reportExists: true });
+    } else {
+      return res.json({ reportExists: false });
+    }
+  });
+});
+
+
+app.get('/api/checkAttempted', (req, res) => {
+  const userId = req.query.user_id;
+  const examId = req.query.exam_id;
+
+  if (!userId || !examId) {
+    return res.status(400).json({ error: "Missing user_id or exam_id." });
+  }
+
+  const query = `
+    SELECT 1 FROM studentanswers 
+    WHERE user_id = ? AND exam_id = ?
+    LIMIT 1
+  `;
+
+  db.execute(query, [userId, examId], (err, results) => {
+    if (err) {
+      console.error("Error checking attempt status:", err);
+      return res.status(500).json({ error: "Database error." });
+    }
+
+    const hasAttempted = results.length > 0;
+    res.json({ hasAttempted });
+  });
+});
+
+
+
+
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

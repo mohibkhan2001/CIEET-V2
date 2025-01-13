@@ -1,200 +1,154 @@
-    /* General Body Styling */
-    body {
-        font-family: 'Arial', sans-serif;
-        margin: 0;
-        padding: 0;
-        background-color: #f9f9f9;
-        color: #333;
-    }
+/* General Reset and Body Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    color: #333;
+  }
+  
+  /* Header Styles */
+  header .auth-buttons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  header .username {
+    font-size: 18px;
+  }
+  
+  header .logout-icon {
+    font-size: 20px;
+    cursor: pointer;
+    color: #fff;
+  }
+  
+  header .logout-icon:hover {
+    color: #ccc;
+  }
+  
+  /* Exam List Container */
+  #examListContainer {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  #examTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+  
+  /* Table Header and Cells */
+  #examTable th, #examTable td {
+    padding: 10px;
+    text-align: center;
+    border: 1px solid #ddd;
+  }
+  
+  #examTable th {
+    background-color: #007bff;
+    color: white;
+  }
+  #examTable tr:nth-child(odd){
+    background-color: #fff;
+  }
 
-    /* Container for the exam */
-    .exam-container {
-        max-width: 1000px;
-        margin: 50px auto;
-        padding: 30px;
-        background: #ffffff;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        border-radius: 12px;
-        overflow: hidden;
-    }
+  
 
-    /* Header Styling */
+  
+  /* Adjust widths for each column */
+  #examTable th:nth-child(2), /* Exam Name */
+  #examTable td:nth-child(2) {
+    width: 150px; /* Adjust for Exam Name */
+  }
+  
+  #examTable th:nth-child(3), /* Subject */
+  #examTable td:nth-child(3) {
+    width: 120px; /* Adjust for Subject */
+  }
+  
+  #examTable th:nth-child(4), /* Description */
+  #examTable td:nth-child(4) {
+    width: 550px; /* Larger width for Description */
+  }
+  
+  #examTable th:nth-child(5), /* Scheduled Date */
+  #examTable td:nth-child(5) {
+    width: 180px; /* Adjust for Date */
+  }
+  
+  #examTable th:nth-child(6), /* Action */
+  #examTable td:nth-child(6) {
+    width: 150px; /* Adjust for Action button */
+  }
+  
+  /* Table Row Hover Effect */
+  #examTable tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+  
+  #examTable tr:hover {
+    background-color: #f1f1f1;
+  }
+  
+  /* Button Styles */
+  #examTable td button {
+    padding: 8px 16px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+  }
+  
+  #examTable td button:hover {
+    background-color: #218838;
+  }
+  
+  #examTable td button:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+  }
+  
+  /* Media Queries for Responsiveness */
+  @media (max-width: 768px) {
     header {
-        text-align: center;
-        margin-bottom: 40px;
+      flex-direction: column;
+      align-items: flex-start;
     }
-
-    header h1 {
-        font-size: 2.5rem;
-        color: #4CAF50;
-        margin-bottom: 10px;
+  
+    header nav ul {
+      flex-direction: column;
+      gap: 10px;
     }
-
-    header p {
-        font-size: 1.2rem;
-        color: #555;
+  
+    #examTable th, #examTable td {
+      padding: 8px;
+      font-size: 14px;
     }
-
-    /* Timer Styling */
-    #timer {
-        font-size: 1.5rem;
-        font-weight: bold;
-        margin-top: 15px;
-        color: #E74C3C;
+  
+    #examTable td button {
+      padding: 6px 12px;
+      font-size: 14px;
     }
-
-    /* Styling for the exam questions section */
-    #examQuestions {
-        margin-top: 20px;
-        padding: 10px;
-        border-top: 2px solid #f1f1f1;
+  }
+  
+  @media (max-width: 480px) {
+    #examTable th, #examTable td {
+      padding: 6px;
+      font-size: 12px;
     }
-
-    /* Individual question container */
-    .question {
-        margin-bottom: 40px;
-        padding: 20px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        background-color: #fafafa;
+  
+    #examTable td button {
+      padding: 4px 10px;
+      font-size: 12px;
     }
-
-    .question h2 {
-        font-size: 1.5rem;
-        margin: 10px 0;
-        color: #333;
-    }
-
-    /* Styling for the textarea in subjective questions */
-    textarea {
-        width: 100%;
-        padding: 12px;
-        font-size: 1rem;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        margin-top: 10px;
-        resize: vertical;
-    }
-
-    /* Styling for MCQ options */
-    .options {
-        margin-left: 20px;
-    }
-
-    .options input[type="radio"] {
-        margin-right: 10px;
-        margin-top: 5px;
-    }
-
-    /* Navigation buttons */
-    .navigation {
-        margin-top: 40px;
-        text-align: center;
-    }
-
-    .navigation button {
-        padding: 12px 25px;
-        font-size: 1.1rem;
-        margin: 0 10px;
-        cursor: pointer;
-        border: none;
-        border-radius: 8px;
-        background-color: #4CAF50;
-        color: #fff;
-        transition: background-color 0.3s ease;
-    }
-
-    .navigation button:hover {
-        background-color: #45a049;
-    }
-
-    /* Disabled button styling */
-    button:disabled {
-        background-color: #d3d3d3;
-        cursor: not-allowed;
-    }
-
-    /* Attempt Exam Button Styling */
-    #attemptExamButton {
-        padding: 15px 30px;
-        font-size: 1.5rem;
-        background-color: #3498DB;
-        color: white;
-        border: none;
-        cursor: pointer;
-        border-radius: 8px;
-        margin: 20px auto;
-        display: block;
-        transition: background-color 0.3s ease;
-    }
-
-    #attemptExamButton:hover {
-        background-color: #2980B9;
-    }
-
-    /* Styling for the exam question table */
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
-    }
-
-    table th,
-    table td {
-        padding: 12px;
-        text-align: left;
-        border-bottom: 1px solid #ddd;
-    }
-
-    table th {
-        background-color: #4CAF50;
-        color: white;
-    }
-
-    table tr:nth-child(even) {
-        background-color: #f9f9f9;
-    }
-
-    table tr:hover {
-        background-color: #f1f1f1;
-    }
-
-    /* Responsive styling for small screens */
-    @media (max-width: 768px) {
-        .exam-container {
-            padding: 15px;
-            margin: 20px;
-        }
-
-        .question h2 {
-            font-size: 1.3rem;
-        }
-
-        .navigation button {
-            padding: 10px 20px;
-            font-size: 1rem;
-        }
-
-        #attemptExamButton {
-            font-size: 1.2rem;
-        }
-
-        table th,
-        table td {
-            font-size: 0.9rem;
-        }
-    }
-
-    .sidebar {
-        border: 1px solid #ddd;
-        padding: 10px;
-        max-width: 100px;
-        height: 100%;
-    }
-    
-    .question-number {
-        margin: 5px;
-        padding: 5px;
-        cursor: pointer;
-    }
-    
+  }
+  

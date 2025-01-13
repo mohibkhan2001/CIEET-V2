@@ -83,173 +83,18 @@
 <div id="submit">
   <button type="submit" id="submit-report">Submit Report</button>
 </div>
-    <!-- <div id="submit">
-      <button type="submit" id="submit-report">Submit Report</button>
-    </div> -->
+   
+<!-- Modal structure -->
+<div id="report-exists-modal" class="modal">
+  <div class="modal-content">
+      <p><i class="fa-solid fa-triangle-exclamation"></i> Report already exists for this student in this exam.</p>
+      <button id="go-back-btn" class="go-back-btn">Go back</button>
+  </div>
+</div>
+
+
     
 
-    <script>
-   async function fetchStudentAnswers() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const examId = urlParams.get("exam_id");
-    const userId = urlParams.get("user_id");
-
-    if (!examId || !userId) {
-        alert("Missing exam or user ID");
-        return;
-    }
-
-    try {
-        const response = await fetch(`/api/student-answers/${examId}/${userId}`);
-        if (!response.ok) throw new Error("Failed to fetch data");
-
-        const data = await response.json();
-        const tableBody = document.querySelector("#answers-table tbody");
-        const totalMarksElement = document.querySelector("#totalMarks"); // Select the span for total marks
-        const obtainedMarksElement = document.querySelector("#obtainedMarks"); // Select the span for obtained marks
-        const gradeElement = document.querySelector("#grade"); // Select the span for grade
-
-        tableBody.innerHTML = "";
-        let totalMarks = 0;
-        let obtainedMarks = 0;
-
-        // Display total marks if available
-        totalMarks = data[0]?.total_marks || 0; // Assuming all answers belong to the same exam
-        totalMarksElement.textContent = totalMarks; // Update the totalMarks span
-
-        data.forEach((answer, index) => {
-            const row = `
-                <tr>
-                    <td>${answer.question_text}</td>
-                    <td>${answer.answer_text}</td>
-                    <td>${answer.correct_answer}</td>
-                    <td>${answer.question_type}</td>
-                    <td>
-                        <input type="number" min="0" max="10" step="0.5" value="0" class="score-input" data-index="${index}">
-                    </td>
-                </tr>
-            `;
-            tableBody.innerHTML += row;
-        });
-
-        // Add event listeners to score inputs to update obtained marks and grade
-        const scoreInputs = document.querySelectorAll('.score-input');
-        scoreInputs.forEach(input => {
-            input.addEventListener('input', () => {
-                obtainedMarks = 0; // Reset obtained marks
-                scoreInputs.forEach(input => {
-                    obtainedMarks += parseFloat(input.value) || 0; // Sum the scores, defaulting to 0 if invalid input
-                });
-                obtainedMarksElement.textContent = obtainedMarks.toFixed(2); // Update obtained marks span with formatted value
-
-                // Update grade based on the obtained marks
-                const grade = calculateGrade(obtainedMarks, totalMarks);
-                gradeElement.textContent = grade; // Update grade span with calculated grade
-            });
-        });
-
-        // Submit Report Button Event Listener
-        document.querySelector("#submit-report").addEventListener('click', async () => {
-            const remarks = document.querySelector("#remarks").value; // Assuming there's an input for remarks
-            const grade = gradeElement.textContent;
-            const obtainedMarks = parseFloat(obtainedMarksElement.textContent);
-
-            if (!remarks || grade === "--" || isNaN(obtainedMarks)) {
-                alert("Please complete all fields before submitting.");
-                return;
-            }
-
-            const reportData = {
-                examId,
-                userId,
-                obtainedMarks,
-                remarks,
-                grade,
-            };
-
-            try {
-                const response = await fetch('/api/save-student-report', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(reportData),
-                });
-
-                if (!response.ok) {
-                    throw new Error("Failed to save report");
-                }
-
-                const result = await response.json();
-                alert("Report submitted successfully!");
-            } catch (error) {
-                console.error("Error submitting report:", error);
-                alert("An error occurred while submitting the report.");
-            }
-        });
-
-    } catch (error) {
-        console.error("Error fetching student answers:", error);
-    }
-}
-
-// Function to calculate grade based on obtained marks
-function calculateGrade(obtainedMarks, totalMarks) {
-    const percentage = (obtainedMarks / totalMarks) * 100;
-    if (percentage >= 90) return 'A+';
-    if (percentage >= 85) return 'A';
-    if (percentage >= 70) return 'B';
-    if (percentage >= 60) return 'C';
-    if (percentage >= 50) return 'D';
-    return 'F';
-}
-
-
-      document.addEventListener("DOMContentLoaded", fetchStudentAnswers);
-      document.addEventListener("DOMContentLoaded", () => {
-        fetch("/api/user-info") // Endpoint to fetch the user's session info
-          .then((response) => {
-            if (!response.ok) {
-              console.error("User not logged in");
-              return;
-            }
-            return response.json();
-          })
-          .then((data) => {
-            const user = data.user;
-            const usernameSpan = document.getElementById("username");
-
-            if (user && usernameSpan) {
-              // Display user's first and last name
-              usernameSpan.textContent = `${user.firstname} ${user.lastname}`;
-            }
-          })
-          .catch((err) => {
-            console.error("Failed to fetch user info:", err);
-          });
-
-        // Handle the logout button click
-        const logoutButton = document.getElementById("logout-btn");
-        if (logoutButton) {
-          logoutButton.addEventListener("click", () => {
-            fetch("/logout", {
-              method: "POST",
-            })
-              .then((response) => response.json())
-              .then((data) => {
-                if (data.success) {
-                  // Redirect to the homepage after successful logout
-                  window.location.href = "/";
-                } else {
-                  console.error("Failed to log out");
-                }
-              })
-              .catch((err) => {
-                console.error("Error logging out:", err);
-              });
-          });
-        }
-      });
-    </script>
+    <script src="/scripts/student-report.js"></script>
   </body>
 </html>
