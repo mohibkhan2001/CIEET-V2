@@ -8,7 +8,6 @@ function initializeEventListeners() {
   document
     .getElementById("selectAllButton")
     .addEventListener("click", selectAllQuestions);
- 
 }
 // Initialize pagination-related variables
 const questionsPerPage = 5; // Number of questions per page
@@ -118,24 +117,26 @@ function displayQuestions() {
       ? `<div class="correct-answer"><strong>Correct Answer: </strong>${q.correct_answer}</div>`
       : "";
 
-    questionItem.html(`
+      questionItem.html(`
         <div class="check_container">
-          <input id="${q.question_type}-${
-      q.id
-    }" class="question-checkbox hidden" type="checkbox" value="${
-      q.question_type
-    }-${q.id}" name="questions">
-          <label class="checkbox" for="${q.question_type}-${q.id}"></label>
+            <input id="${q.question_type}-${q.id}" 
+                class="question-checkbox hidden" 
+                type="checkbox" 
+                value="${q.id}" 
+                name="questions"
+                data-type="${q.question_type}"> <!-- Added data-type here -->
+            <label class="checkbox" for="${q.question_type}-${q.id}"></label>
         </div>
         <span class="question-text">${q.question_text}</span>
         ${optionsHTML}
         ${diagramHTML}
         ${correctAnswerHTML}
         <div class="question-details">
-          <div class="question-year">${q.year || "N/A"}</div>
-          <div class="question-type">${q.question_type || "Unknown"}</div>
+            <div class="question-year">${q.year || "N/A"}</div>
+            <div class="question-type">${q.question_type || "Unknown"}</div>
         </div>
-      `);
+    `);
+    
 
     // Restore checkbox states from localStorage for all questions
     if (localStorage.getItem(q.question_type + "-" + q.id) === "checked") {
@@ -148,62 +149,116 @@ function displayQuestions() {
   // Update pagination buttons
   setupPagination(allQuestions.length);
 }
-
-// Save checkbox state to localStorage
+// Save checkbox state to localStorage with max marks logic
 $(document).on("change", 'input[name="questions"]', function () {
-  const questionId = $(this).val(); // Question ID
-  const questionType = $(this).data("type"); // Question type (e.g., subjective, objective, diagram)
+  const questionId = $(this).val();
+  const questionType = $(this).attr("data-type");  // Changed to attr() for dynamic elements
 
-  // Create a unique identifier combining type and ID
+  // Log the question type for debugging
+  console.log("Selected Question Type:", questionType);
+
+  // Define max marks based on question type
+  const maxMark = questionType === "objective" ? 1 : 5;  
   const uniqueKey = `${questionType}-${questionId}`;
 
   if (this.checked) {
-    localStorage.setItem(uniqueKey, "checked");
-    updateSelectedQuestions(uniqueKey, true);
+      localStorage.setItem(uniqueKey, JSON.stringify({ checked: true, maxMark }));
+      updateSelectedQuestions(uniqueKey, true);
   } else {
-    localStorage.removeItem(uniqueKey);
-    updateSelectedQuestions(uniqueKey, false);
+      localStorage.removeItem(uniqueKey);
+      updateSelectedQuestions(uniqueKey, false);
   }
+
+  updateTotalMarks(); // Always update marks when checkbox changes
 });
 
-// Global array to store selected question unique keys across pages
-let selectedQuestions =
-  JSON.parse(localStorage.getItem("selectedQuestions")) || [];
 
-// Function to update selected questions and sync with localStorage
+
+// Global array for selected questions
+let selectedQuestions = JSON.parse(localStorage.getItem("selectedQuestions")) || [];
+
+// Function to update selected questions array and sync with localStorage
 function updateSelectedQuestions(uniqueKey, isChecked) {
-  if (isChecked) {
-    // Add to selected questions if checked
-    if (!selectedQuestions.includes(uniqueKey)) {
+  if (isChecked && !selectedQuestions.includes(uniqueKey)) {
       selectedQuestions.push(uniqueKey);
-    }
-  } else {
-    // Remove from selected questions if unchecked
-    const index = selectedQuestions.indexOf(uniqueKey);
-    if (index > -1) {
-      selectedQuestions.splice(index, 1);
-    }
+  } else if (!isChecked) {
+      selectedQuestions = selectedQuestions.filter(key => key !== uniqueKey);
   }
 
-  // Save the updated selected questions to localStorage
+  // Sync updated selection back to localStorage
   localStorage.setItem("selectedQuestions", JSON.stringify(selectedQuestions));
 }
 
-// On page load, restore checkbox states
-$(document).ready(function () {
-  $('input[name="questions"]').each(function () {
-    const questionId = $(this).val();
-    const questionType = $(this).data("type");
-    const uniqueKey = `${questionType}-${questionId}`;
+// Restore checkbox states on page load
+// $(document).ready(function () {
+//   $('input[name="questions"]').each(function () {
+//       const questionId = $(this).val();
+//       const questionType = $(this).data("type");
+//       const uniqueKey = `${questionType}-${questionId}`;
+//       const storedData = JSON.parse(localStorage.getItem(uniqueKey));
 
-    if (localStorage.getItem(uniqueKey) === "checked") {
-      $(this).prop("checked", true);
-      if (!selectedQuestions.includes(uniqueKey)) {
-        selectedQuestions.push(uniqueKey);
-      }
-    }
+//       if (storedData && storedData.checked) {
+//           $(this).prop("checked", true);
+//           if (!selectedQuestions.includes(uniqueKey)) {
+//               selectedQuestions.push(uniqueKey);
+//           }
+//       }
+//   });
+//   updateTotalMarks(); // Update marks when the page loads
+// });
+
+
+$(document).ready(function () {
+  // Clear the selected questions from localStorage
+  localStorage.removeItem("selectedQuestions");
+
+  // Check if totalMarks input exists before setting its value
+  const totalMarksInput = document.getElementById("totalMarks");
+  if (totalMarksInput) {
+    totalMarksInput.value = 0;
+  }
+
+  // Check if teacherSetMarks input exists before setting its value
+  const teacherSetMarksInput = document.getElementById("teacherSetMarks");
+  if (teacherSetMarksInput) {
+    teacherSetMarksInput.value = "";
+  }
+
+  // Reset checkboxes if necessary
+  const checkboxes = document.querySelectorAll("input[type='checkbox']");
+  checkboxes.forEach((checkbox) => {
+    checkbox.checked = false;
   });
+
+  // Reset any active buttons or visual indicators
+  const activeButton = document.querySelector("button.active");
+  if (activeButton) {
+    activeButton.classList.remove("active");
+  }
+
+  // Optional: Call your existing functions here if needed
+  if (typeof updateTotalMarks === "function") {
+    updateTotalMarks(); // Ensure total marks are updated only if the function exists
+  }
 });
+
+
+// Function to update total marks based on selected questions and their types
+function updateTotalMarks() {
+  const selectedQuestions = JSON.parse(localStorage.getItem("selectedQuestions")) || [];
+  let totalMarks = 0;
+
+  selectedQuestions.forEach((uniqueKey) => {
+      const questionData = JSON.parse(localStorage.getItem(uniqueKey));
+      if (questionData && questionData.checked) {
+          totalMarks += questionData.maxMark;
+      }
+  });
+
+  // Update the total marks input field
+  document.getElementById("totalMarks").value = totalMarks;
+}
+
 
 // Event listener for checkbox change
 $(document).on("change", 'input[name="questions"]', function () {
@@ -236,8 +291,6 @@ function restoreSelectedQuestions() {
   });
 }
 
-
-
 // Call restoreSelectedQuestions on page load
 window.onload = function () {
   restoreSelectedQuestions(); // Ensure the selected questions are restored
@@ -253,26 +306,32 @@ window.onload = function () {
 // Call restoreSelectedQuestions on page load
 window.onload = restoreSelectedQuestions;
 
-
-
-// Select all questions function and save to localStorage
+// Select all questions function, save to localStorage, and calculate total marks
 function selectAllQuestions() {
   const checkboxes = document.querySelectorAll('input[name="questions"]');
   const idsArray = [];
+  let totalMarks = 0;
+
   checkboxes.forEach((checkbox) => {
-    checkbox.checked = true; // Check the checkbox
-    const id = checkbox.id; // Get the ID of the checkbox
-    if (id) {
-      idsArray.push(id); // Add the ID to the array
-    }
+      checkbox.checked = true; // Check the checkbox
+      const id = checkbox.id;  // Get the ID of the checkbox
+      const questionType = checkbox.getAttribute("data-type"); // Get question type from data attribute
+      const maxMark = questionType === "objective" ? 1 : 5;  // Assign max mark based on type
+
+      if (id) {
+          idsArray.push(id); // Add the ID to the array
+          totalMarks += maxMark; // Add the question mark to total
+          localStorage.setItem(id, JSON.stringify({ checked: true, maxMark })); // Save question with marks
+      }
   });
+
   console.log("Extracted IDs:", idsArray);
-    localStorage.setItem('selectedQuestions', JSON.stringify(idsArray));
+  console.log("Total Marks:", totalMarks);
+
+  // Save the selected questions and total marks to localStorage
+  localStorage.setItem("selectedQuestions", JSON.stringify(idsArray));
+  document.getElementById("totalMarks").value = totalMarks; // Update total marks input field
 }
-
-
-
-
 
 
 // Fetch all questions function (make sure it's accessible)
@@ -354,72 +413,46 @@ async function showQuestions(subject) {
   }
 }
 
+// Show objective questions only and calculate marks properly
+// Show objective questions only and calculate marks properly
 async function showObjective(subject) {
   document.getElementById("questions-container").style.display = "block";
   currentSubject = subject;
 
-  document.querySelectorAll(".subject-selection button").forEach((btn) => {
-    btn.classList.remove("active");
-  });
-
-  // Scroll smoothly to the questions-container
-  const questionsContainer = document.getElementById("questions-container");
-  questionsContainer.style.display = "block"; // Ensure the container is visible
-  questionsContainer.scrollIntoView({ behavior: "smooth" });
-
-  const clickedButton = document.querySelector(
-    `button[data-subject="${subject}"]`
-  );
-  clickedButton.classList.add("active");
+  document.querySelectorAll(".subject-selection button").forEach((btn) => btn.classList.remove("active"));
+  document.querySelector(`button[data-subject="${subject}"]`).classList.add("active");
 
   try {
-    const data = await fetchAllQuestions(subject);
-
-    allQuestions = [
-      
-      ...(data.mcqs || []),
-      
-    ];
-
-    displayQuestions();
+      const data = await fetchAllQuestions(subject);
+      allQuestions = [...(data.mcqs || [])]; // Only objective questions
+      displayQuestions();
+      updateTotalMarks(); // Update marks after displaying questions
   } catch (error) {
-    console.error("Error fetching questions:", error);
-    alert("Failed to fetch questions. Please try again later.");
+      console.error("Error fetching questions:", error);
+      alert("Failed to fetch questions. Please try again later.");
   }
 }
+
+// Show subjective and diagram questions only and calculate marks properly
 async function showSubjective(subject) {
   document.getElementById("questions-container").style.display = "block";
   currentSubject = subject;
 
-  document.querySelectorAll(".subject-selection button").forEach((btn) => {
-    btn.classList.remove("active");
-  });
-
-  // Scroll smoothly to the questions-container
-  const questionsContainer = document.getElementById("questions-container");
-  questionsContainer.style.display = "block"; // Ensure the container is visible
-  questionsContainer.scrollIntoView({ behavior: "smooth" });
-
-  const clickedButton = document.querySelector(
-    `button[data-subject="${subject}"]`
-  );
-  clickedButton.classList.add("active");
+  document.querySelectorAll(".subject-selection button").forEach((btn) => btn.classList.remove("active"));
+  document.querySelector(`button[data-subject="${subject}"]`).classList.add("active");
 
   try {
-    const data = await fetchAllQuestions(subject);
-
-    allQuestions = [
-      ...(data.subjective || []),
-      
-      ...(data.diagrams || []),
-    ];
-
-    displayQuestions();
+      const data = await fetchAllQuestions(subject);
+      allQuestions = [...(data.subjective || []), ...(data.diagrams || [])];
+      displayQuestions();
+      updateTotalMarks(); // Update marks after displaying questions
   } catch (error) {
-    console.error("Error fetching questions:", error);
-    alert("Failed to fetch questions. Please try again later.");
+      console.error("Error fetching questions:", error);
+      alert("Failed to fetch questions. Please try again later.");
   }
 }
+
+
 
 // Initialize the page with questions
 // showQuestions("math");
@@ -428,74 +461,165 @@ document.addEventListener("DOMContentLoaded", () => {
     .getElementById("automate-exam-btn")
     .addEventListener("click", handleAutomateExam);
 });
+// Function to create notification for the teacher
+async function createNotification(userId, type) {
+  try {
+    const response = await fetch("/notifications/automation", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        user_id: userId, // Pass the logged-in teacher's user ID
+        type: type,      // Notification type (e.g., 'Exam Automation')
+      }),
+    });
 
+    const data = await response.json();
+    if (data.message === "Notification created successfully") {
+      console.log("Notification created for userId:", userId);
+    } else {
+      console.error("Failed to create notification:", data.error);
+    }
+  } catch (error) {
+    console.error("Error creating notification:", error);
+  }
+}
 async function handleAutomateExam(event) {
   event.preventDefault();
 
-  const subject = document.querySelector("button.active")?.getAttribute("data-subject");
-  const examName = document.getElementById("examName").value.trim(); // New exam name field
+  const subject = document
+    .querySelector("button.active")
+    ?.getAttribute("data-subject");
+  const examName = document.getElementById("examName").value.trim();
   const description = document.getElementById("examDescription").value.trim();
   const timer = parseInt(document.getElementById("examTimer").value, 10);
   const examDate = document.getElementById("examDate").value;
-  const totalMarks = parseInt(document.getElementById("totalMarks").value, 10); // Get total marks
+  const totalMarks = parseInt(document.getElementById("totalMarks").value, 10);
 
-  if (!subject || !examName || !description || !timer || !examDate || !totalMarks) {
-      alert("Please fill in all fields before generating the exam.");
-      return;
+  if (
+    !subject ||
+    !examName ||
+    !description ||
+    !timer ||
+    !examDate ||
+    !totalMarks
+  ) {
+    showPopup("Please fill in all fields before generating the exam.");
+    return;
   }
 
-  const selectedQuestions = JSON.parse(localStorage.getItem("selectedQuestions")) || [];
+  const selectedDate = new Date(examDate);
+  const currentDate = new Date();
+  currentDate.setHours(0, 0, 0, 0);
+  selectedDate.setHours(0, 0, 0, 0);
+
+  if (selectedDate <= currentDate) {
+    showPopup("You can only automate exams for future dates.");
+    return;
+  }
+
+  const selectedQuestions =
+    JSON.parse(localStorage.getItem("selectedQuestions")) || [];
   if (selectedQuestions.length === 0) {
-      alert("Please select at least one question.");
-      return;
+    showPopup("Please select at least one question.");
+    return;
   }
 
   try {
-      const response = await fetch("/api/generate-exam", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-              subject,
-              examName,  // Added examName
-              selectedQuestions,
-              description,
-              timer,
-              examDate,
-              totalMarks  // Pass totalMarks
-          }),
-      });
+    const response = await fetch("/api/generate-exam", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        subject,
+        examName,
+        selectedQuestions,
+        description,
+        timer,
+        examDate,
+        totalMarks,
+      }),
+    });
 
-      const data = await response.json();
-      if (response.ok) {
-          alert(`Exam Automated Successfully! Exam ID: ${data.examId}`);
-          resetSelectedQuestions();
-      } else {
-          alert(data.error || "Error creating the exam.");
-      }
+    const data = await response.json();
+    if (response.ok) {
+      // Show success message and reload page when "OK" is clicked
+      showPopup(`Exam Automated Successfully! Exam ID: ${data.examId}`, true);
+    } else {
+      showPopup(data.error || "Error creating the exam.");
+    }
   } catch (error) {
-      console.error("Error:", error);
+    console.error("Error:", error);
   }
+}
+
+function showPopup(message, reloadOnClose = false) {
+  const popup = document.getElementById("popup");
+  const popupMessage = document.getElementById("popup-message");
+  popupMessage.textContent = message;
+  popup.classList.remove("hidden");
+
+  const closeButton = document.getElementById("popup-close");
+  const closeHandler = () => {
+    popup.classList.add("hidden");
+    closeButton.removeEventListener("click", closeHandler); // Clean up event listener
+    if (reloadOnClose) {
+      location.reload(); // Reload the page if required
+    }
+  };
+  closeButton.addEventListener("click", closeHandler);
+}
+
+
+function showPopup(message) {
+  const popup = document.getElementById("popup");
+  const popupMessage = document.getElementById("popup-message");
+  popupMessage.textContent = message;
+  popup.classList.remove("hidden");
+
+  const closeButton = document.getElementById("popup-close");
+  closeButton.addEventListener("click", () => {
+    popup.classList.add("hidden");
+  });
 }
 
 
 
 
+
+// Reset selected questions and total marks
 function resetSelectedQuestions() {
   // Clear the selected questions from localStorage
   localStorage.removeItem("selectedQuestions");
 
   // Reset checkboxes
-  const checkboxes = document.querySelectorAll("input[type='checkbox']");
+  const checkboxes = document.querySelectorAll("input[name='questions']");
   checkboxes.forEach((checkbox) => {
-    checkbox.checked = false;
+      checkbox.checked = false;
   });
 
-  // Optionally, reset any active buttons or visual indicators
+  // Reset Total Marks input if it exists
+  const totalMarksInput = document.getElementById("totalMarks");
+  if (totalMarksInput) {
+      totalMarksInput.value = 0;
+  }
+
+  // Reset the teacher's set total marks input if it exists
+  const teacherSetMarksInput = document.getElementById("teacherSetMarks");
+  if (teacherSetMarksInput) {
+      teacherSetMarksInput.value = "";
+  }
+
+  // Optionally, reset active buttons or indicators
   const activeButton = document.querySelector("button.active");
   if (activeButton) {
-    activeButton.classList.remove("active");
+      activeButton.classList.remove("active");
   }
 }
+
+
+
+
 document.addEventListener("DOMContentLoaded", () => {
   fetch("/api/user-info") // Endpoint to fetch the user's session info
     .then((response) => {
@@ -530,7 +654,7 @@ document.addEventListener("DOMContentLoaded", () => {
           if (data.success) {
             // Reset the checkboxes after logout
             resetSelectedQuestions();
-            
+
             // Redirect to the homepage after successful logout
             window.location.href = "/";
           } else {

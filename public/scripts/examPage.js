@@ -21,9 +21,11 @@ function loadExamPage(examId) {
 
       // Load exam details immediately
       document.getElementById("examTitle").textContent = `Exam: ${data.examId}`;
-      document.getElementById("examSubject").textContent = data.subject || "No subject provided.";
-      document.getElementById("examDescription").textContent = data.description || "No description provided.";
-      document.getElementById("studentName").textContent = "John Doe"; // Replace with dynamic data if needed
+      document.getElementById("examSubject").textContent =
+        data.subject || "No subject provided.";
+      document.getElementById("examDescription").textContent =
+        data.description || "No description provided.";
+      // document.getElementById("studentName").textContent = ""; // Replace with dynamic data if needed
 
       // Store subject in sessionStorage
       sessionStorage.setItem("subject", data.subject);
@@ -61,7 +63,6 @@ function loadExamPage(examId) {
   xhr.send();
 }
 
-
 function attemptExam() {
   document.getElementById("attemptExamButton").style.display = "none";
   document.getElementById("examQuestions").style.display = "block";
@@ -84,20 +85,24 @@ function saveAnswer(index) {
   const question = questions[index];
   let answerText = "";
 
-  const questionElement = document.querySelectorAll("#examQuestions .question")[index];
+  const questionElement = document.querySelectorAll("#examQuestions .question")[
+    index
+  ];
   if (!questionElement) return; // Ensure the question element exists
 
   // Save answer based on question type
   if (question.type === "subjective" || question.type === "diagram") {
-      const textarea = questionElement.querySelector("textarea");
-      if (textarea) {
-          answerText = textarea.value.trim();
-      }
+    const textarea = questionElement.querySelector("textarea");
+    if (textarea) {
+      answerText = textarea.value.trim();
+    }
   } else if (question.type === "objective") {
-      const selectedOption = questionElement.querySelector('input[type="radio"]:checked');
-      if (selectedOption) {
-          answerText = selectedOption.value;
-      }
+    const selectedOption = questionElement.querySelector(
+      'input[type="radio"]:checked'
+    );
+    if (selectedOption) {
+      answerText = selectedOption.value;
+    }
   }
 
   // Save the answer to local storage
@@ -107,53 +112,47 @@ function saveAnswer(index) {
 }
 
 function addEventListenersToQuestion(index) {
-  const questionElement = document.querySelectorAll("#examQuestions .question")[index];
+  const questionElement = document.querySelectorAll("#examQuestions .question")[
+    index
+  ];
   if (!questionElement) return;
 
   // For text inputs (subjective/diagram)
   const textarea = questionElement.querySelector("textarea");
   if (textarea) {
-      textarea.addEventListener("input", () => saveAnswer(index));
+    textarea.addEventListener("input", () => saveAnswer(index));
   }
 
   // For radio buttons (objective)
   const radioButtons = questionElement.querySelectorAll('input[type="radio"]');
-  radioButtons.forEach(radio => {
-      radio.addEventListener("change", () => saveAnswer(index));
+  radioButtons.forEach((radio) => {
+    radio.addEventListener("change", () => saveAnswer(index));
   });
 }
 
 function addEventListenersToQuestion(index) {
-  const questionElement = document.querySelectorAll("#examQuestions .question")[index];
+  const questionElement = document.querySelectorAll("#examQuestions .question")[
+    index
+  ];
 
   if (!questionElement) return;
 
   if (questionElement.querySelector("textarea")) {
-    questionElement.querySelector("textarea").addEventListener("input", function() {
-      saveAnswer(index);
-    });
+    questionElement
+      .querySelector("textarea")
+      .addEventListener("input", function () {
+        saveAnswer(index);
+      });
   }
 
   if (questionElement.querySelectorAll('input[type="radio"]').length > 0) {
-    questionElement.querySelectorAll('input[type="radio"]').forEach(radio => {
-      radio.addEventListener("change", function() {
+    questionElement.querySelectorAll('input[type="radio"]').forEach((radio) => {
+      radio.addEventListener("change", function () {
         saveAnswer(index);
       });
     });
   }
 }
-
-// function navigateQuestion(direction) {
-//   if (direction === "next" && currentQuestionIndex < questions.length - 1) {
-//     currentQuestionIndex++;
-//     renderQuestion();
-//   } else if (direction === "previous" && currentQuestionIndex > 0) {
-//     currentQuestionIndex--;
-//     renderQuestion();
-//   }
-
-//   updateNavigationButtons();
-// }
 
 // Call addEventListenersToQuestion when rendering a question
 function renderQuestion() {
@@ -167,11 +166,15 @@ function renderQuestion() {
 
   // Loop through all questions and render them
   questions.forEach((question, index) => {
-    let questionHtml = `<div class="question"><p><strong>Q${index + 1}: ${question.question_text}</strong></p>`;
+    let questionHtml = `<div class="question"><p><strong>Q${index + 1}: ${
+      question.question_text
+    }</strong></p>`;
 
     if (question.type === "subjective") {
       // Render textarea for subjective questions
-      questionHtml += `<textarea rows="5" cols="50" name="answer">${getSavedAnswer(index)}</textarea>`;
+      questionHtml += `<textarea rows="5" cols="50" name="answer">${getSavedAnswer(
+        index
+      )}</textarea>`;
     } else if (question.type === "objective") {
       // Render radio buttons for objective questions
       questionHtml += question.options
@@ -179,7 +182,9 @@ function renderQuestion() {
           (option) =>
             `<div>
                 <label>
-                  <input type="radio" name="answer${index}" value="${option}" ${option === getSavedAnswer(index) ? 'checked' : ''}/>
+                  <input type="radio" name="answer${index}" value="${option}" ${
+              option === getSavedAnswer(index) ? "checked" : ""
+            }/>
                   ${option}
                 </label>
               </div>`
@@ -188,10 +193,14 @@ function renderQuestion() {
     } else if (question.type === "diagram") {
       // Render image and textarea for diagram questions
       questionHtml += ` 
-        <img src="http://localhost:3000/Images/Diagrams/${question.diagram_url}" 
+        <img src="http://localhost:3000/Images/Diagrams/${
+          question.diagram_url
+        }" 
              alt="Diagram Question" 
              style="width: 300px; height: auto; max-height: 300px; border-radius: 10px; object-fit: contain;" />
-        <textarea rows="5" cols="50" name="answer">${getSavedAnswer(index)}</textarea>`;
+        <textarea rows="5" cols="50" name="answer">${getSavedAnswer(
+          index
+        )}</textarea>`;
     }
 
     questionHtml += `</div>`;
@@ -207,7 +216,7 @@ function renderQuestion() {
 
 function getSavedAnswer(index) {
   const savedAnswers = JSON.parse(localStorage.getItem("answers")) || {};
-  return savedAnswers[index] || ''; // Return saved answer or empty string if no answer is saved
+  return savedAnswers[index] || ""; // Return saved answer or empty string if no answer is saved
 }
 
 function startTimer(duration) {
@@ -218,7 +227,9 @@ function startTimer(duration) {
     const minutes = Math.floor(timeRemaining / 60);
     const seconds = timeRemaining % 60;
 
-    document.getElementById("timeRemaining").textContent = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    document.getElementById("timeRemaining").textContent = `${String(
+      minutes
+    ).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
     timeRemaining--;
 
     if (timeRemaining < 0) {
@@ -235,52 +246,101 @@ function updateNavigationButtons() {
   document.getElementById("submitBtn").disabled = false; // Enable submit button
 }
 
-
-
 function submitExam() {
   // Save all answers before submitting
   questions.forEach((_, index) => saveAnswer(index));
 
-  const userId = sessionStorage.getItem("user_id");
-  console.log(userId);
+  // Extract exam ID from the URL
+  const urlParts = window.location.pathname.split("/");
+  const examId = urlParts[urlParts.length - 1]; // Get the last segment of the URL
+
+  if (!examId) {
+    return alert("Exam ID is required.");
+  }
+
   const subject = sessionStorage.getItem("subject"); // Retrieve subject from sessionStorage
 
   if (!subject) {
-    return alert("Subject is required");
+    return alert("Subject is required.");
   }
 
   const savedAnswers = JSON.parse(localStorage.getItem("answers")) || {};
 
   const answers = questions.map((question, index) => ({
-      user_id: userId,
-      exam_id: examId,
-      subject: subject, // Ensure subject is passed here
-      question_text: question.question_text,
-      question_type: question.type,
-      answer_text: savedAnswers[index] || "",
-      submitted_at: new Date().toISOString(),
+    exam_id: examId,
+    subject: subject,
+    question_text: question.question_text,
+    question_type: question.type,
+    answer_text: savedAnswers[index] || "",
+    submitted_at: new Date().toISOString(),
   }));
 
+  // Submit answers
   const xhr = new XMLHttpRequest();
   xhr.open("POST", "/api/saveStudentAnswers", true);
   xhr.setRequestHeader("Content-Type", "application/json");
 
   xhr.onload = function () {
-      if (xhr.status === 200) {
-          alert("Exam submitted successfully.");
+    if (xhr.status === 200) {
+      alert("Exam submitted successfully.");
 
-          // Reset local storage after exam submission
-          localStorage.removeItem("answers"); // Clear answers from local storage
-          sessionStorage.removeItem("subject"); // Clear subject from session storage
-          sessionStorage.removeItem("user_id"); // Optionally, clear user_id from session storage if needed
+      // Create a notification for the teacher
+      fetch("/notifications/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          examId: examId, // Pass the exam ID to identify the teacher
+          type: "submission", // Specify the notification type
+        }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.message === "Notification created successfully") {
+            console.log("Notification created for examId:", examId);
+          } else {
+            console.error("Failed to create notification:", data.error);
+          }
+        })
+        .catch((error) => {
+          console.error("Error creating notification:", error);
+        });
 
-          // Redirect after submission
-          window.location.href = "http://localhost:3000/std_exam";
-      } else {
-          alert("Error submitting exam. Please try again.");
-      }
+      // Clear storage and redirect
+      localStorage.removeItem("answers");
+      sessionStorage.removeItem("subject");
+      window.location.href = "http://localhost:3000/std_exam";
+    } else {
+      alert("Error submitting exam. Please try again.");
+    }
   };
 
   xhr.onerror = () => alert("Network error. Please try again.");
   xhr.send(JSON.stringify(answers));
+}
+
+
+function createNotification(examId, type) {
+  fetch("/notifications/create", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      examId: examId, // Pass examId to identify the teacher
+      type: type, // Notification type (e.g., 'submission')
+    }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.message === "Notification created successfully") {
+        console.log("Notification created for examId:", examId);
+      } else {
+        console.error("Failed to create notification:", data.error);
+      }
+    })
+    .catch((error) => {
+      console.error("Error creating notification:", error);
+    });
 }

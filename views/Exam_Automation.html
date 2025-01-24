@@ -90,24 +90,15 @@
             <label for="examDate">Exam Date:</label>
             <input type="date" id="examDate" required />
     
-            <!-- Total Marks Input -->
-            <label for="totalMarks">Total Marks:</label>
-            <input type="number" id="totalMarks" placeholder="Enter total marks" min="1" required />
+          <!-- Total Marks Input (Read-Only) -->
+<label for="totalMarks">Total Marks:</label>
+<input type="number" id="totalMarks" placeholder="Total Marks" min="1" readonly />
+
+            
+   
         </div>
     </div>
-    
-      
-      
-     
-      
-
-
-        <!-- Search Bar and Filters -->
-        
-
-
-
-        
+       
         <div id="questions-container">
           <!-- Questions will be displayed here -->
         </div>
@@ -150,6 +141,14 @@
       <!-- Overlay to dim the background -->
       <div id="overlay" class="overlay" onclick="closeAddQuestionModal()"></div>
     </main>
+
+    <div id="popup" class="popup hidden">
+      <div class="popup-content">
+        <p id="popup-message"></p>
+        <button id="popup-close">OK</button>
+      </div>
+    </div>
+    
 
     <script
       src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"

@@ -35,49 +35,85 @@ async function fetchStudentAnswers() {
             return;
         }
 
-        // Fetch the student's answers
-        const response = await fetch(`/api/student-answers/${examId}/${userId}`);
-        if (!response.ok) throw new Error("Failed to fetch data");
+       // Fetch the student's answers
+const response = await fetch(`/api/student-answers/${examId}/${userId}`);
+if (!response.ok) throw new Error("Failed to fetch data");
 
-        const data = await response.json();
-        const tableBody = document.querySelector("#answers-table tbody");
-        const totalMarksElement = document.querySelector("#totalMarks");
-        const obtainedMarksElement = document.querySelector("#obtainedMarks");
-        const gradeElement = document.querySelector("#grade");
+const data = await response.json();
+const tableBody = document.querySelector("#answers-table tbody");
+const totalMarksElement = document.querySelector("#totalMarks");
+const obtainedMarksElement = document.querySelector("#obtainedMarks");
+const gradeElement = document.querySelector("#grade");
 
-        tableBody.innerHTML = "";
-        let totalMarks = data[0]?.total_marks || 0;
-        totalMarksElement.textContent = totalMarks;
+tableBody.innerHTML = "";
+let totalMarks = data[0]?.total_marks || 0;
+totalMarksElement.textContent = totalMarks;
 
-        let obtainedMarks = 0;
+let obtainedMarks = 0;
 
-        data.forEach((answer, index) => {
-            const row = `
-                <tr>
-                    <td>${answer.question_text}</td>
-                    <td>${answer.answer_text}</td>
-                    <td>${answer.correct_answer}</td>
-                    <td>${answer.question_type}</td>
-                    <td>
-                        <input type="number" min="0" max="10" step="0.5" value="0" class="score-input" data-index="${index}">
-                    </td>
-                </tr>
-            `;
-            tableBody.innerHTML += row;
-        });
+data.forEach((answer, index) => {
+  let scoreInputHTML;
 
-        const scoreInputs = document.querySelectorAll('.score-input');
-        scoreInputs.forEach(input => {
-            input.addEventListener('input', () => {
-                obtainedMarks = Array.from(scoreInputs).reduce((sum, input) => {
-                    return sum + (parseFloat(input.value) || 0);
-                }, 0);
-                obtainedMarksElement.textContent = obtainedMarks.toFixed(2);
+  if (answer.question_type === "objective") {
+      // For objective type questions, compare the answer and set input to 1 or 0
+      const isCorrect = answer.answer_text.trim() === answer.correct_answer.trim();
+      const fixedScore = isCorrect ? 1 : 0;
 
-                const grade = calculateGrade(obtainedMarks, totalMarks);
-                gradeElement.textContent = grade;
-            });
-        });
+      scoreInputHTML = `
+          <input type="number" value="${fixedScore}" class="score-input" data-index="${index}" readonly>
+      `;
+
+      obtainedMarks += fixedScore; // Automatically add to obtained marks
+  } else {
+      // For other question types, allow manual scoring
+      scoreInputHTML = `
+          <input type="number" min="0" max="5" step="0.5" value="0" class="score-input" data-index="${index}">
+      `;
+  }
+
+  const row = document.createElement("tr"); // Create a new table row element
+  row.innerHTML = `
+      <td>${answer.question_text}</td>
+      <td>${answer.answer_text}</td>
+      <td>${answer.correct_answer}</td>
+      <td>${answer.question_type}</td>
+      <td>${scoreInputHTML}</td>
+  `;
+
+  tableBody.appendChild(row); // Append the row directly to the table
+});
+
+
+// Update obtained marks and grade dynamically for non-objective types
+const scoreInputs = document.querySelectorAll('.score-input');
+scoreInputs.forEach(input => {
+    input.addEventListener('input', () => {
+        obtainedMarks = Array.from(scoreInputs).reduce((sum, input) => {
+            return sum + (parseFloat(input.value) || 0);
+        }, 0);
+        obtainedMarksElement.textContent = obtainedMarks.toFixed(2);
+
+        const grade = calculateGrade(obtainedMarks, totalMarks);
+        gradeElement.textContent = grade;
+    });
+});
+
+// Update the displayed obtained marks and grade initially
+obtainedMarksElement.textContent = obtainedMarks.toFixed(2);
+gradeElement.textContent = calculateGrade(obtainedMarks, totalMarks);
+
+        // const scoreInputs = document.querySelectorAll('.score-input');
+        // scoreInputs.forEach(input => {
+        //     input.addEventListener('input', () => {
+        //         obtainedMarks = Array.from(scoreInputs).reduce((sum, input) => {
+        //             return sum + (parseFloat(input.value) || 0);
+        //         }, 0);
+        //         obtainedMarksElement.textContent = obtainedMarks.toFixed(2);
+
+        //         const grade = calculateGrade(obtainedMarks, totalMarks);
+        //         gradeElement.textContent = grade;
+        //     });
+        // });
 
         // Submit Report Button including teacher ID
         document.querySelector("#submit-report").addEventListener('click', async () => {
@@ -110,6 +146,9 @@ async function fetchStudentAnswers() {
 
                 alert("Report submitted successfully!");
 
+                // After successful report submission, create the notification
+                await createReportNotification(examId, userId);
+
                 // Redirect to /reporting after a successful report submission
                 window.location.href = '/reporting';
 
@@ -127,18 +166,47 @@ async function fetchStudentAnswers() {
     }
 }
 
+async function createReportNotification(examId, userId) {
+  try {
+      const response = await fetch('/api/create-notification', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ examId, userId, type: 'report' }),
+      });
 
+      if (!response.ok) throw new Error("Failed to create notification");
 
-
-function calculateGrade(obtainedMarks, totalMarks) {
-    const percentage = (obtainedMarks / totalMarks) * 100;
-    if (percentage >= 90) return 'A+';
-    if (percentage >= 80) return 'A';
-    if (percentage >= 70) return 'B';
-    if (percentage >= 60) return 'C';
-    if (percentage >= 50) return 'D';
-    return 'F';
+      console.log("Report notification created successfully.");
+  } catch (error) {
+      console.error("Error creating report notification:", error);
+  }
 }
+
+
+// function calculateGrade(obtainedMarks, totalMarks, isObjective, totalObjectiveQuestions) {
+//   if (isObjective) {
+//       // Grading logic for objective questions based on the number of questions
+//       const percentage = (obtainedMarks / totalObjectiveQuestions) * 100;
+//       if (percentage === 100) return 'A+';
+//       if (percentage >= 90) return 'A';
+//       if (percentage >= 80) return 'B';
+//       if (percentage >= 70) return 'C';
+//       if (percentage >= 50) return 'D';
+//       return 'F'; // Less than 50%
+//   } else {
+//       // Default grading logic for other question types
+//       const percentage = (obtainedMarks / totalMarks) * 100;
+//       if (percentage >= 90) return 'A+';
+//       if (percentage >= 80) return 'A';
+//       if (percentage >= 70) return 'B';
+//       if (percentage >= 60) return 'C';
+//       if (percentage >= 50) return 'D';
+//       return 'F';
+//   }
+// }
+
 
 
 
@@ -199,3 +267,5 @@ function calculateGrade(obtainedMarks, totalMarks) {
           });
         }
       });
+
+      

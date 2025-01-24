@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log("DOM content loaded"); // Check if the script runs
+
     const reportBody = document.getElementById('reportBody');
 
     try {
@@ -25,7 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const reports = data.reports.filter(report => report.user_id === user.id);
 
         if (reports.length === 0) {
-            reportBody.innerHTML = '<tr><td colspan="8">No reports available</td></tr>';
+            reportBody.innerHTML = '<tr><td colspan="8">Result is not uploaded yet</td></tr>';
             return;
         }
 
@@ -33,6 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <tr>
               <td>${report.firstname}</td>
               <td>${report.lastname}</td>
+              <td>${report.subject}</td>
                 <td>${report.total_marks}</td>
                 <td>${report.obtained_marks}</td>
                 <td>${report.remarks}</td>
@@ -45,22 +48,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         reportBody.innerHTML = '<tr><td colspan="8">Error loading reports</td></tr>';
     }
 
-    // Handle the logout button click
-    const logoutButton = document.getElementById("logout-btn");
-    if (logoutButton) {
-        logoutButton.addEventListener("click", () => {
-            fetch("/logout", { method: "POST" })
-                .then((response) => response.json())
-                .then((data) => {
-                    if (data.success) {
-                        window.location.href = "/";
-                    } else {
-                        console.error("Failed to log out");
-                    }
-                })
-                .catch((err) => {
-                    console.error("Error logging out:", err);
-                });
-        });
-    }
+    // Check if the logout button exists in the DOM
+   
+
+    
 });
+// Adding a log to check if the button is properly clicked
+const logoutButton = document.getElementById("logout-btn");
+        if (logoutButton) {
+          logoutButton.addEventListener("click", () => {
+            fetch("/logout", {
+              method: "POST",
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.success) {
+                  // Redirect to the homepage after successful logout
+                  window.location.href = "/";
+                } else {
+                  console.error("Failed to log out");
+                }
+              })
+              .catch((err) => {
+                console.error("Error logging out:", err);
+              });
+          });
+        }

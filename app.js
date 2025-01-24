@@ -1442,6 +1442,50 @@ app.get("/api/teacher/exams", (req, res) => {
     res.status(200).json({ exams: enrichedResults });
   });
 });
+app.get("/api/admin/exams", (req, res) => {
+  // Ensure user is authenticated and authorized as a teacher
+  if (
+    !req.session.user ||
+    !req.session.user.id ||
+    req.session.user.role !== "Admin"
+  ) {
+    return res.status(403).json({ error: "Access denied. Teachers only." });
+  }
+
+  const query = `
+      SELECT exam_name, subject, subjective, objective, diagram, description, timer, exam_date, created_at, exam_id 
+      FROM generated_exams 
+     ORDER BY created_at DESC
+  `;
+
+  db.query(query, [req.session.user.id], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Failed to fetch teacher exams." });
+    }
+
+    const enrichedResults = results.map((exam) => {
+      let creationDate = "Unknown";
+      let creationTime = "Unknown";
+
+      try {
+        const createdAt = new Date(exam.created_at);
+        creationDate = createdAt.toISOString().split("T")[0]; // YYYY-MM-DD
+        creationTime = createdAt.toISOString().split("T")[1].split(".")[0]; // HH:MM:SS
+      } catch (err) {
+        console.error(`Error processing date for exam: ${exam.exam_id}`, err);
+      }
+
+      return {
+        ...exam,
+        creationDate,
+        creationTime,
+      };
+    });
+
+    res.status(200).json({ exams: enrichedResults });
+  });
+});
 
 app.delete("/api/delete-exam/:examId", (req, res) => {
   const examId = req.params.examId; // Get exam_id from the request parameters
@@ -1764,8 +1808,15 @@ app.post("/api/save-student-report", async (req, res) => {
   const { examId, userId, obtainedMarks, remarks, grade, teacherId } = req.body;
 
   // Validate required fields
-  if (!examId || !userId || !teacherId || obtainedMarks === undefined || !remarks || !grade) {
-      return res.status(400).json({ error: "Missing required data" });
+  if (
+    !examId ||
+    !userId ||
+    !teacherId ||
+    obtainedMarks === undefined ||
+    !remarks ||
+    !grade
+  ) {
+    return res.status(400).json({ error: "Missing required data" });
   }
 
   const query = `
@@ -1781,20 +1832,19 @@ app.post("/api/save-student-report", async (req, res) => {
   const values = [teacherId, obtainedMarks, remarks, grade, examId, userId];
 
   db.query(query, values, (err, result) => {
-      if (err) {
-          console.error("Error saving student report:", err);
-          return res
-              .status(500)
-              .json({ error: "An error occurred while saving the report" });
-      }
+    if (err) {
+      console.error("Error saving student report:", err);
+      return res
+        .status(500)
+        .json({ error: "An error occurred while saving the report" });
+    }
 
-      res.status(201).json({
-          message: "Report saved successfully",
-          reportId: result.insertId,
-      });
+    res.status(201).json({
+      message: "Report saved successfully",
+      reportId: result.insertId,
+    });
   });
 });
-
 
 app.get("/api/getPersonalReport", (req, res) => {
   if (!req.session.user) {
@@ -1814,13 +1864,18 @@ app.get("/api/getPersonalReport", (req, res) => {
           ser.obtained_marks, 
           ser.remarks, 
           ser.grade, 
-          ser.created_at
+          ser.created_at,
+          sa.subject
       FROM 
           student_exam_reports ser
       JOIN 
           users u 
       ON 
           ser.user_id = u.user_id
+      LEFT JOIN 
+          generated_exams sa
+      ON 
+          sa.exam_id = ser.exam_id
       WHERE 
           ser.user_id = ?
   `;
@@ -1834,10 +1889,13 @@ app.get("/api/getPersonalReport", (req, res) => {
   });
 });
 
+
 // New route to check if the report exists for a given exam, teacher, and student
 app.get("/api/verify-report", (req, res) => {
   if (!req.session.user) {
-    return res.status(401).json({ errors: ["Please log in to verify reports"] });
+    return res
+      .status(401)
+      .json({ errors: ["Please log in to verify reports"] });
   }
 
   const { examId, userId } = req.query; // Get examId and userId from query params
@@ -1871,8 +1929,7 @@ app.get("/api/verify-report", (req, res) => {
   });
 });
 
-
-app.get('/api/checkAttempted', (req, res) => {
+app.get("/api/checkAttempted", (req, res) => {
   const userId = req.query.user_id;
   const examId = req.query.exam_id;
 
@@ -1897,9 +1954,333 @@ app.get('/api/checkAttempted', (req, res) => {
   });
 });
 
+//Notification routes start from here
 
+app.get("/notifications/unread", async (req, res) => {
+  try {
+    const userId = req.query.userId; // Assume user ID is passed as a query parameter
 
+    // Log to verify the incoming userId
+    console.log("Fetching unread notifications for userId:", userId);
 
+    // Ensure the userId is provided
+    if (!userId) {
+      return res.status(400).json({ error: "userId is required" });
+    }
+
+    // Query to fetch unread notifications for the given userId
+    db.query(
+      "SELECT * FROM notifications WHERE user_id = ? AND is_read = FALSE",
+      [userId],
+      (err, rows) => {
+        if (err) {
+          console.error("Error fetching notifications:", err);
+          return res
+            .status(500)
+            .json({ error: "Failed to fetch notifications" });
+        }
+
+        // Log the result of the query
+        console.log("Unread notifications:", rows);
+
+        res.status(200).json(rows); // Return unread notifications
+      }
+    );
+  } catch (error) {
+    console.error("Error fetching notifications:", error);
+    res.status(500).json({ error: "Failed to fetch notifications" });
+  }
+});
+
+app.get("/notifications/unread-exam-automation", async (req, res) => {
+  try {
+    // Query to fetch unread notifications of type 'exam automation' for all users
+    db.query(
+      'SELECT * FROM notifications WHERE is_read = FALSE AND type = "exam automation"',
+      (err, rows) => {
+        if (err) {
+          console.error("Error fetching notifications:", err);
+          return res
+            .status(500)
+            .json({ error: "Failed to fetch notifications" });
+        }
+
+        // Log the result of the query
+        console.log('Unread "exam automation" notifications:', rows);
+
+        res.status(200).json(rows); // Return unread "exam automation" notifications for all users
+      }
+    );
+  } catch (error) {
+    console.error("Error fetching notifications:", error);
+    res.status(500).json({ error: "Failed to fetch notifications" });
+  }
+});
+
+app.get("/notifications/unread-report", async (req, res) => {
+  try {
+    const { userId, type } = req.query;
+
+    // Validate query parameters
+    if (!userId || !type) {
+      return res
+        .status(400)
+        .json({ error: "Missing required query parameters: userId and type." });
+    }
+
+    // Query to fetch unread notifications for the user with the given type
+    db.query(
+      "SELECT * FROM notifications WHERE user_id = ? AND type = ? AND is_read = FALSE",
+      [userId, type],
+      (err, rows) => {
+        if (err) {
+          console.error("Error fetching notifications:", err);
+          return res
+            .status(500)
+            .json({ error: "Failed to fetch notifications" });
+        }
+
+        // Log the fetched unread notifications for debugging
+        console.log(
+          `Unread notifications for user ${userId} with type '${type}':`,
+          rows
+        );
+
+        res.status(200).json(rows); // Return the unread notifications
+      }
+    );
+  } catch (error) {
+    console.error("Error fetching notifications:", error);
+    res.status(500).json({ error: "Failed to fetch notifications" });
+  }
+});
+
+app.post("/notifications/mark-read", async (req, res) => {
+  try {
+    const { userId, type } = req.body; // Expect userId and type in the request body
+
+    // Log to verify the incoming data
+    console.log(
+      "Marking notifications as read for userId:",
+      userId,
+      "and type:",
+      type
+    );
+
+    // Ensure the userId and type are provided
+    if (!userId || !type) {
+      return res.status(400).json({ error: "userId and type are required" });
+    }
+
+    // Update the notifications to mark them as read
+    db.query(
+      "UPDATE notifications SET is_read = TRUE WHERE user_id = ? AND type = ?",
+      [userId, type],
+      (err, result) => {
+        if (err) {
+          console.error("Error updating notifications:", err);
+          return res
+            .status(500)
+            .json({ error: "Failed to update notifications" });
+        }
+
+        // Log the result of the update
+        console.log("Updated notifications:", result.affectedRows);
+
+        // Check if any rows were affected
+        if (result.affectedRows > 0) {
+          res
+            .status(200)
+            .json({ success: true, message: "Notifications marked as read" });
+        } else {
+          res.status(404).json({
+            success: false,
+            message: "No matching notifications found",
+          });
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error updating notifications:", error);
+    res.status(500).json({ error: "Failed to update notifications" });
+  }
+});
+
+app.post("/notifications/mark-read-exam-automation", (req, res) => {
+  // Update notifications of type 'exam automation' to 'read' where is_read is FALSE
+  const updateQuery = `
+    UPDATE notifications
+    SET is_read = TRUE
+    WHERE type = 'exam automation' AND is_read = FALSE
+  `;
+
+  db.query(updateQuery, (err, result) => {
+    if (err) {
+      console.error("Error marking notifications as read:", err);
+      return res
+        .status(500)
+        .json({ error: "Failed to mark notifications as read" });
+    }
+
+    if (result.affectedRows > 0) {
+      return res
+        .status(200)
+        .json({ success: true, message: "Notifications marked as read" });
+    } else {
+      return res
+        .status(404)
+        .json({ success: false, message: "No unread notifications found" });
+    }
+  });
+});
+
+app.put("/notifications/mark-read-report", async (req, res) => {
+  const { userId, type } = req.body;
+
+  if (!userId || !type) {
+    return res.status(400).json({ error: "Missing required parameters" });
+  }
+
+  try {
+    db.query(
+      "UPDATE notifications SET is_read = TRUE WHERE user_id = ? AND type = ? AND is_read = FALSE",
+      [userId, type],
+      (err, result) => {
+        if (err) {
+          console.error("Error updating notifications:", err);
+          return res
+            .status(500)
+            .json({ error: "Failed to update notifications" });
+        }
+
+        res.status(200).json({
+          message: `Marked ${result.affectedRows} '${type}' notifications as read for user ${userId}`,
+        });
+      }
+    );
+  } catch (error) {
+    console.error("Error updating notifications:", error);
+    res.status(500).json({ error: "Failed to update notifications" });
+  }
+});
+
+app.post("/notifications/create", (req, res) => {
+  const { examId } = req.body;
+
+  if (!examId) {
+    return res.status(400).json({ error: "Exam ID is required" });
+  }
+
+  // Fetch the user_id (teacher) from the generated_exams table
+  const selectQuery = "SELECT user_id FROM generated_exams WHERE exam_id = ?";
+
+  db.query(selectQuery, [examId], (selectError, results) => {
+    if (selectError) {
+      console.error("Error fetching teacher user_id:", selectError);
+      return res.status(500).json({ error: "Database error" });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: "Exam not found" });
+    }
+
+    const teacherUserId = results[0].user_id;
+
+    // Insert the notification for the teacher
+    const insertQuery = `
+      INSERT INTO notifications (user_id, type, is_read, created_at) 
+      VALUES (?, 'submission', FALSE, NOW())
+    `;
+
+    db.query(insertQuery, [teacherUserId], (insertError, insertResult) => {
+      if (insertError) {
+        console.error("Error inserting notification:", insertError);
+        return res.status(500).json({ error: "Failed to create notification" });
+      }
+
+      if (insertResult.affectedRows > 0) {
+        return res
+          .status(201)
+          .json({ message: "Notification created successfully" });
+      } else {
+        console.error("No rows affected while inserting notification.");
+        return res.status(500).json({ error: "Failed to create notification" });
+      }
+    });
+  });
+});
+
+app.post("/notifications/automation", (req, res) => {
+  const { user_id, type } = req.body; // Allow type to be dynamic if needed.
+
+  // Debugging: Log incoming data to ensure user_id and type are received correctly
+  console.log("Received data:", req.body);
+
+  if (!user_id || !type) {
+    return res.status(400).json({ error: "User ID and Type are required" });
+  }
+
+  const is_read = false; // Default to unread
+  const created_at = new Date().toISOString(); // Current timestamp
+
+  const insertQuery = `
+      INSERT INTO notifications (user_id, type, is_read, created_at) 
+      VALUES (?, ?, ?, ?)
+  `;
+
+  db.query(
+    insertQuery,
+    [user_id, type, is_read, created_at],
+    (insertError, insertResult) => {
+      if (insertError) {
+        console.error(
+          "Error inserting notification:",
+          insertError.sqlMessage || insertError
+        );
+        return res.status(500).json({ error: "Failed to create notification" });
+      }
+
+      if (insertResult.affectedRows > 0) {
+        console.log("Notification successfully created for user_id:", user_id);
+        return res
+          .status(201)
+          .json({ message: "Notification created successfully" });
+      } else {
+        console.error(
+          "No rows were affected, possible issue with the query structure."
+        );
+        return res.status(500).json({ error: "Failed to create notification" });
+      }
+    }
+  );
+});
+
+// Backend route to create a notification when the teacher submits the report
+app.post("/api/create-notification", (req, res) => {
+  const { examId, userId, type } = req.body;
+
+  if (!examId || !userId || !type) {
+    return res
+      .status(400)
+      .json({ error: "Exam ID, User ID, and Type are required" });
+  }
+
+  const createdAt = new Date().toISOString();
+
+  const insertQuery = `
+      INSERT INTO notifications (user_id, type, is_read, created_at)
+      VALUES (?, ?, FALSE, ?)
+  `;
+
+  db.query(insertQuery, [userId, type, createdAt], (err, result) => {
+    if (err) {
+      console.error("Error creating notification:", err);
+      return res.status(500).json({ error: "Failed to create notification" });
+    }
+
+    res.status(201).json({ message: "Notification created successfully" });
+  });
+});
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

@@ -143,4 +143,18 @@
     text-align: center;
     padding-top: 20px;
   }
-  
+ #exam-link{
+  position: relative;
+ }
+
+ #report-link{
+  position: relative;
+ }
+
+ nav ul a{
+  color: #003366;
+  text-decoration: none;
+  font-size: 0.85rem;
+  padding-left: 10px;
+  font-weight: 500;
+ }
