@@ -1,170 +1,193 @@
 async function fetchStudentAnswers() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const examId = urlParams.get("exam_id");
-    const userId = urlParams.get("user_id");
+  const urlParams = new URLSearchParams(window.location.search);
+  const examId = urlParams.get("exam_id");
+  const userId = urlParams.get("user_id");
 
-    if (!examId || !userId) {
-        alert("Missing exam or user ID");
-        return;
-    }
-
-    try {
-        // Fetch the logged-in teacher's information
-        const userResponse = await fetch('/api/user-info');
-        if (!userResponse.ok) throw new Error("Failed to fetch user info");
-
-        const userData = await userResponse.json();
-        const teacherId = userData.user.id;
-
-        const reportCheckResponse = await fetch(`/api/verify-report?examId=${examId}&userId=${userId}`);
-        if (!reportCheckResponse.ok) throw new Error("Failed to check report");
-
-        const reportExists = await reportCheckResponse.json();
-        if (reportExists.reportExists) {
-            // Show the modal pop-up with animation
-            const modal = document.getElementById('report-exists-modal');
-            const goBackBtn = document.getElementById('go-back-btn');
-
-            modal.style.display = 'block'; // Show the modal
-
-            // When the "Go back" button is clicked, redirect to /reporting
-            goBackBtn.addEventListener('click', () => {
-                window.location.href = '/reporting';
-            });
-
-            return;
-        }
-
-       // Fetch the student's answers
-const response = await fetch(`/api/student-answers/${examId}/${userId}`);
-if (!response.ok) throw new Error("Failed to fetch data");
-
-const data = await response.json();
-const tableBody = document.querySelector("#answers-table tbody");
-const totalMarksElement = document.querySelector("#totalMarks");
-const obtainedMarksElement = document.querySelector("#obtainedMarks");
-const gradeElement = document.querySelector("#grade");
-
-tableBody.innerHTML = "";
-let totalMarks = data[0]?.total_marks || 0;
-totalMarksElement.textContent = totalMarks;
-
-let obtainedMarks = 0;
-
-data.forEach((answer, index) => {
-  let scoreInputHTML;
-
-  if (answer.question_type === "objective") {
-      // For objective type questions, compare the answer and set input to 1 or 0
-      const isCorrect = answer.answer_text.trim() === answer.correct_answer.trim();
-      const fixedScore = isCorrect ? 1 : 0;
-
-      scoreInputHTML = `
-          <input type="number" value="${fixedScore}" class="score-input" data-index="${index}" readonly>
-      `;
-
-      obtainedMarks += fixedScore; // Automatically add to obtained marks
-  } else {
-      // For other question types, allow manual scoring
-      scoreInputHTML = `
-          <input type="number" min="0" max="5" step="0.5" value="0" class="score-input" data-index="${index}">
-      `;
+  if (!examId || !userId) {
+    alert("Missing exam or user ID");
+    return;
   }
 
-  const row = document.createElement("tr"); // Create a new table row element
-  row.innerHTML = `
-      <td>${answer.question_text}</td>
-      <td>${answer.answer_text}</td>
-      <td>${answer.correct_answer}</td>
-      <td>${answer.question_type}</td>
-      <td>${scoreInputHTML}</td>
-  `;
+  try {
+    // Fetch the logged-in teacher's information
+    const userResponse = await fetch("/api/user-info");
+    if (!userResponse.ok) throw new Error("Failed to fetch user info");
 
-  tableBody.appendChild(row); // Append the row directly to the table
-});
+    const userData = await userResponse.json();
+    const teacherId = userData.user.id;
 
+    // Check if the report already exists
+    const reportCheckResponse = await fetch(
+      `/api/verify-report?examId=${examId}&userId=${userId}`
+    );
+    if (!reportCheckResponse.ok) throw new Error("Failed to check report");
 
-// Update obtained marks and grade dynamically for non-objective types
-const scoreInputs = document.querySelectorAll('.score-input');
-scoreInputs.forEach(input => {
-    input.addEventListener('input', () => {
+    const reportExists = await reportCheckResponse.json();
+    
+    // Fetch the student's answers regardless of whether the report exists
+    const response = await fetch(`/api/student-answers/${examId}/${userId}`);
+    if (!response.ok) throw new Error("Failed to fetch student answers");
+
+    const data = await response.json();
+    const tableBody = document.querySelector("#answers-table tbody");
+    const totalMarksElement = document.querySelector("#totalMarks");
+    const obtainedMarksElement = document.querySelector("#obtainedMarks");
+    const gradeElement = document.querySelector("#grade");
+
+    tableBody.innerHTML = "";
+    let totalMarks = data[0]?.total_marks || 0;
+    totalMarksElement.textContent = totalMarks;
+
+    let obtainedMarks = 0;
+
+    data.forEach((answer, index) => {
+      let scoreInputHTML;
+
+      if (answer.question_type === "objective") {
+        // For objective type questions, compare the answer and set input to 1 or 0
+        const isCorrect =
+          answer.answer_text.trim() === answer.correct_answer.trim();
+        const fixedScore = isCorrect ? 1 : 0;
+
+        scoreInputHTML = `
+            <input type="number" value="${fixedScore}" class="score-input" data-index="${index}" readonly>
+        `;
+
+        obtainedMarks += fixedScore; // Automatically add to obtained marks
+      } else {
+        // For other question types, allow manual scoring if the report doesn't exist
+        scoreInputHTML = `
+            <input type="number" min="0" max="5" step="0.5" value="0" class="score-input" data-index="${index}" ${
+              reportExists.reportExists ? "readonly" : ""
+            }>
+        `;
+      }
+
+      const row = document.createElement("tr"); // Create a new table row element
+      row.innerHTML = `
+          <td>${answer.question_text}</td>
+          <td>${answer.answer_text}</td>
+          <td>${answer.correct_answer}</td>
+          <td>${answer.question_type}</td>
+          <td>${scoreInputHTML}</td>
+      `;
+
+      tableBody.appendChild(row); // Append the row directly to the table
+    });
+
+    // Update obtained marks and grade dynamically for non-objective types
+    const scoreInputs = document.querySelectorAll(".score-input");
+    scoreInputs.forEach((input) => {
+      input.addEventListener("input", () => {
         obtainedMarks = Array.from(scoreInputs).reduce((sum, input) => {
-            return sum + (parseFloat(input.value) || 0);
+          return sum + (parseFloat(input.value) || 0);
         }, 0);
         obtainedMarksElement.textContent = obtainedMarks.toFixed(2);
 
         const grade = calculateGrade(obtainedMarks, totalMarks);
         gradeElement.textContent = grade;
+      });
     });
-});
 
-// Update the displayed obtained marks and grade initially
-obtainedMarksElement.textContent = obtainedMarks.toFixed(2);
-gradeElement.textContent = calculateGrade(obtainedMarks, totalMarks);
+    // Update the displayed obtained marks and grade initially
+    obtainedMarksElement.textContent = obtainedMarks.toFixed(2);
+    gradeElement.textContent = calculateGrade(obtainedMarks, totalMarks);
 
-        // const scoreInputs = document.querySelectorAll('.score-input');
-        // scoreInputs.forEach(input => {
-        //     input.addEventListener('input', () => {
-        //         obtainedMarks = Array.from(scoreInputs).reduce((sum, input) => {
-        //             return sum + (parseFloat(input.value) || 0);
-        //         }, 0);
-        //         obtainedMarksElement.textContent = obtainedMarks.toFixed(2);
+    if (reportExists.reportExists) {
+      // Hide the summary section and submit button if the report already exists
+      const summarySection = document.querySelector("#report-summary");
+      if (summarySection) {
+        summarySection.style.display = "none";
+      }
 
-        //         const grade = calculateGrade(obtainedMarks, totalMarks);
-        //         gradeElement.textContent = grade;
-        //     });
-        // });
+      const submitButton = document.querySelector("#submit-report");
+      if (submitButton) {
+        submitButton.style.display = "none";
+      }
 
-        // Submit Report Button including teacher ID
-        document.querySelector("#submit-report").addEventListener('click', async () => {
-            const remarks = document.querySelector("#remarks").value;
-            const grade = gradeElement.textContent;
-            const obtainedMarks = parseFloat(obtainedMarksElement.textContent);
+      // Add a message to indicate the report is already submitted
+      let container = document.querySelector("#answers-container");
+      if (!container) {
+        container = document.createElement("div");
+        container.id = "answers-container";
+        container.style.margin = "20px auto";
+        container.style.padding = "20px";
+        container.style.maxWidth = "600px";
+        container.style.backgroundColor = "#fff";
+        container.style.border = "1px solid #ccc";
+        container.style.borderRadius = "5px";
+        container.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.1)";
+        document.body.appendChild(container);
+      }
 
-            if (!remarks || grade === "--" || isNaN(obtainedMarks)) {
-                alert("Please complete all fields before submitting.");
-                return;
-            }
-
-            const reportData = {
-                examId,
-                userId,
-                teacherId,
-                obtainedMarks,
-                remarks,
-                grade,
-            };
-
-            try {
-                const response = await fetch('/api/save-student-report', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(reportData),
-                });
-
-                if (!response.ok) throw new Error("Failed to save report");
-
-                alert("Report submitted successfully!");
-
-                // After successful report submission, create the notification
-                await createReportNotification(examId, userId);
-
-                // Redirect to /reporting after a successful report submission
-                window.location.href = '/reporting';
-
-                // Optionally, disable the submit button after successful submission
-                document.querySelector("#submit-report").disabled = true;
-            } catch (error) {
-                console.error("Error submitting report:", error);
-                alert("An error occurred while submitting the report.");
-            }
-        });
-
-    } catch (error) {
-        console.error("Error fetching student answers:", error);
-        alert("An error occurred while fetching the answers.");
+      const message = document.createElement("div");
+      message.textContent =
+        "This report has already been submitted. You can only view the answers.";
+      message.style.textAlign = "center";
+      message.style.margin = "20px";
+      message.style.padding = "10px";
+      message.style.backgroundColor = "#f8d7da";
+      message.style.color = "#842029";
+      message.style.border = "1px solid #f5c2c7";
+      message.style.borderRadius = "5px";
+      container.appendChild(message);
     }
+
+    // Submit Report Button including teacher ID
+    document
+      .querySelector("#submit-report")
+      .addEventListener("click", async () => {
+        const remarks = document.querySelector("#remarks").value;
+        const grade = gradeElement.textContent;
+        const obtainedMarks = parseFloat(obtainedMarksElement.textContent);
+
+        if (!remarks || grade === "--" || isNaN(obtainedMarks)) {
+          alert("Please complete all fields before submitting.");
+          return;
+        }
+
+        const reportData = {
+          examId,
+          userId,
+          teacherId,
+          obtainedMarks,
+          remarks,
+          grade,
+        };
+
+        try {
+          const response = await fetch("/api/save-student-report", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(reportData),
+          });
+
+          if (!response.ok) throw new Error("Failed to save report");
+
+          alert("Report submitted successfully!");
+
+          // After successful report submission, create the notification
+          await createReportNotification(examId, userId);
+
+          // Redirect to /reporting after a successful report submission
+          window.location.href = "/reporting";
+
+          // Optionally, disable the submit button after successful submission
+          document.querySelector("#submit-report").disabled = true;
+        } catch (error) {
+          console.error("Error submitting report:", error);
+          alert("An error occurred while submitting the report.");
+        }
+      });
+  } catch (error) {
+    console.error("Error fetching student answers:", error);
+    alert("An error occurred while fetching the answers.");
+  }
 }
+
+
+
+
 
 async function createReportNotification(examId, userId) {
   try {
